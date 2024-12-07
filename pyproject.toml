@@ -6,7 +6,7 @@ authors = ["Your Name <minh.triet.chau@dsv.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.11"
+python = ">=3.10,<3.12"
 grad-dft = {git = "git@github.com:XanaduAI/GradDFT"}
 pyscf = "^2.7.0"
 
