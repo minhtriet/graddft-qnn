@@ -1,6 +1,8 @@
 from pyscf import gto, dft
 import grad_dft as gd
 
+from jax import numpy as jnp
+
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
@@ -38,5 +40,5 @@ mf.kernel()
 # Then we can use the following function to generate the molecule object
 HF_molecule = gd.molecule_from_pyscf(mf)
 
-nf = gd.NeuralFunctional(coefficients, energy_densities, coefficient_inputs)
+nf = gd.Functional(coefficients, energy_densities, coefficient_inputs)
 
