@@ -1,6 +1,7 @@
 from pyscf import gto, dft
 import grad_dft as gd
 
+from jax.random import PRNGKey
 from jax import numpy as jnp
 
 
@@ -42,3 +43,11 @@ HF_molecule = gd.molecule_from_pyscf(mf)
 
 nf = gd.Functional(coefficients, energy_densities, coefficient_inputs)
 
+
+key = PRNGKey(42)
+cinputs = coefficient_inputs(HF_molecule)
+params = nf.init(key, cinputs)
+
+params = nf.init(key, cinputs)
+
+E = nf.energy(params, HF_molecule)
