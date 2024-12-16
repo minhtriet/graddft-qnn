@@ -1,8 +1,10 @@
 from pyscf import gto, dft
 import grad_dft as gd
-
+import yaml
 from jax.random import PRNGKey
 from jax import numpy as jnp
+
+import pennylane as qml
 
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
@@ -23,31 +25,23 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     return lda_e
 
 
-def coefficients(instance, rhoinputs):
-    """
-    :param instance: an instance of the class Functional.
-    :param rhoinputs: input to the neural network, in the form of an array.
-    :return:
-    """
-    x = rhoinputs
-    # todo add debugger here
-    # todo allow instance to be QNNFunctional, maybe implement that too
-    return rhoinputs[0]
-
-# Define the geometry of the molecule and mean-field object
-mol = gto.M(atom=[["H", (0, 0, 0)]], basis="def2-tzvp", charge=0, spin=1)
-mf = dft.UKS(mol)
-mf.kernel()
-# Then we can use the following function to generate the molecule object
-HF_molecule = gd.molecule_from_pyscf(mf)
-
-nf = gd.Functional(coefficients, energy_densities, coefficient_inputs)
+if __name__ == '__main__':
 
 
-key = PRNGKey(42)
-cinputs = coefficient_inputs(HF_molecule)
-params = nf.init(key, cinputs)
+    # Define the geometry of the molecule and mean-field object
+    mol = gto.M(atom=[["H", (0, 0, 0)]], basis="def2-tzvp", charge=0, spin=1)
+    mf = dft.UKS(mol)
+    mf.kernel()
+    # Then we can use the following function to generate the molecule object
+    HF_molecule = gd.molecule_from_pyscf(mf)
 
-params = nf.init(key, cinputs)
+    nf = gd.Functional(coefficients, energy_densities, coefficient_inputs)
 
-E = nf.energy(params, HF_molecule)
+
+    key = PRNGKey(42)
+    cinputs = coefficient_inputs(HF_molecule)
+    params = nf.init(key, cinputs)
+
+    params = nf.init(key, cinputs)
+
+    E = nf.energy(params, HF_molecule)
