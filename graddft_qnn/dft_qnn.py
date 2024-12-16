@@ -11,13 +11,6 @@ class DFTQNN:
         self.dev = qml.device('default.qubit', wires=self.num_qubits)
 
 
-    def get_circuit(self):
-        """Returns the quantum circuit."""
-        if self.circuit is None:
-            raise ValueError("Circuit not built. Call build_circuit first.")
-        return self.circuit
-
-
     @qml.qnode(self.dev)
     def coefficients(instance, rhoinputs):
         """

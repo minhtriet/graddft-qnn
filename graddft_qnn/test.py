@@ -3,7 +3,7 @@ import grad_dft as gd
 import yaml
 from jax.random import PRNGKey
 from jax import numpy as jnp
-
+from dft_qnn import DFTQNN
 import pennylane as qml
 
 
@@ -26,7 +26,7 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
 
 
 if __name__ == '__main__':
-
+    dft_qnn = DFTQNN("config.yaml")
 
     # Define the geometry of the molecule and mean-field object
     mol = gto.M(atom=[["H", (0, 0, 0)]], basis="def2-tzvp", charge=0, spin=1)
@@ -34,9 +34,11 @@ if __name__ == '__main__':
     mf.kernel()
     # Then we can use the following function to generate the molecule object
     HF_molecule = gd.molecule_from_pyscf(mf)
+    coefficients = dft_qnn.circuit()
 
     nf = gd.Functional(coefficients, energy_densities, coefficient_inputs)
 
+    # Start the training
 
     key = PRNGKey(42)
     cinputs = coefficient_inputs(HF_molecule)
