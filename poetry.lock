@@ -12,6 +12,17 @@ files = [
 ]
 
 [[package]]
+name = "appdirs"
+version = "1.4.4"
+description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
+optional = false
+python-versions = "*"
+files = [
+    {file = "appdirs-1.4.4-py2.py3-none-any.whl", hash = "sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128"},
+    {file = "appdirs-1.4.4.tar.gz", hash = "sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41"},
+]
+
+[[package]]
 name = "astunparse"
 version = "1.6.3"
 description = "An AST unparser for Python"
@@ -44,6 +55,38 @@ dev = ["cloudpickle", "hypothesis", "mypy (>=1.11.1)", "pre-commit", "pympler", 
 docs = ["cogapp", "furo", "myst-parser", "sphinx", "sphinx-notfound-page", "sphinxcontrib-towncrier", "towncrier (<24.7)"]
 tests = ["cloudpickle", "hypothesis", "mypy (>=1.11.1)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "pytest-xdist[psutil]"]
 tests-mypy = ["mypy (>=1.11.1)", "pytest-mypy-plugins"]
+
+[[package]]
+name = "autograd"
+version = "1.7.0"
+description = "Efficiently computes derivatives of NumPy code."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "autograd-1.7.0-py3-none-any.whl", hash = "sha256:49680300f842f3a8722b060ac0d3ed7aca071d1ad4d3d38c9fdadafdcc73c30b"},
+    {file = "autograd-1.7.0.tar.gz", hash = "sha256:de743fd368d6df523cd37305dcd171861a9752a144493677d2c9f5a56983ff2f"},
+]
+
+[package.dependencies]
+numpy = "*"
+
+[package.extras]
+scipy = ["scipy"]
+
+[[package]]
+name = "autoray"
+version = "0.7.0"
+description = "Abstract your array operations."
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "autoray-0.7.0-py3-none-any.whl", hash = "sha256:03103957df3d1b66b8068158056c2909a72095b19d1b24262261276a714a5d07"},
+    {file = "autoray-0.7.0.tar.gz", hash = "sha256:7829d21258512f87e02f23ce74ae5759af4ce8998069d2cce53468f1d701a219"},
+]
+
+[package.extras]
+docs = ["astroid (<3)", "furo", "ipython (!=8.7.0)", "myst-nb", "setuptools-scm", "sphinx (>=2.0)", "sphinx-autoapi", "sphinx-copybutton"]
+tests = ["coverage", "numpy", "pytest", "pytest-cov"]
 
 [[package]]
 name = "cachetools"
@@ -941,6 +984,25 @@ files = [
 ]
 
 [[package]]
+name = "networkx"
+version = "3.4.2"
+description = "Python package for creating and manipulating graphs and networks"
+optional = false
+python-versions = ">=3.10"
+files = [
+    {file = "networkx-3.4.2-py3-none-any.whl", hash = "sha256:df5d4365b724cf81b8c6a7312509d0c22386097011ad1abe274afd5e9d3bbc5f"},
+    {file = "networkx-3.4.2.tar.gz", hash = "sha256:307c3669428c5362aab27c8a1260aa8f47c4e91d3891f48be0141738d8d053e1"},
+]
+
+[package.extras]
+default = ["matplotlib (>=3.7)", "numpy (>=1.24)", "pandas (>=2.0)", "scipy (>=1.10,!=1.11.0,!=1.11.1)"]
+developer = ["changelist (==0.5)", "mypy (>=1.1)", "pre-commit (>=3.2)", "rtoml"]
+doc = ["intersphinx-registry", "myst-nb (>=1.1)", "numpydoc (>=1.8.0)", "pillow (>=9.4)", "pydata-sphinx-theme (>=0.15)", "sphinx (>=7.3)", "sphinx-gallery (>=0.16)", "texext (>=0.6.7)"]
+example = ["cairocffi (>=1.7)", "contextily (>=1.6)", "igraph (>=0.11)", "momepy (>=0.7.2)", "osmnx (>=1.9)", "scikit-learn (>=1.5)", "seaborn (>=0.13)"]
+extra = ["lxml (>=4.6)", "pydot (>=3.0.1)", "pygraphviz (>=1.14)", "sympy (>=1.10)"]
+test = ["pytest (>=7.2)", "pytest-cov (>=4.0)"]
+
+[[package]]
 name = "numpy"
 version = "1.24.1"
 description = "Fundamental package for array computing in Python"
@@ -1065,6 +1127,68 @@ files = [
     {file = "packaging-24.2-py3-none-any.whl", hash = "sha256:09abb1bccd265c01f4a3aa3f7a7db064b36514d2cba19a2f694fe6150451a759"},
     {file = "packaging-24.2.tar.gz", hash = "sha256:c228a6dc5e932d346bc5739379109d49e8853dd8223571c7c5b55260edc0b97f"},
 ]
+
+[[package]]
+name = "pennylane"
+version = "0.39.0"
+description = "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network."
+optional = false
+python-versions = "*"
+files = [
+    {file = "PennyLane-0.39.0-py3-none-any.whl", hash = "sha256:e11928a8ffd652b9c1b4f11955b50210c3b637f36ee3d8cea64a3a9a6a830977"},
+]
+
+[package.dependencies]
+appdirs = "*"
+autograd = "*"
+autoray = ">=0.6.11"
+cachetools = "*"
+networkx = "*"
+numpy = "<2.1"
+packaging = "*"
+pennylane-lightning = ">=0.39"
+requests = "*"
+rustworkx = ">=0.14.0"
+scipy = "*"
+toml = "*"
+typing-extensions = "*"
+
+[package.extras]
+kernels = ["cvxopt", "cvxpy"]
+
+[[package]]
+name = "pennylane-lightning"
+version = "0.39.0"
+description = "PennyLane-Lightning plugin"
+optional = false
+python-versions = ">=3.10"
+files = [
+    {file = "PennyLane_Lightning-0.39.0-cp310-cp310-macosx_13_0_arm64.whl", hash = "sha256:dfdf6071337f743519d7bcbe4d1bf35f1822bf14020dbda3c734b0471c4dbb12"},
+    {file = "PennyLane_Lightning-0.39.0-cp310-cp310-macosx_13_0_x86_64.whl", hash = "sha256:0d9d7a865cf81923a05247e811a1534f3395fc9f27ea51a0472837b2dbe88f8d"},
+    {file = "PennyLane_Lightning-0.39.0-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:1d4c22f28afdb816bca37617d9d508e3a73b0bd50df4581bafd1de7f8ab028b2"},
+    {file = "PennyLane_Lightning-0.39.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:1878dbf59c779face32ee8b9291e2cf18a601c491a132afe89f9b1e477026455"},
+    {file = "PennyLane_Lightning-0.39.0-cp310-cp310-win_amd64.whl", hash = "sha256:8e5e68f467f68216d2b5f19639b4b3d621743c389a4d207282c52557e20ff10c"},
+    {file = "PennyLane_Lightning-0.39.0-cp311-cp311-macosx_13_0_arm64.whl", hash = "sha256:8b5dfb5ee187a98925130965b5cbfb9ecfc650ec23b2cfdbf16040db25d79f73"},
+    {file = "PennyLane_Lightning-0.39.0-cp311-cp311-macosx_13_0_x86_64.whl", hash = "sha256:80debc3b1c7a5923509f4662b95ca1703ac8a29eaaa78a169240b23c4c1c7875"},
+    {file = "PennyLane_Lightning-0.39.0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:ac2bcafd8b10b58e99cd050bb89a67e97b53e66ab8636e37bafd67a32905f935"},
+    {file = "PennyLane_Lightning-0.39.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:de45c1c2e97572e59081878dc80bbebe17b938a783005ce0ad6632ba8dd46956"},
+    {file = "PennyLane_Lightning-0.39.0-cp311-cp311-win_amd64.whl", hash = "sha256:dcbec946148018a8aebae6cf45bb0d9d6f9a418bb0655ed4b3ae2f7e948e320d"},
+    {file = "PennyLane_Lightning-0.39.0-cp312-cp312-macosx_13_0_arm64.whl", hash = "sha256:6c7553d206f185ab6f7688fe086d80a33f382beb56e9ad579090bdba041adfb1"},
+    {file = "PennyLane_Lightning-0.39.0-cp312-cp312-macosx_13_0_x86_64.whl", hash = "sha256:30a08ed59fd2c11257bc989303547b8125e7453c8165f8c75ec7d8090451ec54"},
+    {file = "PennyLane_Lightning-0.39.0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:c0f52da46791605e3f8f0644b45a97de799df1f69cd3659a58fc04f7288f948e"},
+    {file = "PennyLane_Lightning-0.39.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:f0a9ab74b0cf2cbc9556a0c85a750a5d6063721405f76cacf8b17f9e6774dd9b"},
+    {file = "PennyLane_Lightning-0.39.0-cp312-cp312-win_amd64.whl", hash = "sha256:f568120eac4ed4b5d498889cb9359040dd7070ef711e98cdbace4efde794c866"},
+    {file = "PennyLane_Lightning-0.39.0-py3-none-any.whl", hash = "sha256:55de99da8e513f89b416087d1665257498be244006968b472b82a56b972d0f0d"},
+    {file = "PennyLane_Lightning-0.39.0.tar.gz", hash = "sha256:a1db6069c7d97eea50846d5b51a3d9ae97539bf68ac480b5c9bea1eaa5e3f1d1"},
+]
+
+[package.dependencies]
+pennylane = ">=0.37"
+
+[package.extras]
+gpu = ["pennylane-lightning-gpu"]
+kokkos = ["pennylane-lightning-kokkos"]
+tensor = ["pennylane-lightning-tensor"]
 
 [[package]]
 name = "pluggy"
@@ -1333,6 +1457,62 @@ files = [
 
 [package.dependencies]
 pyasn1 = ">=0.1.3"
+
+[[package]]
+name = "ruff"
+version = "0.8.3"
+description = "An extremely fast Python linter and code formatter, written in Rust."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "ruff-0.8.3-py3-none-linux_armv6l.whl", hash = "sha256:8d5d273ffffff0acd3db5bf626d4b131aa5a5ada1276126231c4174543ce20d6"},
+    {file = "ruff-0.8.3-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:e4d66a21de39f15c9757d00c50c8cdd20ac84f55684ca56def7891a025d7e939"},
+    {file = "ruff-0.8.3-py3-none-macosx_11_0_arm64.whl", hash = "sha256:c356e770811858bd20832af696ff6c7e884701115094f427b64b25093d6d932d"},
+    {file = "ruff-0.8.3-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9c0a60a825e3e177116c84009d5ebaa90cf40dfab56e1358d1df4e29a9a14b13"},
+    {file = "ruff-0.8.3-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:75fb782f4db39501210ac093c79c3de581d306624575eddd7e4e13747e61ba18"},
+    {file = "ruff-0.8.3-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:7f26bc76a133ecb09a38b7868737eded6941b70a6d34ef53a4027e83913b6502"},
+    {file = "ruff-0.8.3-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:01b14b2f72a37390c1b13477c1c02d53184f728be2f3ffc3ace5b44e9e87b90d"},
+    {file = "ruff-0.8.3-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:53babd6e63e31f4e96ec95ea0d962298f9f0d9cc5990a1bbb023a6baf2503a82"},
+    {file = "ruff-0.8.3-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:1ae441ce4cf925b7f363d33cd6570c51435972d697e3e58928973994e56e1452"},
+    {file = "ruff-0.8.3-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d7c65bc0cadce32255e93c57d57ecc2cca23149edd52714c0c5d6fa11ec328cd"},
+    {file = "ruff-0.8.3-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:5be450bb18f23f0edc5a4e5585c17a56ba88920d598f04a06bd9fd76d324cb20"},
+    {file = "ruff-0.8.3-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:8faeae3827eaa77f5721f09b9472a18c749139c891dbc17f45e72d8f2ca1f8fc"},
+    {file = "ruff-0.8.3-py3-none-musllinux_1_2_i686.whl", hash = "sha256:db503486e1cf074b9808403991663e4277f5c664d3fe237ee0d994d1305bb060"},
+    {file = "ruff-0.8.3-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:6567be9fb62fbd7a099209257fef4ad2c3153b60579818b31a23c886ed4147ea"},
+    {file = "ruff-0.8.3-py3-none-win32.whl", hash = "sha256:19048f2f878f3ee4583fc6cb23fb636e48c2635e30fb2022b3a1cd293402f964"},
+    {file = "ruff-0.8.3-py3-none-win_amd64.whl", hash = "sha256:f7df94f57d7418fa7c3ffb650757e0c2b96cf2501a0b192c18e4fb5571dfada9"},
+    {file = "ruff-0.8.3-py3-none-win_arm64.whl", hash = "sha256:fe2756edf68ea79707c8d68b78ca9a58ed9af22e430430491ee03e718b5e4936"},
+    {file = "ruff-0.8.3.tar.gz", hash = "sha256:5e7558304353b84279042fc584a4f4cb8a07ae79b2bf3da1a7551d960b5626d3"},
+]
+
+[[package]]
+name = "rustworkx"
+version = "0.15.1"
+description = "A python graph library implemented in Rust"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "rustworkx-0.15.1-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:6cd4496d3298cd3205c03545e48cc37d21e0455d57752af801d3fb250452d590"},
+    {file = "rustworkx-0.15.1-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:cb518f5649e62d753e29ca1e57290c8f58adbebcd154dc3159f4a36ebfa1e2b7"},
+    {file = "rustworkx-0.15.1-cp38-abi3-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:6ac68ae2515ece22ba3ef56f3d16ad6bf707955f650d623190b2e7d706c6dc92"},
+    {file = "rustworkx-0.15.1-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8b903edec1d803704b499959f9d6f6119cdda63b9b64194a4b4307e506b112f0"},
+    {file = "rustworkx-0.15.1-cp38-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:a2c97a56ff8a0f6c273a83e26e627c72207442b4252aa550acad0bff42caac40"},
+    {file = "rustworkx-0.15.1-cp38-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:241c502532e348ba89200823326dba30de4df4b886cb2fd5a140b359ff124bb3"},
+    {file = "rustworkx-0.15.1-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7e5f4156f46fa03177c9b0580450eab87786063495d48b457762a5bdd20c55e2"},
+    {file = "rustworkx-0.15.1-cp38-abi3-musllinux_1_1_aarch64.whl", hash = "sha256:7834ab34748db6214ec3b3836b996b23882dc83184234e6d346d6bb85fd58ae5"},
+    {file = "rustworkx-0.15.1-cp38-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:ce53f173fed16e1d51d9df9f23475a16c981b03bf1a412d991c75a70db6b1dc1"},
+    {file = "rustworkx-0.15.1-cp38-abi3-win32.whl", hash = "sha256:308bc76a01bcae9af4602d8b9ed58021df37dd0bb5a7b2e3831ae53c5e234ff0"},
+    {file = "rustworkx-0.15.1-cp38-abi3-win_amd64.whl", hash = "sha256:89077382633e918d2392772f53b9d6d30eee51eb536f8d38ee195c212b2f0427"},
+    {file = "rustworkx-0.15.1.tar.gz", hash = "sha256:0e0cc86599f979285b2ab9c357276f3272f3fcb3b2df5651a6bf9704c570d4c1"},
+]
+
+[package.dependencies]
+numpy = ">=1.16.0,<3"
+
+[package.extras]
+all = ["matplotlib (>=3.0)", "pillow (>=5.4)"]
+graphviz = ["pillow (>=5.4)"]
+mpl = ["matplotlib (>=3.0)"]
 
 [[package]]
 name = "scipy"
@@ -1661,6 +1841,17 @@ files = [
 ]
 
 [[package]]
+name = "toml"
+version = "0.10.2"
+description = "Python Library for Tom's Obvious, Minimal Language"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+files = [
+    {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
+    {file = "toml-0.10.2.tar.gz", hash = "sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f"},
+]
+
+[[package]]
 name = "tomli"
 version = "2.2.1"
 description = "A lil' TOML parser"
@@ -1711,6 +1902,27 @@ files = [
     {file = "toolz-1.0.0-py3-none-any.whl", hash = "sha256:292c8f1c4e7516bf9086f8850935c799a874039c8bcf959d47b600e4c44a6236"},
     {file = "toolz-1.0.0.tar.gz", hash = "sha256:2c86e3d9a04798ac556793bced838816296a2f085017664e4995cb40a1047a02"},
 ]
+
+[[package]]
+name = "tqdm"
+version = "4.67.1"
+description = "Fast, Extensible Progress Meter"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tqdm-4.67.1-py3-none-any.whl", hash = "sha256:26445eca388f82e72884e0d580d5464cd801a3ea01e63e5601bdff9ba6a48de2"},
+    {file = "tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2"},
+]
+
+[package.dependencies]
+colorama = {version = "*", markers = "platform_system == \"Windows\""}
+
+[package.extras]
+dev = ["nbval", "pytest (>=6)", "pytest-asyncio (>=0.24)", "pytest-cov", "pytest-timeout"]
+discord = ["requests"]
+notebook = ["ipywidgets (>=6)"]
+slack = ["slack-sdk"]
+telegram = ["requests"]
 
 [[package]]
 name = "typeguard"
@@ -1891,4 +2103,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "afd85efd99203777fa9a7e8cffe777935543a6e1ea548eba31547d4e528f1b3f"
+content-hash = "c98c55e39feedf3e0657d411e2b7bee1742494e2dc21cc4dc5202c75002b8d80"
