@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     # Then we can use the following function to generate the molecule object
     HF_molecule = gd.molecule_from_pyscf(mean_field)
-    coefficients = dft_qnn.circuit()
+    coefficients = dft_qnn.circuit()  # todo add phi and theta here
 
     nf = gd.Functional(coefficients, energy_densities, coefficient_inputs)
     key = PRNGKey(42)
@@ -63,7 +63,6 @@ if __name__ == "__main__":
 
     E = nf.energy(params, HF_molecule)
 
-    # todo predictor is for simple energy loss func but why
     predictor = gd.non_scf_predictor(nf)
 
     # training loop
