@@ -22,4 +22,4 @@ class DFTQNN:
         return qml.probs()
 
     def circuit(self):
-        return qml.QNode(self._circuit_blueprint, self.dev)
+        return qml.QNode(self._circuit_blueprint, self.dev, interface="autograd")

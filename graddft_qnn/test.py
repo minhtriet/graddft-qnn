@@ -37,7 +37,7 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
 if __name__ == "__main__":
     dft_qnn = DFTQNN("config.yaml")
 
-    mol = gto.M(atom=[["H", (0, 0, 0)]], basis="def2-tzvp", charge=0, spin=1)
+    mol = gto.M(atom=[["H", (0, 0, 0)], ["F", (0, 0, 1.1)]], basis="def2-tzvp", charge=0, spin=1)
     mean_field = dft.UKS(mol)
     ground_truth_energy = mean_field.kernel()
 
@@ -48,6 +48,8 @@ if __name__ == "__main__":
     nf = gd.Functional(coefficients, energy_densities, coefficient_inputs)
     key = PRNGKey(42)
     cinputs = coefficient_inputs(HF_molecule)
+
+    # todo change interface to autograd?
 
     # Init the params
     params = nf.init(key, cinputs)
