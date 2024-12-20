@@ -7,14 +7,19 @@ from tqdm import tqdm
 
 from dft_qnn import DFTQNN
 
+from qnn_functional import QNNFunctional
+
 from optax import adam
 
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
-    # todo kinetic seems not written in E_{xc}[\rho] = \int \c_\theta[\rho](r) \cdot e[\rho](r)dr
-    kinetic = molecule.kinetic_density()
-    return jnp.concatenate((rho, kinetic), axis=1)
+    # kinetic = molecule.kinetic_density()
+    # todo IMPORTANT pyscf coarse grid, do pca? down sample the 3d image. n quit to encode 2^n amplitude
+    # todo entry point must be jax array, not a scalar or anything
+    # todo experiment with jax before this
+    return rho
+    # return jnp.concatenate((rho, kinetic), axis=1)
 
 
 def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
@@ -34,10 +39,30 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     return lda_e
 
 
-if __name__ == "__main__":
-    dft_qnn = DFTQNN("config.yaml")
+from flax import linen as nn
+from jax.nn import sigmoid
 
-    mol = gto.M(atom=[["H", (0, 0, 0)], ["F", (0, 0, 1.1)]], basis="def2-tzvp", charge=0, spin=1)
+out_features = 1
+
+
+def coefficients_(_, rhoinputs):
+    r"""
+    Instance is an instance of the class Functional or NeuralFunctional.
+    rhoinputs is the input to the neural network, in the form of an array.
+    localfeatures represents the potentials e_\theta(r).
+
+    The output of this function is the energy density of the system.
+    """
+
+    x = nn.Dense(features=out_features)(rhoinputs)
+    x = nn.LayerNorm()(x)
+    return sigmoid(x)
+
+
+if __name__ == "__main__":
+    dft_qnn = DFTQNN("config.yaml")  # todo start simpler, make sure input output shape
+
+    mol = gto.M(atom=[["H", (0, 0, 0)], ["F", (0, 0, 1.1)]], basis="def2-tzvp")
     mean_field = dft.UKS(mol)
     ground_truth_energy = mean_field.kernel()
 
@@ -45,11 +70,12 @@ if __name__ == "__main__":
     HF_molecule = gd.molecule_from_pyscf(mean_field)
     coefficients = dft_qnn.circuit()  # todo add phi and theta here
 
-    nf = gd.Functional(coefficients, energy_densities, coefficient_inputs)
+    # todo jax is functional, how to avoid oop stuffs when working with jax
+
+    nf = QNNFunctional(coefficients, energy_densities, coefficient_inputs)
+    # nf = gd.NeuralFunctional(coefficients, energy_densities, coefficient_inputs)
     key = PRNGKey(42)
     cinputs = coefficient_inputs(HF_molecule)
-
-    # todo change interface to autograd?
 
     # Init the params
     params = nf.init(key, cinputs)
