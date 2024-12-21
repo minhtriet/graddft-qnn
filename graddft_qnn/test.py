@@ -15,7 +15,7 @@ from optax import adam
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
     # kinetic = molecule.kinetic_density()
-    # todo IMPORTANT pyscf coarse grid, do pca? down sample the 3d image. n quit to encode 2^n amplitude
+    # todo IMPORTANT down sample the 3d image. n quit to encode 2^n amplitude
     # todo entry point must be jax array, not a scalar or anything
     # todo experiment with jax before this
     return rho
@@ -68,12 +68,11 @@ if __name__ == "__main__":
 
     # Then we can use the following function to generate the molecule object
     HF_molecule = gd.molecule_from_pyscf(mean_field)
-    coefficients = dft_qnn.circuit()  # todo add phi and theta here
+    coefficients = dft_qnn.circuit()
 
     # todo jax is functional, how to avoid oop stuffs when working with jax
 
     nf = QNNFunctional(coefficients, energy_densities, coefficient_inputs)
-    # nf = gd.NeuralFunctional(coefficients, energy_densities, coefficient_inputs)
     key = PRNGKey(42)
     cinputs = coefficient_inputs(HF_molecule)
 
@@ -85,9 +84,6 @@ if __name__ == "__main__":
     momentum = 0.9
     tx = adam(learning_rate=learning_rate, b1=momentum)
     opt_state = tx.init(params)
-    key = PRNGKey(42)
-    cinputs = coefficient_inputs(HF_molecule)
-    params = nf.init(key, cinputs)
 
     E = nf.energy(params, HF_molecule)
 
