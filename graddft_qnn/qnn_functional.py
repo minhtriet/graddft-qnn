@@ -7,6 +7,8 @@ from grad_dft.molecule import Grid
 from jax import numpy as jnp
 from grad_dft import abs_clip
 from jaxtyping import Array, PyTree, Scalar, Float
+# from standard_scaler import StandardScaler
+
 
 class QNNFunctional(gd.Functional):
     @nn.compact
@@ -26,9 +28,11 @@ class QNNFunctional(gd.Functional):
         coefficient_inputs = self.dim_reduction(coefficient_inputs)
         return self.coefficients(coefficient_inputs)
 
+
     def dim_reduction(self, original_array: ArrayImpl):
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(original_array)
+        # todo create pca numpy
         pca = PCA(n_components=1, random_state=42)
         X_pca = pca.fit_transform(X_scaled)
         return X_pca
@@ -44,9 +48,11 @@ class QNNFunctional(gd.Functional):
     ) -> Scalar:
         """
         trim the extra elements of :param: coefficient before calling the upper class's method
+        coeff input: JVPTracer
+        densities: JVPTracer
         """
         coefficients = self.apply(params, coefficient_inputs, **kwargs)
-        coefficients = coefficients[:coefficient_inputs.shape[0]]
+        # coefficients = coefficients[:coefficient_inputs.shape[0]]
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
         return self._integrate(xc_energy_density, grid.weights)
