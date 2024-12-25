@@ -2,12 +2,13 @@ import grad_dft as gd
 from jaxlib.xla_extension import ArrayImpl
 from flax import linen as nn
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
+# from sklearn.preprocessing import StandardScaler
 from grad_dft.molecule import Grid
 from jax import numpy as jnp
 from grad_dft import abs_clip
 from jaxtyping import Array, PyTree, Scalar, Float
-# from standard_scaler import StandardScaler
+import pcax
+from standard_scaler import StandardScaler
 
 
 class QNNFunctional(gd.Functional):
@@ -32,9 +33,8 @@ class QNNFunctional(gd.Functional):
     def dim_reduction(self, original_array: ArrayImpl):
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(original_array)
-        # todo create pca numpy
-        pca = PCA(n_components=1, random_state=42)
-        X_pca = pca.fit_transform(X_scaled)
+        state = pcax.fit(X_scaled, n_components=3)
+        X_pca = pcax.transform(state, X_scaled)
         return X_pca
 
     def xc_energy(

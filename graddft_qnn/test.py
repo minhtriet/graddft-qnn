@@ -70,8 +70,6 @@ if __name__ == "__main__":
     HF_molecule = gd.molecule_from_pyscf(mean_field)
     coefficients = dft_qnn.circuit()
 
-    # todo jax is functional, how to avoid oop stuffs when working with jax
-
     nf = QNNFunctional(coefficients, energy_densities, coefficient_inputs)
     key = PRNGKey(42)
     cinputs = coefficient_inputs(HF_molecule)
