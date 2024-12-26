@@ -14,12 +14,10 @@ from optax import adam
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
-    # kinetic = molecule.kinetic_density()
     # todo IMPORTANT down sample the 3d image. n quit to encode 2^n amplitude
     # todo entry point must be jax array, not a scalar or anything
     # todo experiment with jax before this
     return rho
-    # return jnp.concatenate((rho, kinetic), axis=1)
 
 
 def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
@@ -39,26 +37,6 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     return lda_e
 
 
-from flax import linen as nn
-from jax.nn import sigmoid
-
-out_features = 1
-
-
-def coefficients_(_, rhoinputs):
-    r"""
-    Instance is an instance of the class Functional or NeuralFunctional.
-    rhoinputs is the input to the neural network, in the form of an array.
-    localfeatures represents the potentials e_\theta(r).
-
-    The output of this function is the energy density of the system.
-    """
-
-    x = nn.Dense(features=out_features)(rhoinputs)
-    x = nn.LayerNorm()(x)
-    return sigmoid(x)
-
-
 if __name__ == "__main__":
     dft_qnn = DFTQNN("config.yaml")  # todo start simpler, make sure input output shape
 
@@ -66,7 +44,6 @@ if __name__ == "__main__":
     mean_field = dft.UKS(mol)
     ground_truth_energy = mean_field.kernel()
 
-    # Then we can use the following function to generate the molecule object
     HF_molecule = gd.molecule_from_pyscf(mean_field)
     coefficients = dft_qnn.circuit()
 
@@ -75,11 +52,15 @@ if __name__ == "__main__":
     cinputs = coefficient_inputs(HF_molecule)
 
     # Init the params
-    params = nf.init(key, cinputs)
+    # params = nf.init(key, cinputs)
+    params = dft_qnn.params
     # Start the training
 
-    learning_rate = 0.01
+    # todo from yaml instead
+    learning_rate = 0.001
     momentum = 0.9
+    n_epochs = 3
+
     tx = adam(learning_rate=learning_rate, b1=momentum)
     opt_state = tx.init(params)
 
@@ -88,8 +69,6 @@ if __name__ == "__main__":
     predictor = gd.non_scf_predictor(nf)
 
     # training loop
-    # todo n_epochs from yaml instead
-    n_epochs = 3
     for iteration in tqdm(range(n_epochs), desc="Training epoch"):
         (cost_value, predicted_energy), grads = gd.simple_energy_loss(
             params, predictor, HF_molecule, ground_truth_energy
