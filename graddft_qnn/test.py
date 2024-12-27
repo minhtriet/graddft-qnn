@@ -1,3 +1,6 @@
+import jax
+import optax
+from jaxtyping import PyTree
 from optax import apply_updates
 from pyscf import gto, dft
 import grad_dft as gd
@@ -36,6 +39,48 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # The output of features must be an Array of dimension n_grid x n_features.
     return lda_e
 
+def simple_energy_loss(params: PyTree,
+    compute_energy,#:  Callable,
+    atoms,#: #Union[Molecule, Solid],
+    truth_energy,#: #Float,
+    ):
+    """
+    Computes the loss for a single molecule
+
+    Parameters
+    ----------
+    params: PyTree
+        functional parameters (weights)
+    compute_energy: Callable.
+        any non SCF or SCF method in evaluate.py
+    atoms: Union[Molecule, Solid]
+        The collcection of atoms.
+    truth_energy: Float
+        The energy value we are training against
+    """
+    atoms_out = compute_energy(params, atoms)
+    E_predict = atoms_out.energy
+    diff = E_predict - truth_energy
+    return diff**2, E_predict
+
+@jax.jit
+def update_step(opt, params, opt_state, data, targets):
+    loss_val, grads = jax.value_and_grad(simple_energy_loss, argnums=[1, 2])(cinputs, dft_qnn.phi, dft_qnn.theta, predictor, HF_molecule,
+                                                       ground_truth_energy)
+    updates, opt_state = opt.update(grads, opt_state)
+    params = optax.apply_updates(params, updates)
+    return params, opt_state, loss_val
+
+@jax.jit
+def optimization_jit(params, data, targets, print_training=False):
+    opt = optax.adam(learning_rate=0.3)
+
+    opt_state = opt.init(params)
+    args = (params, opt_state, data, targets, print_training)
+    (params, opt_state, _, _, _) = jax.lax.fori_loop(0, 100, update_step, args)
+
+    return params
+
 
 if __name__ == "__main__":
     dft_qnn = DFTQNN("config.yaml")  # todo start simpler, make sure input output shape
@@ -48,7 +93,7 @@ if __name__ == "__main__":
     coefficients = dft_qnn.circuit()
 
     nf = QNNFunctional(coefficients, energy_densities, coefficient_inputs)
-    key = PRNGKey(42)
+    # key = PRNGKey(42)
     cinputs = coefficient_inputs(HF_molecule)
 
     # Init the params
@@ -68,18 +113,4 @@ if __name__ == "__main__":
 
     predictor = gd.non_scf_predictor(nf)
 
-    # training loop
-    for iteration in tqdm(range(n_epochs), desc="Training epoch"):
-        (cost_value, predicted_energy), grads = gd.simple_energy_loss(
-            params, predictor, HF_molecule, ground_truth_energy
-        )
-        print(
-            "Iteration",
-            iteration,
-            "Predicted energy:",
-            predicted_energy,
-            "Cost value:",
-            cost_value,
-        )
-        updates, opt_state = tx.update(grads, opt_state, params)
-        params = apply_updates(params, updates)
+    optimization_jit(params, cinputs, predictor, print_training=True)
