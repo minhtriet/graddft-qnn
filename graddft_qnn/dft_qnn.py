@@ -1,8 +1,11 @@
 import yaml
 import pennylane as qml
 
+import flax.linen as nn
+from flax.typing import Array
 
-class DFTQNN:
+
+class DFTQNN(nn.Module):
     def __init__(self, yaml_file):
         with open(yaml_file, "r") as file:
             data = yaml.safe_load(file)
@@ -10,23 +13,34 @@ class DFTQNN:
                 raise KeyError("YAML file must contain 'QBITS' key")
             self.num_qubits = data["QBITS"]
             self.dev = qml.device("default.qubit", wires=self.num_qubits)
-        self.theta = [0.0] * self.num_qubits  # todo a different way of init
-        self.phi = [0.0] * self.num_qubits
-        self.params = {"params": {"phi": self.phi, "theta": self.theta}}
 
-    def _circuit_blueprint(self, feature):
+    @nn.compact
+    def __call__(self, feature: Array) -> Array:
+
+        @qml.device(self.dev)
+        def circuit(feature, theta, phi):
+            """
+            :param instance: an instance of the class Functional.
+            :param rhoinputs: input to the neural network, in the form of an array.
+            :return:
+            """
+            qml.AmplitudeEmbedding(feature, wires=range(self.num_qubits), pad_with=0.0)
+
+            for i in range(self.num_qubits):
+                qml.RY(theta[i], wires=i)
+                qml.U1(phi[i], wires=i)
+            return qml.probs()
+
+
+        """Applies a linear transformation to the inputs along the last dimension.
+
+        Args:
+          inputs: The nd-array to be transformed.
+
+        Returns:
+          The transformed input.
         """
-        :param instance: an instance of the class Functional.
-        :param rhoinputs: input to the neural network, in the form of an array.
-        :return:
-        """
-        # todo what if nqb is smnaller than feature
-        qml.AmplitudeEmbedding(feature, wires=range(self.num_qubits), pad_with=0.0)
+        theta = self.param('theta', self.param_init)
+        phi = self.param("phi", self.param_init)
+        return circuit(feature, theta, phi)
 
-        for i in range(self.num_qubits):
-            qml.RY(self.theta[i], wires=i)
-            qml.U1(self.phi[i], wires=i)
-        return qml.probs()
-
-    def circuit(self):
-        return qml.QNode(self._circuit_blueprint, self.dev)
