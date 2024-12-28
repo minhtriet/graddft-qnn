@@ -1,12 +1,13 @@
 import jax
 import optax
+import yaml
 from jaxtyping import PyTree
 from optax import apply_updates
 from pyscf import gto, dft
 import grad_dft as gd
 from jax.random import PRNGKey
+import pennylane as qml
 from jax import numpy as jnp
-from tqdm import tqdm
 
 from dft_qnn import DFTQNN
 
@@ -83,34 +84,48 @@ def optimization_jit(params, data, targets, print_training=False):
 
 
 if __name__ == "__main__":
-    dft_qnn = DFTQNN("config.yaml")  # todo start simpler, make sure input output shape
+    with open("config.yaml", "r") as file:
+        data = yaml.safe_load(file)
+        if "QBITS" not in data:
+            raise KeyError("YAML file must contain 'QBITS' key")
+        num_qubits = data["QBITS"]
+        dev = qml.device("default.qubit", wires=num_qubits)
+    dft_qnn = DFTQNN(dev)  # todo start simpler, make sure input output shape
 
     mol = gto.M(atom=[["H", (0, 0, 0)], ["F", (0, 0, 1.1)]], basis="def2-tzvp")
     mean_field = dft.UKS(mol)
     ground_truth_energy = mean_field.kernel()
-
     HF_molecule = gd.molecule_from_pyscf(mean_field)
-    coefficients = dft_qnn.circuit()
 
-    nf = QNNFunctional(coefficients, energy_densities, coefficient_inputs)
-    # key = PRNGKey(42)
-    cinputs = coefficient_inputs(HF_molecule)
+    key = PRNGKey(42)
+    # coeff_input = dim_reduction(coefficient_inputs(HF_molecule))
+    coeff_input = coefficient_inputs(HF_molecule)
+    parameters = dft_qnn.init(key, coeff_input)
 
-    # Init the params
-    # params = nf.init(key, cinputs)
-    params = dft_qnn.params
+    nf = QNNFunctional(coefficients=dft_qnn,
+                       energy_densities=energy_densities,
+                       coefficient_inputs=coefficient_inputs)
+
     # Start the training
-
-    # todo from yaml instead
     learning_rate = 0.001
     momentum = 0.9
     n_epochs = 3
 
     tx = adam(learning_rate=learning_rate, b1=momentum)
-    opt_state = tx.init(params)
-
-    E = nf.energy(params, HF_molecule)
+    opt_state = tx.init(parameters)
 
     predictor = gd.non_scf_predictor(nf)
 
-    optimization_jit(params, cinputs, predictor, print_training=True)
+    from tqdm import tqdm
+    from optax import apply_updates
+
+    n_epochs = 20
+    for iteration in tqdm(range(n_epochs), desc="Training epoch"):
+        (cost_value, predicted_energy), grads = gd.simple_energy_loss(
+            parameters, predictor, HF_molecule, ground_truth_energy
+        )
+        print("Iteration", iteration, "Predicted energy:", predicted_energy, "Cost value:", cost_value)
+        updates, opt_state = tx.update(grads, opt_state, parameters)
+        parameters = apply_updates(parameters, updates)
+
+    nf.save_checkpoints(parameters, tx, step=n_epochs)
