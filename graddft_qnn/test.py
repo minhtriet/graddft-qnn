@@ -2,12 +2,13 @@ import jax
 import optax
 import yaml
 from jaxtyping import PyTree
-from optax import apply_updates
 from pyscf import gto, dft
 import grad_dft as gd
 from jax.random import PRNGKey
 import pennylane as qml
 from jax import numpy as jnp
+from tqdm import tqdm
+from optax import apply_updates
 
 from dft_qnn import DFTQNN
 
@@ -107,19 +108,16 @@ if __name__ == "__main__":
                        coefficient_inputs=coefficient_inputs)
 
     # Start the training
-    learning_rate = 0.001
+    learning_rate = 0.1
     momentum = 0.9
-    n_epochs = 3
+    n_epochs = 20
 
     tx = adam(learning_rate=learning_rate, b1=momentum)
     opt_state = tx.init(parameters)
 
     predictor = gd.non_scf_predictor(nf)
+    # pca normalization is correct or not, becasue only coeff inputs is normalized, still have grid, density
 
-    from tqdm import tqdm
-    from optax import apply_updates
-
-    n_epochs = 20
     for iteration in tqdm(range(n_epochs), desc="Training epoch"):
         (cost_value, predicted_energy), grads = gd.simple_energy_loss(
             parameters, predictor, HF_molecule, ground_truth_energy
