@@ -99,7 +99,6 @@ if __name__ == "__main__":
     HF_molecule = gd.molecule_from_pyscf(mean_field)
 
     key = PRNGKey(42)
-    # coeff_input = dim_reduction(coefficient_inputs(HF_molecule))
     coeff_input = coefficient_inputs(HF_molecule)
     parameters = dft_qnn.init(key, coeff_input)
 
@@ -126,4 +125,22 @@ if __name__ == "__main__":
         updates, opt_state = tx.update(grads, opt_state, parameters)
         parameters = apply_updates(parameters, updates)
 
-    nf.save_checkpoints(parameters, tx, step=n_epochs)
+
+"""
+scale back the electron density to 3d (symetry)
+understand the data a bit better
+
+look at different ways of downscaling (deleting every 3th data point)
+matrix - product state simulator 
+embedding 3d point cloud to qnn, convolution quantum neural net
+
+Create training dataset
+Better strategy than just amplitude embedding
+
+Coeff inputs of E_xc is standardized from 0 mean, unitary variance.
+    The loss is to what range, do we need some post processing
+
+To compare, we need to compare with classic conv net
+
+loss - iteration vs equivariant approach
+"""

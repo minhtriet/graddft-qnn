@@ -14,24 +14,6 @@ class QNNFunctional(gd.Functional):
     This functional uses more jax API than flax
     """
 
-    @nn.compact
-    def __call__(self, coefficient_inputs) -> Scalar:
-        r"""Where the functional is called, mapping the density to the energy.
-        Expected to be overwritten by the inheriting class.
-        Should use the _integrate() helper function to perform the integration.
-
-        Parameters
-        ---------
-        inputs: inputs to the function f
-
-        Returns
-        -------
-        Union[Array, Scalar]
-        """
-
-        return self.coefficients(self, coefficient_inputs)
-
-
     def xc_energy(
             self,
             params: PyTree,
@@ -44,6 +26,8 @@ class QNNFunctional(gd.Functional):
         # todo ask for confirm
         coefficients = coefficients[:coefficient_inputs.shape[0]]  # shape: (xxx)
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
+        # coeffs have norm of 1, and  we are multiplying with very small number here, should we normalize density for the sake of the neural net optimization, or we want to obey the physics semantic?
+        # look at the 3d image, what we have is a molecule. A large part is 0
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
         return self._integrate(xc_energy_density, grid.weights)
