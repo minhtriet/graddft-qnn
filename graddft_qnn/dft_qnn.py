@@ -1,21 +1,19 @@
 import dataclasses
 
+import flax.linen as nn
 import pcax
 import pennylane as qml
-
-from standard_scaler import StandardScaler
-from jaxlib.xla_extension import ArrayImpl
-import flax.linen as nn
 from flax.typing import Array
+from jaxlib.xla_extension import ArrayImpl
+from standard_scaler import StandardScaler
+
 
 @dataclasses.dataclass
 class DFTQNN(nn.Module):
-
     dev: qml.device
 
     @nn.compact
     def __call__(self, feature: Array) -> Array:
-
         @qml.qnode(self.dev)
         def circuit(feature, theta, phi):
             """
@@ -33,8 +31,8 @@ class DFTQNN(nn.Module):
         # todo I don't like this, but have to do because grad_dft.functional.Functional.compute_coefficient_inputs
         # will calculate the coeff input without any dim reduction, might need to change that later.
         feature = self.dim_reduction(feature)
-        theta = self.param('theta', nn.initializers.normal(), (len(self.dev.wires), ))
-        phi = self.param("phi", nn.initializers.normal(), (len(self.dev.wires), ))
+        theta = self.param("theta", nn.initializers.normal(), (len(self.dev.wires),))
+        phi = self.param("phi", nn.initializers.normal(), (len(self.dev.wires),))
         result = circuit(feature, theta, phi)
         return result
 
@@ -45,5 +43,5 @@ class DFTQNN(nn.Module):
         state = pcax.fit(X_scaled, n_components=1)
         X_pca = pcax.transform(state, X_scaled)
         X_pca = X_pca.flatten()
-        X_pca = X_pca[:len(self.dev.wires)]
+        X_pca = X_pca[: len(self.dev.wires)]
         return X_pca

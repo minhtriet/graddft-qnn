@@ -22,6 +22,7 @@ optax = "0.2.1"
 
 
 [tool.poetry.group.macos.dependencies]
+optional = true
 tensorflow-metal = "1.1.0"
 tensorflow-macos = "2.14.0"
 
@@ -29,6 +30,14 @@ tensorflow-macos = "2.14.0"
 [tool.poetry.group.data_explore.dependencies]
 jupyterlab = "^4.3.4"
 matplotlib = "^3.10.0"
+
+[tool.ruff]
+line-length = 88
+show-fixes = true
+indent-width = 4
+target-version = "py310"
+lint.select = ["W", "E", "I", "F", "UP", "PL"]
+lint.ignore = []
 
 [build-system]
 requires = ["poetry-core"]

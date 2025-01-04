@@ -1,6 +1,7 @@
 import numpy as np
-from graddft_qnn.standard_scaler import StandardScaler
 from numpy.testing import assert_almost_equal, assert_array_almost_equal
+
+from graddft_qnn.standard_scaler import StandardScaler
 
 # Make some data to be used many times
 rng = np.random.RandomState(0)
@@ -19,20 +20,26 @@ def _check_dim_1axis(a):
 
 def test_standard_scaler_1d():
     # Test scaling of dataset along single axis
-    for X in [X_1row, X_1col]:
+    for X_list in [X_1row, X_1col]:
         scaler = StandardScaler()
-        X_scaled = scaler.fit(X).transform(X)
+        X_scaled = scaler.fit(X_list).transform(X_list)
 
-        if isinstance(X, list):
-            X = np.array(X)  # cast only after scaling done
+        if isinstance(X_list, list):
+            X = np.array(X_list)  # cast only after scaling done
 
         if _check_dim_1axis(X) == 1:
             assert_almost_equal(scaler.mean_, X.ravel(), decimal=6)
-            assert_array_almost_equal(X_scaled.mean(axis=0), np.zeros_like(n_features), decimal=6)
-            assert_array_almost_equal(X_scaled.std(axis=0), np.zeros_like(n_features), decimal=6)
+            assert_array_almost_equal(
+                X_scaled.mean(axis=0), np.zeros_like(n_features), decimal=6
+            )
+            assert_array_almost_equal(
+                X_scaled.std(axis=0), np.zeros_like(n_features), decimal=6
+            )
         else:
             assert_almost_equal(scaler.mean_, X.mean(), decimal=6)
-            assert_array_almost_equal(X_scaled.mean(axis=0), np.zeros_like(n_features), decimal=6)
+            assert_array_almost_equal(
+                X_scaled.mean(axis=0), np.zeros_like(n_features), decimal=6
+            )
             assert_array_almost_equal(X_scaled.mean(axis=0), 0.0, decimal=6)
             assert_array_almost_equal(X_scaled.std(axis=0), 1.0, decimal=6)
 

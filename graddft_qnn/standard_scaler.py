@@ -1,10 +1,12 @@
+
 import jax.numpy as np
-import math
+
 
 class StandardScaler:
     """
     A version of standard scaler implemented in jnp
     """
+
     def __init__(self):
         self.mean_ = None
         self.std_ = None
