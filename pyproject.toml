@@ -21,11 +21,16 @@ pcax = "^0.1.0"
 optax = "0.2.1"
 
 
-[tool.poetry.group.macos.dependencies]
+[tool.poetry.group.macos]
 optional = true
+
+[tool.poetry.group.macos.dependencies]
 tensorflow-metal = "1.1.0"
 tensorflow-macos = "2.14.0"
 
+
+[tool.poetry.group.data_explore]
+optional = true
 
 [tool.poetry.group.data_explore.dependencies]
 jupyterlab = "^4.3.4"
