@@ -38,6 +38,7 @@ class QNNFunctional(gd.Functional):
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
         return self._integrate(xc_energy_density, grid.weights)
+        import pyscf.tools.cubegen
 
     @jax.jit
     def loss_fn(

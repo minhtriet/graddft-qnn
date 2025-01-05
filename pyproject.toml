@@ -19,6 +19,7 @@ tqdm = "^4.67.1"
 scikit-learn = "^1.6.0"
 pcax = "^0.1.0"
 optax = "0.2.1"
+ase = "^3.24.0"
 
 
 [tool.poetry.group.macos]
@@ -35,6 +36,7 @@ optional = true
 [tool.poetry.group.data_explore.dependencies]
 jupyterlab = "^4.3.4"
 matplotlib = "^3.10.0"
+ipympl = "^0.9.6"
 
 [tool.ruff]
 line-length = 88
