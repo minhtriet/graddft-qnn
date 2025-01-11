@@ -22,17 +22,17 @@ class DFTQNN(nn.Module):
             :return:
             """
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
+            theta_idx = 0
+            for i in self.dev.wires[:,:,3]:
+                self.U_O3(wires=[i, i+2], theta_1=theta[theta_idx: theta_idx + 2])
 
-            for i in self.dev.wires:
-                qml.RY(theta[i], wires=i)
-                qml.U1(phi[i], wires=i)
             return qml.probs()
 
         # todo I don't like this, but have to do because grad_dft.functional.Functional.compute_coefficient_inputs
         # will calculate the coeff input without any dim reduction, might need to change that later.
         feature = self.dim_reduction(feature)
         theta = self.param("theta", nn.initializers.normal(), (len(self.dev.wires),))
-        phi = self.param("phi", nn.initializers.normal(), (len(self.dev.wires),))
+        phi = self.param("phi", nn.initializers.normal(), (2,))
         result = circuit(feature, theta, phi)
         return result
 
@@ -46,15 +46,23 @@ class DFTQNN(nn.Module):
         X_pca = X_pca[: len(self.dev.wires)]
         return X_pca
 
-    def U1_AE(self, theta_1, theta_2, theta_3, wires):
+    def U_O3(self, psi, theta, phi):
+        qml.Rz(psi, wires=wires[0])
+        qml.Rx(theta, wires=wires[1])
+        qml.Rz(phi, wires=wires[2])
+
+    def V_O3(self, psi, theta, phi):
+        pass
+
+    def U1_AE(self, thetas, wires):
         # circuit 1
-        qml.Rx(theta_1, wires=wires[0])
-        qml.Rx(theta_2, wires=wires[1])
-        qml.QubitUnitary(self._RXX_matrix(theta_3), wires=wires[0, 1])
+        qml.Rx(thetas[0], wires=wires[0])
+        qml.Rx(thetas[1], wires=wires[1])
+        qml.QubitUnitary(self._RXX_matrix(thetas[2]), wires=wires[0, 1])
 
     def U3_AE(self, theta_1, theta_2, theta_3, theta_4, theta_5, wires):
         # circuit 4
-        qml.Rot(theta_1, theta_2, theta_3, wires=wires[0])
+        qml.Rot(thetas[0], theta_2, theta_3, wires=wires[0])
         qml.RX(theta_4, wires=wires[1])
         qml.QubitUnitary(self._RXX_matrix(theta_5), wires=wires)
 
