@@ -46,15 +46,35 @@ class DFTQNN(nn.Module):
         X_pca = X_pca[: len(self.dev.wires)]
         return X_pca
 
-    def U_O3(self, param, wires):
-        """
-        param is in the order of [ :param psi, :param theta :param phi]
-        :param wires:
-        :return:
-        """
-        qml.RZ(param[0], wires=wires[0])
-        qml.RX(param[1], wires=wires[1])
-        qml.RZ(param[2], wires=wires[2])
+    def U_O3(self, psi, theta, phi, wires, gamma=0):
+        # todo change gamma to a learnable param
+        qml.Rz(psi, wires=wires[0])
+        qml.Rx(theta, wires=wires[0])
+        qml.Rz(phi, wires=wires[0])
+
+        qml.Rz(psi, wires=wires[1])
+        qml.Rx(theta, wires=wires[1])
+        qml.Rz(phi, wires=wires[1])
+
+        qml.Rz(psi, wires=wires[2])
+        qml.Rx(theta, wires=wires[2])
+        qml.Rz(phi, wires=wires[2])
+
+        qml.QubitUnitary(self._RXXX_matrix(gamma), wires=wires[0, 1, 2])
+
+    def _RXXX_matrix(self, theta):
+        cos = np.cos(theta * 0.5)
+        sin = -1j * np.sin(theta * 0.5)
+        return np.array([
+            [cos, 0, 0, 0, 0, 0, 0, sin],
+            [0, cos, 0, 0, 0, 0, sin, 0],
+            [0, 0, cos, 0, 0, sin, 0, 0],
+            [0, 0, 0, cos, sin, 0, 0, 0],
+            [0, 0, 0, sin, cos, 0, 0, 0],
+            [0, 0, sin, 0, 0, cos, 0, 0],
+            [0, sin, 0, 0, 0, 0, cos, 0],
+            [sin, 0, 0, 0, 0, 0, 0, cos],
+        ])
 
     def V_O3(self, psi, theta, phi):
         pass
