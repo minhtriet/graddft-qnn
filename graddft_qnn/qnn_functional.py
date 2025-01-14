@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import grad_dft as gd
 import jax

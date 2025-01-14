@@ -1,28 +1,8 @@
 import numpy as np
-from flax.typing import PRNGKey
-
-from graddft_qnn.dft_qnn import DFTQNN
 import pennylane as qml
 import pytest
 
-import numpy as np
-from jax.random import PRNGKey
-
-
-# Define a function to check equivariance
-def check_equivariance(f, num_tests=10):
-    print("Equivariance test passed!")
-    return True
-
-
-# Example function to test (must be O(3)-equivariant, e.g., vector-valued function)
-def example_function(x):
-    # For demonstration: just return the vector itself (trivially equivariant)
-    return x
-
-
-# Run the equivariance test
-check_equivariance(example_function)
+from graddft_qnn.dft_qnn import DFTQNN
 
 
 @pytest.fixture
@@ -32,20 +12,32 @@ def circuit():
     return circuit
 
 
-def test_quantum_circuit_with_embeddings(circuit):
-    """
-    Testing the relation
-    :param setup_device:
-    :return:
-    """
-    input = np.arange(1, 2**3)
-    key = PRNGKey(42)
-    coeff_input = np.random.random((3))
-    parameters = circuit.init(key, coeff_input)
+def fixed_circuit(feature, psi, theta, phi):
+    dev = qml.device("default.qubit", wires=3)
 
-    # have to give parameters twice here but not sure of the reason, cannot call circuit
-    f_x = circuit.apply(parameters, input)
-    f_x_rot = circuit.apply(parameters, [6, 5, 8, 7, 2, 1, 4, 3])
+    @qml.qnode(dev)
+    def circuit(feature, psi, theta, phi):
+        qml.AmplitudeEmbedding(feature, wires=dev.wires, normalize=True)
+        for i in dev.wires[::3]:
+            DFTQNN.U_O3(psi, theta, phi, wires=range(i, i + 3))
+
+        return qml.probs()
+
+    return circuit(feature, psi, theta, phi)
+
+
+@pytest.mark.parametrize(
+    "feature,psi,theta,phi,expected",
+    [(np.arange(1, 2**3 + 1), np.pi, 0, 0, [6, 5, 8, 7, 2, 1, 4, 3])
+     # todo add more test here to cover D2h group
+     ],
+)
+def test_quantum_circuit_with_embeddings(feature, psi, theta, phi, expected):
+    """
+    Testing the equivariance of a quantum circuit
+    """
+    f_x = fixed_circuit(feature, psi, theta, phi)
+    f_x_rot = fixed_circuit(expected, 0, 0, 0)
     rot_f_x = (
         np.array(
             [

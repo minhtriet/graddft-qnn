@@ -1,10 +1,12 @@
 import dataclasses
-import numpy as np
+
 import flax.linen as nn
+import numpy as np
 import pcax
 import pennylane as qml
 from flax.typing import Array
 from jaxlib.xla_extension import ArrayImpl
+
 from graddft_qnn.standard_scaler import StandardScaler
 
 
@@ -23,7 +25,7 @@ class DFTQNN(nn.Module):
             """
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for i in self.dev.wires[::3]:
-                self.U_O3(psi[i], theta[i], phi[i], wires=range(i, i + 3))
+                DFTQNN.U_O3(psi[i], theta[i], phi[i], wires=range(i, i + 3))
 
             return qml.probs()
 
@@ -46,7 +48,8 @@ class DFTQNN(nn.Module):
         X_pca = X_pca[: len(self.dev.wires)]
         return X_pca
 
-    def U_O3(self, psi, theta, phi, wires, gamma=0):
+    @staticmethod
+    def U_O3(psi, theta, phi, wires, gamma=0):
         # todo change gamma to a learnable param
         qml.RZ(psi, wires=wires[0])
         qml.RX(theta, wires=wires[0])
@@ -60,7 +63,8 @@ class DFTQNN(nn.Module):
         qml.RX(theta, wires=wires[2])
         qml.RZ(phi, wires=wires[2])
 
-        qml.QubitUnitary(self._RXXX_matrix(gamma), wires=wires[0:3])
+        # todo loss function
+        # qml.QubitUnitary(self._RXXX_matrix(gamma), wires=wires[0:3])
 
     def _RXXX_matrix(self, theta):
         cos = np.cos(theta * 0.5)

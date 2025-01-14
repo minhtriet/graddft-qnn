@@ -1,6 +1,4 @@
 import grad_dft as gd
-import jax
-import optax
 import pennylane as qml
 import yaml
 from dft_qnn import DFTQNN
