@@ -23,7 +23,7 @@ class DFTQNN(nn.Module):
             """
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for i in self.dev.wires[::3]:
-                self.U_O3([psi[i], theta[i], phi[i]], wires=range(i,i+3))
+                self.U_O3(psi[i], theta[i], phi[i], wires=range(i, i + 3))
 
             return qml.probs()
 
@@ -48,33 +48,35 @@ class DFTQNN(nn.Module):
 
     def U_O3(self, psi, theta, phi, wires, gamma=0):
         # todo change gamma to a learnable param
-        qml.Rz(psi, wires=wires[0])
-        qml.Rx(theta, wires=wires[0])
-        qml.Rz(phi, wires=wires[0])
+        qml.RZ(psi, wires=wires[0])
+        qml.RX(theta, wires=wires[0])
+        qml.RZ(phi, wires=wires[0])
 
-        qml.Rz(psi, wires=wires[1])
-        qml.Rx(theta, wires=wires[1])
-        qml.Rz(phi, wires=wires[1])
+        qml.RZ(psi, wires=wires[1])
+        qml.RX(theta, wires=wires[1])
+        qml.RZ(phi, wires=wires[1])
 
-        qml.Rz(psi, wires=wires[2])
-        qml.Rx(theta, wires=wires[2])
-        qml.Rz(phi, wires=wires[2])
+        qml.RZ(psi, wires=wires[2])
+        qml.RX(theta, wires=wires[2])
+        qml.RZ(phi, wires=wires[2])
 
-        qml.QubitUnitary(self._RXXX_matrix(gamma), wires=wires[0, 1, 2])
+        qml.QubitUnitary(self._RXXX_matrix(gamma), wires=wires[0:3])
 
     def _RXXX_matrix(self, theta):
         cos = np.cos(theta * 0.5)
         sin = -1j * np.sin(theta * 0.5)
-        return np.array([
-            [cos, 0, 0, 0, 0, 0, 0, sin],
-            [0, cos, 0, 0, 0, 0, sin, 0],
-            [0, 0, cos, 0, 0, sin, 0, 0],
-            [0, 0, 0, cos, sin, 0, 0, 0],
-            [0, 0, 0, sin, cos, 0, 0, 0],
-            [0, 0, sin, 0, 0, cos, 0, 0],
-            [0, sin, 0, 0, 0, 0, cos, 0],
-            [sin, 0, 0, 0, 0, 0, 0, cos],
-        ])
+        return np.array(
+            [
+                [cos, 0, 0, 0, 0, 0, 0, sin],
+                [0, cos, 0, 0, 0, 0, sin, 0],
+                [0, 0, cos, 0, 0, sin, 0, 0],
+                [0, 0, 0, cos, sin, 0, 0, 0],
+                [0, 0, 0, sin, cos, 0, 0, 0],
+                [0, 0, sin, 0, 0, cos, 0, 0],
+                [0, sin, 0, 0, 0, 0, cos, 0],
+                [sin, 0, 0, 0, 0, 0, 0, cos],
+            ]
+        )
 
     def V_O3(self, psi, theta, phi):
         pass
@@ -87,7 +89,7 @@ class DFTQNN(nn.Module):
 
     def U3_AE(self, theta_1, theta_2, theta_3, theta_4, theta_5, wires):
         # circuit 4
-        qml.Rot(thetas[0], theta_2, theta_3, wires=wires[0])
+        qml.Rot(theta_1, theta_2, theta_3, wires=wires[0])
         qml.RX(theta_4, wires=wires[1])
         qml.QubitUnitary(self._RXX_matrix(theta_5), wires=wires)
 

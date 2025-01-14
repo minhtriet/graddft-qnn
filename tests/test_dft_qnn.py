@@ -27,7 +27,7 @@ check_equivariance(example_function)
 
 @pytest.fixture
 def circuit():
-    dev = qml.device('default.qubit', wires=3)
+    dev = qml.device("default.qubit", wires=3)
     circuit = DFTQNN(dev)
     return circuit
 
@@ -46,14 +46,19 @@ def test_quantum_circuit_with_embeddings(circuit):
     # have to give parameters twice here but not sure of the reason, cannot call circuit
     f_x = circuit.apply(parameters, input)
     f_x_rot = circuit.apply(parameters, [6, 5, 8, 7, 2, 1, 4, 3])
-    rot_f_x = np.array([
-    [0, 0, 0, 0, 0, 1, 0, 0],
-    [0, 0, 0, 0, 1, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1],
-    [0, 0, 0, 0, 0, 0, 1, 0],
-    [0, 1, 0, 0, 0, 0, 0, 0],
-    [1, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 1, 0, 0, 0, 0, 0]
-]) @ f_x
+    rot_f_x = (
+        np.array(
+            [
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+            ]
+        )
+        @ f_x
+    )
     assert np.allclose(f_x_rot, rot_f_x, atol=1e-6)
