@@ -5,13 +5,6 @@ import pytest
 from graddft_qnn.dft_qnn import DFTQNN
 
 
-@pytest.fixture
-def circuit():
-    dev = qml.device("default.qubit", wires=3)
-    circuit = DFTQNN(dev)
-    return circuit
-
-
 def fixed_circuit(feature, psi, theta, phi):
     dev = qml.device("default.qubit", wires=3)
 
