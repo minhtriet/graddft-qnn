@@ -5,7 +5,7 @@ import pcax
 import pennylane as qml
 from flax.typing import Array
 from jaxlib.xla_extension import ArrayImpl
-from standard_scaler import StandardScaler
+from graddft_qnn.standard_scaler import StandardScaler
 
 
 @dataclasses.dataclass
@@ -15,25 +15,25 @@ class DFTQNN(nn.Module):
     @nn.compact
     def __call__(self, feature: Array) -> Array:
         @qml.qnode(self.dev)
-        def circuit(feature, theta, phi):
+        def circuit(feature, psi, theta, phi):
             """
             :param instance: an instance of the class Functional.
             :param rhoinputs: input to the neural network, in the form of an array.
             :return:
             """
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
-            theta_idx = 0
-            for i in self.dev.wires[:,:,3]:
-                self.U_O3(wires=[i, i+2], theta_1=theta[theta_idx: theta_idx + 2])
+            for i in self.dev.wires[::3]:
+                self.U_O3([psi[i], theta[i], phi[i]], wires=range(i,i+3))
 
             return qml.probs()
 
         # todo I don't like this, but have to do because grad_dft.functional.Functional.compute_coefficient_inputs
         # will calculate the coeff input without any dim reduction, might need to change that later.
-        feature = self.dim_reduction(feature)
+        # feature = self.dim_reduction(feature)
+        psi = self.param("psi", nn.initializers.normal(), (len(self.dev.wires),))
         theta = self.param("theta", nn.initializers.normal(), (len(self.dev.wires),))
-        phi = self.param("phi", nn.initializers.normal(), (2,))
-        result = circuit(feature, theta, phi)
+        phi = self.param("phi", nn.initializers.normal(), (len(self.dev.wires),))
+        result = circuit(feature, psi, theta, phi)
         return result
 
     # todo save the scaler instead of scaling everytime like now
@@ -46,10 +46,15 @@ class DFTQNN(nn.Module):
         X_pca = X_pca[: len(self.dev.wires)]
         return X_pca
 
-    def U_O3(self, psi, theta, phi):
-        qml.Rz(psi, wires=wires[0])
-        qml.Rx(theta, wires=wires[1])
-        qml.Rz(phi, wires=wires[2])
+    def U_O3(self, param, wires):
+        """
+        param is in the order of [ :param psi, :param theta :param phi]
+        :param wires:
+        :return:
+        """
+        qml.RZ(param[0], wires=wires[0])
+        qml.RX(param[1], wires=wires[1])
+        qml.RZ(param[2], wires=wires[2])
 
     def V_O3(self, psi, theta, phi):
         pass
