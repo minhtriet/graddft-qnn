@@ -49,7 +49,7 @@ class DFTQNN(nn.Module):
         return X_pca
 
     @staticmethod
-    def U_O3(psi, theta, phi, wires, gamma=0):
+    def U_O3(psi, theta, phi, wires, gamma=1.23):
         # todo change gamma to a learnable param
         qml.RZ(psi, wires=wires[0])
         qml.RX(theta, wires=wires[0])
@@ -64,9 +64,10 @@ class DFTQNN(nn.Module):
         qml.RZ(phi, wires=wires[2])
 
         # todo loss function
-        # qml.QubitUnitary(self._RXXX_matrix(gamma), wires=wires[0:3])
+        qml.QubitUnitary(DFTQNN._RXXX_matrix(gamma), wires=wires[0:3])
 
-    def _RXXX_matrix(self, theta):
+    @staticmethod
+    def _RXXX_matrix(theta):
         cos = np.cos(theta * 0.5)
         sin = -1j * np.sin(theta * 0.5)
         return np.array(
@@ -118,17 +119,3 @@ class DFTQNN(nn.Module):
         return np.cos(theta * 0.5) * np.eye(4) - 1j * np.sin(theta * 0.5) * np.kron(
             self._X_matrix(), self._X_matrix()
         )
-
-    def _RXXX_matrix(self, theta):
-        cos = np.cos(theta * 0.5)
-        sin = -1j*np.sin(theta * 0.5)
-        return np.array([
-                [cos, 0, 0, 0, 0, 0, 0, sin],
-                [0, cos, 0, 0, 0, 0, sin, 0],
-                [0, 0, cos, 0, 0, sin, 0, 0],
-                [0, 0, 0, cos, sin, 0, 0, 0],
-                [0, 0, 0, sin, cos, 0, 0, 0],
-                [0, 0, sin, 0, 0, cos, 0, 0],
-                [0, sin, 0, 0, 0, 0, cos, 0],
-                [sin, 0, 0, 0, 0, 0, 0, cos],
-                ])
