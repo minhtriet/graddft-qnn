@@ -20,6 +20,7 @@ scikit-learn = "^1.6.0"
 pcax = "^0.1.0"
 optax = "0.2.1"
 ase = "^3.24.0"
+tensorflow-io = "^0.37.1"
 
 
 [tool.poetry.group.macos]

@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import grad_dft as gd
 import jax
@@ -17,8 +17,8 @@ class QNNFunctional(gd.Functional):
         self,
         params: PyTree,
         grid: Grid,
-        coefficient_inputs: Float[Array],
-        densities: Float[Array],
+        coefficient_inputs: Float[Array, "(n,n)"],
+        densities: Float[Array, "(n,n)"],
         clip_cte: float = 1e-30,
     ) -> Scalar:
         """
@@ -30,7 +30,6 @@ class QNNFunctional(gd.Functional):
         :return:
         """
         coefficients = self.coefficients.apply(params, coefficient_inputs)
-        # todo ask for confirm
         coefficients = coefficients[: coefficient_inputs.shape[0]]  # shape: (xxx)
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
         # coeffs have norm of 1, and  we are multiplying with very small number here, should we normalize density for the sake of the neural net optimization, or we want to obey the physics semantic?
@@ -38,7 +37,6 @@ class QNNFunctional(gd.Functional):
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
         return self._integrate(xc_energy_density, grid.weights)
-        import pyscf.tools.cubegen
 
     @jax.jit
     def loss_fn(
