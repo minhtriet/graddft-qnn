@@ -3238,6 +3238,44 @@ files = [
 cffi = {version = "*", markers = "implementation_name == \"pypy\""}
 
 [[package]]
+name = "rdkit"
+version = "2024.9.4"
+description = "A collection of chemoinformatics and machine-learning software written in C++ and Python"
+optional = false
+python-versions = "*"
+files = [
+    {file = "rdkit-2024.9.4-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:0570ed8d912e8ce6134c22b684214eccb21436120e8180fe329140218952604b"},
+    {file = "rdkit-2024.9.4-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:d0a53c2fc914fa166335561dcdcce65024bd28a0de1ce67f685ddaab1ef8bebb"},
+    {file = "rdkit-2024.9.4-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:7948f777040cdc4cb2f38cd4546e68e35347d2d3758be9a0b243d8c4c62d65f9"},
+    {file = "rdkit-2024.9.4-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:dba895c40bb56ea62202dcff62d536b7ed80e7c1df469ba1f9afc21adba94bed"},
+    {file = "rdkit-2024.9.4-cp310-cp310-win_amd64.whl", hash = "sha256:8a5d85bf9903982ce3fcfc9929d948691f078b602d0f7a10a1633209f3fcc93f"},
+    {file = "rdkit-2024.9.4-cp311-cp311-macosx_10_15_x86_64.whl", hash = "sha256:61607c96469ab010465d26ffce84036224111f1138f1319592af1447788ea480"},
+    {file = "rdkit-2024.9.4-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:37b70dad06f42b340bf17af677133f3c3e9ea35c5c6d04005c9c8ae1c06c5ec6"},
+    {file = "rdkit-2024.9.4-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:08e7f3722ff401db028f58bac758781c70767806814c42370ab17b173cf8a03a"},
+    {file = "rdkit-2024.9.4-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:2e2a42259fccc9ecbfc5277bf3c8b20fb3c19388b006db10668db4df5e88e100"},
+    {file = "rdkit-2024.9.4-cp311-cp311-win_amd64.whl", hash = "sha256:ab7877ea7aa7a6bb3b4e8c35ca8fe664f435716b791938cbcb473785d6bdfc3b"},
+    {file = "rdkit-2024.9.4-cp312-cp312-macosx_10_15_x86_64.whl", hash = "sha256:4605650ca6168fd64b9e5b47be83db03ac7b87cf29039d987a7a1d236f5f398f"},
+    {file = "rdkit-2024.9.4-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:c495173b61d22d4580de262a0beeec7f75d13baf8e420781907677e0589db06b"},
+    {file = "rdkit-2024.9.4-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:a3e10398efdbdc9619e6bb130714406815b97ed86cb01a960a1102df25adfde1"},
+    {file = "rdkit-2024.9.4-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:823ef3f30240a7d2fbd182bece217cab73744e3dce7a0c0a4d3535d548061b98"},
+    {file = "rdkit-2024.9.4-cp312-cp312-win_amd64.whl", hash = "sha256:3ac6ae62c4a17b8a74dd8f716480162df56b482a70d04065d6727bdf5833d6a0"},
+    {file = "rdkit-2024.9.4-cp313-cp313-macosx_10_15_x86_64.whl", hash = "sha256:e17b3c529d433491064f9eedd5e91b11012a016d926a0ef111a9891e0a613ddd"},
+    {file = "rdkit-2024.9.4-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:65f0f3a2c4aa65bffcc15a3d68a4562011cbebdcf82921b9ced341c43df2bac3"},
+    {file = "rdkit-2024.9.4-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:8b912c07d63e9f1c3b71caffee7bc5c0566ca238fcbdf7a298d6153d9d9c1736"},
+    {file = "rdkit-2024.9.4-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:26f904a8575e807096a95d2d343ee43f44c3b129432ad6aa79a3a11fbbb21925"},
+    {file = "rdkit-2024.9.4-cp313-cp313-win_amd64.whl", hash = "sha256:c26592f3e7688b6b0d7a225e83977b77d90ed4b93c5e2541f19c386555382c13"},
+    {file = "rdkit-2024.9.4-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:6946904e866ad5f2d76ece83e6c6bee4017eed3d3b9421cb9b3810a3ad502035"},
+    {file = "rdkit-2024.9.4-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:b4e8238c79916c3bbccb657ff3ea5a763ebfde30b57d340545fd2eceae08eb4c"},
+    {file = "rdkit-2024.9.4-cp39-cp39-manylinux_2_28_aarch64.whl", hash = "sha256:b05e17e5a3f6896d1605033a76a81889b7bae58ac07da80ce6928ce01734e3bd"},
+    {file = "rdkit-2024.9.4-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:e0aa2aee44573234b72f0a43bd327a1b30aca8bea89a07c6724e21ab45416149"},
+    {file = "rdkit-2024.9.4-cp39-cp39-win_amd64.whl", hash = "sha256:625e4943798c15e95ff453715f8fdc48c3d7bcab242b0e2d1c051d1756604b6d"},
+]
+
+[package.dependencies]
+numpy = "*"
+Pillow = "*"
+
+[[package]]
 name = "referencing"
 version = "0.35.1"
 description = "JSON Referencing + Python"
@@ -3814,41 +3852,6 @@ protobuf = ">=3.19.6"
 tf-keras = ">=2.14.1"
 
 [[package]]
-name = "tensorflow-io"
-version = "0.37.1"
-description = "TensorFlow IO"
-optional = false
-python-versions = "<3.13,>=3.7"
-files = [
-    {file = "tensorflow_io-0.37.1-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:dc1adb4a39a02c2d389e2711439ca7d03c4ccf0c5074af5ee123c5d5ca372dcb"},
-    {file = "tensorflow_io-0.37.1-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:e9488e2d737057121e1218eeb34f96f2d2423ed3cf7d00eba68bc3a5b66d2366"},
-    {file = "tensorflow_io-0.37.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d7ce860f864e3f9ef12bb8980c4e80a941713bfe7dbfe71e6e05dbb96003c8d6"},
-    {file = "tensorflow_io-0.37.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:dee4a2d6c3586bda78d747d003d063ec503c6ac124c24d4dfcf4f105cd9309a1"},
-    {file = "tensorflow_io-0.37.1-cp311-cp311-macosx_10_14_x86_64.whl", hash = "sha256:14c7ada03c2ab8ca3beca618833d0da8de1d693598827147c56a0dde54e17d87"},
-    {file = "tensorflow_io-0.37.1-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:410b70c108ce93f657147b8e9528353e1df5292a5e33cd6555d4cd964c856b0e"},
-    {file = "tensorflow_io-0.37.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:144251635584e128060f7047a710e567bfac6171de03e0a79faf2b909bc689c4"},
-    {file = "tensorflow_io-0.37.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b072ae78143df8f786d3cbb9060b76f17f966824dd1e7906d3252c79525d2358"},
-    {file = "tensorflow_io-0.37.1-cp312-cp312-macosx_10_14_x86_64.whl", hash = "sha256:42c587d9962554adbcfd2da17b51415dbb04c18afb06055649b7c3be4c21a266"},
-    {file = "tensorflow_io-0.37.1-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:1fdc5c28c038ab9ae0ad505a9fce45e6cc6dadd1133932d4f38fdea8d8a05900"},
-    {file = "tensorflow_io-0.37.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1c51b213c8d9b933e1602fccfb8fd70e8b5719e27916fcbe088ca7f695c70f49"},
-    {file = "tensorflow_io-0.37.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1abf9b8db2faa37c94aed7fef267c93e0fba30b6ec30f857a39ea7e89bf3748d"},
-    {file = "tensorflow_io-0.37.1-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:c36b50eaf97f26e2918b5e983e77c872024aded7d624b9cb2dc7514ff5f4b4ff"},
-    {file = "tensorflow_io-0.37.1-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:1f5da94e61350a3ec076b9fa2beb947ecd120a25ad3fed2817a1d150b983b30b"},
-    {file = "tensorflow_io-0.37.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:255e26143b254db80b6a55e1f063f83dad74046e3429d7e95e63434cc418e335"},
-    {file = "tensorflow_io-0.37.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:43e8234271e39aece83edb2595b0e47dbc056984b95f3dc3d26cd4f9433944ef"},
-]
-
-[package.dependencies]
-tensorflow-io-gcs-filesystem = "0.37.1"
-
-[package.extras]
-tensorflow = ["tensorflow (>=2.16.0,<2.17.0)"]
-tensorflow-aarch64 = ["tensorflow-aarch64 (>=2.16.0,<2.17.0)"]
-tensorflow-cpu = ["tensorflow-cpu (>=2.16.0,<2.17.0)"]
-tensorflow-gpu = ["tensorflow-gpu (>=2.16.0,<2.17.0)"]
-tensorflow-rocm = ["tensorflow-rocm (>=2.16.0,<2.17.0)"]
-
-[[package]]
 name = "tensorflow-io-gcs-filesystem"
 version = "0.37.1"
 description = "TensorFlow IO"
@@ -4422,4 +4425,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "8d945448475cf631bbc701ec8399980eb0cb53e800e9501a92007ba200d57c39"
+content-hash = "ec56967694a82d627ee7f50deb7ad64a4fe786ab8e8e9454b2a6acf295834eb0"
