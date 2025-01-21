@@ -47,6 +47,9 @@ x_reflect_matrix = []
 y_reflect_matrix = []
 z_reflect_matrix = []
 
+# todo I suppose w would invent something like RX(a) \otimes RY(b) \otimes RZ(c). I suppose that a, b, c is learnable param?
+# then doesn't make sense to add that to test code? Or we just add the param that we know should work
+# todo how closely is it related to invent a new material?
 
 @pytest.mark.parametrize(
     "feature,psi,theta,phi,group_matrix,expected",
