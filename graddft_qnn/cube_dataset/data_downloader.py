@@ -9,7 +9,7 @@ from pyscf.tools import cubegen
 from rdkit import Chem
 
 
-class DataGenerator:
+class DataDownloader:
     """
     create .cube files for different molecules
     """
@@ -27,8 +27,8 @@ class DataGenerator:
     def __call__(self, *args, **kwargs):
         # todo could be written in aiohttp and asyncio later
         # todo tqdm
-        for molecule, cid in DataGenerator.cids.items():
-            res = requests.get(DataGenerator.REQUEST_URL.format(cid))
+        for molecule, cid in DataDownloader.cids.items():
+            res = requests.get(DataDownloader.REQUEST_URL.format(cid))
             with open(os.path.join(self.temp_file.name, f"{cid}.sdf"), "w") as file:
                 file.write(res.text)
 
@@ -64,12 +64,4 @@ class DataGenerator:
             cubegen.density(mol, f"{molecule}_den.cube", mf.make_rdm1())
 
 
-class DataLoader:
-    """
-    split data into train val and test set
-    """
-
-    pass
-
-
-DataGenerator()()
+DataDownloader()()

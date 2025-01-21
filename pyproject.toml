@@ -6,7 +6,7 @@ authors = ["Your Name <minh.triet.chau@dsv.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = ">=3.11,<3.12"
 grad-dft = {git = "git@github.com:XanaduAI/GradDFT"}
 pyscf = "^2.7.0"
 numpy = "1.24.1"
@@ -21,6 +21,8 @@ pcax = "^0.1.0"
 optax = "0.2.1"
 ase = "^3.24.0"
 rdkit = "^2024.9.4"
+tensorflow-datasets = "^4.9.7"
+mlcroissant = "^1.0.12"
 
 
 [tool.poetry.group.macos]
