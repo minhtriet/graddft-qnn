@@ -13,9 +13,8 @@ from tqdm import tqdm
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
-    # todo IMPORTANT down sample the 3d image. n quit to encode 2^n amplitude
+    # todo down sample the 3d image
     # todo entry point must be jax array, not a scalar or anything
-    # todo experiment with jax before this
     return rho
 
 
