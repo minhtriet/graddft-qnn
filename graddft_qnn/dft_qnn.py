@@ -9,11 +9,11 @@ from jaxlib.xla_extension import ArrayImpl
 
 from graddft_qnn.standard_scaler import StandardScaler
 
-from gates.ansatz import Ansatz
-from helper.operatize import Operatize
+from graddft_qnn.gates.ansatz import Ansatz
+from graddft_qnn.helper.operatize import Operatize
 from scipy.linalg import expm
 
-from unitary_rep import O_h
+from graddft_qnn.unitary_rep import O_h
 
 @dataclasses.dataclass
 class DFTQNN(nn.Module):
@@ -46,7 +46,7 @@ class DFTQNN(nn.Module):
 
         unitary_reps = [O_h._180_deg_rot()]
         ansatz = Ansatz(np.pi, np.pi, np.pi, np.pi, [0,1,2])
-        generator = self.twirling(unitary_reps=unitary_reps, ansatz=qml.matrix(ansatz))
+        generator = DFTQNN.twirling(unitary_reps=unitary_reps, ansatz=qml.matrix(ansatz))
 
         # this won't work
         # generator_op = Operatize(generator)
@@ -57,8 +57,8 @@ class DFTQNN(nn.Module):
         result = circuit(feature, psi, theta, phi, equivar_gate_matrix)
         return result
 
-
-    def twirling(self, ansatz, unitary_reps):
+    @staticmethod
+    def twirling(ansatz, unitary_reps):
         generator = np.zeros_like(ansatz)
         for unitary_rep in unitary_reps:
             generator += unitary_rep @ ansatz @ unitary_rep.conjugate()

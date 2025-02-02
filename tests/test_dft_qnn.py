@@ -47,16 +47,11 @@ x_reflect_matrix = []
 y_reflect_matrix = []
 z_reflect_matrix = []
 
-# todo I suppose w would invent something like RX(a) \otimes RY(b) \otimes RZ(c). I suppose that a, b, c is learnable param?
-# then doesn't make sense to add that to test code? Or we just add the param that we know should work
-# todo how closely is it related to invent a new material?
-# minimize hammming distance ?
 @pytest.mark.parametrize(
     "feature,psi,theta,phi,group_matrix,expected",
     [
         (np.arange(1, 2**3 + 1), np.pi, 0, 0, x_rot_matrix, [6, 5, 8, 7, 2, 1, 4, 3]),
         (np.arange(1, 2**3 + 1), np.pi, 0, 0, z_rot_matrix, [4, 3, 2, 1, 8, 7, 6, 5]),
-        # todo add more test here to cover D2h group
     ],
 )
 def test_UO3_gate(feature, psi, theta, phi, group_matrix, expected):
