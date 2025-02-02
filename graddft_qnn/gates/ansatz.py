@@ -13,13 +13,13 @@ class Ansatz(qml.operation.Operation):
         self._parameters = [theta_x, theta_y, theta_z, theta_entanglement]
 
     @staticmethod
-    def compute_matrix(
-            *params, **hyperparams: dict[str, Any]
-    ):
+    def compute_matrix(*params, **hyperparams: dict[str, Any]):
         """
         equation 55 JJMeyer
         """
-        per_wire = qml.X.compute_matrix() @ qml.Y.compute_matrix() @ qml.Z.compute_matrix()
+        per_wire = (
+            qml.X.compute_matrix() @ qml.Y.compute_matrix() @ qml.Z.compute_matrix()
+        )
         all_wires = np.kron(np.kron(per_wire, per_wire), per_wire)
         all_wires = all_wires @ Ansatz._RXXX_matrix(0.1)
 

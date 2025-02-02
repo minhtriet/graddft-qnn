@@ -15,6 +15,7 @@ from scipy.linalg import expm
 
 from graddft_qnn.unitary_rep import O_h
 
+
 @dataclasses.dataclass
 class DFTQNN(nn.Module):
     """
@@ -34,7 +35,7 @@ class DFTQNN(nn.Module):
             """
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for i in self.dev.wires[::3]:
-                qml.QubitUnitary(equivar_gate_matrix, wires=range(i,i+3))
+                qml.QubitUnitary(equivar_gate_matrix, wires=range(i, i + 3))
 
             return qml.probs()
 
@@ -45,8 +46,10 @@ class DFTQNN(nn.Module):
         phi = self.param("phi", nn.initializers.normal(), (len(self.dev.wires),))
 
         unitary_reps = [O_h._180_deg_rot()]
-        ansatz = Ansatz(np.pi, np.pi, np.pi, np.pi, [0,1,2])
-        generator = DFTQNN.twirling(unitary_reps=unitary_reps, ansatz=qml.matrix(ansatz))
+        ansatz = Ansatz(np.pi, np.pi, np.pi, np.pi, [0, 1, 2])
+        generator = DFTQNN.twirling(
+            unitary_reps=unitary_reps, ansatz=qml.matrix(ansatz)
+        )
 
         # this won't work
         # generator_op = Operatize(generator)
@@ -65,7 +68,7 @@ class DFTQNN(nn.Module):
         generator /= len(ansatz)
         return generator
 
-    #=========
+    # =========
     # todo save the scaler instead of scaling everytime like now
     def dim_reduction(self, original_array: ArrayImpl):
         scaler = StandardScaler()

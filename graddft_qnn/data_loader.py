@@ -1,8 +1,9 @@
 import os.path
 
 import tensorflow as tf
+
 # Ensure TF does not see GPU and grab all GPU memory.
-tf.config.set_visible_devices([], device_type='GPU')
+tf.config.set_visible_devices([], device_type="GPU")
 import tensorflow_datasets as tfds
 
 import pathlib
@@ -13,7 +14,6 @@ import jax.numpy as jnp
 
 
 # Step 1: Read the Cube file and extract the grid
-
 
 
 # Example usage:

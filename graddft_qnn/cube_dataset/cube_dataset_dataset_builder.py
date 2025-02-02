@@ -25,9 +25,7 @@ class CubeDataset(tfds.core.GeneratorBasedBuilder):
         return self.dataset_info_from_configs(
             features=tfds.features.FeaturesDict(
                 {
-                    "grid": tfds.features.Tensor(
-                        shape=(80, 80, 80), dtype=tf.float32
-                    ),
+                    "grid": tfds.features.Tensor(shape=(80, 80, 80), dtype=tf.float32),
                     "gs_energy": tfds.features.Tensor(
                         shape=(), dtype=tf.float32
                     ),  # A scalar value
@@ -55,7 +53,7 @@ class CubeDataset(tfds.core.GeneratorBasedBuilder):
                 yield (
                     cube_file.name,
                     {
-                        'grid': xyz['data'].astype(np.float32),
+                        "grid": xyz["data"].astype(np.float32),
                         "gs_energy": 1,
                     },
                 )
