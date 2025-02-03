@@ -1,13 +1,14 @@
 import unittest
+
+import numpy
 import pennylane as qml
 import pennylane.numpy as np
-import numpy
 from scipy.linalg import expm
 
+from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.gates.ansatz import Ansatz
 from graddft_qnn.unitary_rep import O_h
 
-from graddft_qnn.dft_qnn import DFTQNN
 
 class MyTestCase(unittest.TestCase):
     dev = qml.device("default.qubit", wires=3)

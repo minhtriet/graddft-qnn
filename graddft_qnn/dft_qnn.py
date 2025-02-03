@@ -6,13 +6,10 @@ import pcax
 import pennylane as qml
 from flax.typing import Array
 from jaxlib.xla_extension import ArrayImpl
-
-from graddft_qnn.standard_scaler import StandardScaler
-
-from graddft_qnn.gates.ansatz import Ansatz
-from graddft_qnn.helper.operatize import Operatize
 from scipy.linalg import expm
 
+from graddft_qnn.gates.ansatz import Ansatz
+from graddft_qnn.standard_scaler import StandardScaler
 from graddft_qnn.unitary_rep import O_h
 
 

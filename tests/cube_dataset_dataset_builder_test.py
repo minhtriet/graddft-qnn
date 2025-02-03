@@ -1,7 +1,8 @@
 """cube_dataset dataset."""
 
-from graddft_qnn.cube_dataset import cube_dataset_dataset_builder
 import tensorflow_datasets as tfds
+
+from graddft_qnn.cube_dataset import cube_dataset_dataset_builder
 
 
 class CubeDatasetTest(tfds.testing.DatasetBuilderTestCase):

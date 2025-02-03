@@ -1,4 +1,3 @@
-from typing import Any
 
 import pennylane as qml
 import pennylane.numpy as np
