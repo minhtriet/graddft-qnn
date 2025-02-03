@@ -48,7 +48,8 @@ class Ansatz(qml.operation.Operation):
             ]
         )
 
-    def _ZZZ_matrix(self):
+    @staticmethod
+    def _ZZZ_matrix():
         return np.array([
             [1, 0, 0, 0, 0, 0, 0, 0],
             [0, -1, 0, 0, 0, 0, 0, 0],
