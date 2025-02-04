@@ -32,7 +32,12 @@ class MyTestCase(unittest.TestCase):
         generator = DFTQNN.twirling(
             unitary_reps=unitary_reps, ansatz=qml.matrix(ansatz)
         )
-        equivar_gate_matrix = expm(generator)
+        equivar_gate_matrix = expm(-1j * generator)
         result = MyTestCase.circuit(feature, equivar_gate_matrix)
         rot_result = MyTestCase.circuit(rot_feature, equivar_gate_matrix)
-        assert result == rot_result
+        # same rotation matrix, but for 3d coordinates
+        r3 = np.array([[-1, 0, 0],
+                       [0, -1, 0],
+                       [0, 0, 1]])
+
+        assert (r3 @ result == rot_result).all()

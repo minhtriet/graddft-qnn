@@ -28,7 +28,9 @@ class Ansatz(qml.operation.Operation):
             qml.X.compute_matrix() @ qml.Y.compute_matrix() @ qml.Z.compute_matrix()
         )
         all_wires = np.kron(np.kron(per_wire, per_wire), per_wire)
-        all_wires = all_wires @ Ansatz._ZZZ_matrix()
+        all_wires = (
+            all_wires @ Ansatz._ZZZ_matrix()
+        )  # todo ask how to add learnable parameter to this ansatz?
 
         return all_wires
 

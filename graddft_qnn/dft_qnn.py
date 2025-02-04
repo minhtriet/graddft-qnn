@@ -52,7 +52,7 @@ class DFTQNN(nn.Module):
         # generator_op = Operatize(generator)
         # equivar_gate_matrix = qml.matrix(qml.evolve(generator_op))
 
-        equivar_gate_matrix = expm(generator)
+        equivar_gate_matrix = expm(-1j * generator)
 
         result = circuit(feature, psi, theta, phi, equivar_gate_matrix)
         return result
@@ -62,7 +62,7 @@ class DFTQNN(nn.Module):
         generator = np.zeros_like(ansatz)
         for unitary_rep in unitary_reps:
             generator += unitary_rep @ ansatz @ unitary_rep.conjugate()
-        generator /= len(unitary_reps)
+        generator /= len(unitary_reps) + 1  # + 1 is for the identity transformation
         return generator
 
     # =========
