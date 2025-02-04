@@ -62,7 +62,7 @@ class DFTQNN(nn.Module):
         generator = np.zeros_like(ansatz)
         for unitary_rep in unitary_reps:
             generator += unitary_rep @ ansatz @ unitary_rep.conjugate()
-        generator /= len(ansatz)
+        generator /= len(unitary_reps)
         return generator
 
     # =========
