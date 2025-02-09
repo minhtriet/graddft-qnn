@@ -1,10 +1,12 @@
-import pennylane as qml
 import numpy as np
+import pennylane as qml
+
 
 def RXX(theta):
     return np.cos(theta * 0.5) * np.eye(4) - 1j * np.sin(theta * 0.5) * np.kron(
         qml.X.compute_matrix(), qml.X.compute_matrix()
     )
+
 
 def RXXX_matrix(theta=3.1415):
     cos = np.cos(theta * 0.5)
@@ -21,6 +23,7 @@ def RXXX_matrix(theta=3.1415):
             [sin, 0, 0, 0, 0, 0, 0, cos],
         ]
     )
+
 
 def ZZZ_matrix():
     return np.array(

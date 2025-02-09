@@ -26,7 +26,9 @@ class MyTestCase(unittest.TestCase):
 
     def test_invariant(self):
         numpy.random.seed(42)
-        feature = numpy.random.rand(8)  # todo should also work with tensor, not just vanilla np
+        feature = numpy.random.rand(
+            8
+        )  # todo should also work with tensor, not just vanilla np
         rot_feature = O_h._180_deg_rot_matrix() @ feature
 
         unitary_reps = [O_h._180_deg_rot()]
@@ -35,8 +37,7 @@ class MyTestCase(unittest.TestCase):
         generator = DFTQNN.twirling(
             unitary_reps=unitary_reps, ansatz_gates=ansatz.wire_to_single_qubit_gates
         )
-        exp_gate_1 = [ expm(g) for g in generator
-        ]
+        exp_gate_1 = [expm(g) for g in generator]
         all_gates_1 = itertools.reduce(np.kron, exp_gate_1)
 
         exp_gate_3 = [expm(g) for g in generator]
