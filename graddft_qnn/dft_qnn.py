@@ -1,4 +1,5 @@
 import dataclasses
+import functools
 
 import flax.linen as nn
 import numpy as np
@@ -45,7 +46,7 @@ class DFTQNN(nn.Module):
         unitary_reps = [O_h._180_deg_rot()]
         ansatz = Ansatz(np.pi, np.pi, np.pi, np.pi, [0, 1, 2])
         generator = DFTQNN.twirling(
-            unitary_reps=unitary_reps, ansatz=qml.matrix(ansatz)
+            unitary_reps=unitary_reps, ansatz_gates=qml.matrix(ansatz)
         )
 
         # this won't work
@@ -58,8 +59,9 @@ class DFTQNN(nn.Module):
         return result
 
     @staticmethod
-    def twirling(ansatz, unitary_reps):
-        generator = np.zeros_like(ansatz)
+    def twirling(ansatz_gates: list[np.array], unitary_reps: list[np.array]):
+        ansatz = functools.reduce(np.kron, ansatz_gates)
+        generator = np.zeros_like(ansatz_gates)
         for unitary_rep in unitary_reps:
             generator += unitary_rep @ ansatz @ unitary_rep.conjugate()
         generator /= len(unitary_reps) + 1  # + 1 is for the identity transformation

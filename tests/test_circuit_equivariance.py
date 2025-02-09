@@ -1,3 +1,4 @@
+import itertools
 import unittest
 
 import numpy
@@ -20,24 +21,35 @@ class MyTestCase(unittest.TestCase):
         for i in MyTestCase.dev.wires[::3]:
             qml.QubitUnitary(equivar_gate_matrix, wires=range(i, i + 3))
         return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+        # todo make sure it works with twirling formular <X1><Z2>
+        # qml.pauli_decompose
 
-    def test_something(self):
-        # will calculate the coeff input without any dim reduction, might need to change that later.
+    def test_invariant(self):
         numpy.random.seed(42)
-        feature = numpy.random.rand(8)
+        feature = numpy.random.rand(8)  # todo should also work with tensor, not just vanilla np
         rot_feature = O_h._180_deg_rot_matrix() @ feature
 
         unitary_reps = [O_h._180_deg_rot()]
-        ansatz = Ansatz(np.pi, np.pi, np.pi, np.pi, [0, 1, 2])
+        ansatz = Ansatz()
+
         generator = DFTQNN.twirling(
-            unitary_reps=unitary_reps, ansatz=qml.matrix(ansatz)
+            unitary_reps=unitary_reps, ansatz_gates=ansatz.wire_to_single_qubit_gates
         )
-        equivar_gate_matrix = expm(-1j * generator)
+        exp_gate_1 = [ expm(g) for g in generator
+        ]
+        all_gates_1 = itertools.reduce(np.kron, exp_gate_1)
+
+        exp_gate_3 = [expm(g) for g in generator]
+        all_gates_3 = itertools.reduce(np.kron, exp_gate_3)
+
+        equivar_gate_matrix = all_gates_1 @ all_gates_3
+        list_gates = qml.pauli_decompose(equivar_gate_matrix)
+
         result = MyTestCase.circuit(feature, equivar_gate_matrix)
         rot_result = MyTestCase.circuit(rot_feature, equivar_gate_matrix)
         # same rotation matrix, but for 3d coordinates
-        r3 = np.array([[-1, 0, 0],
-                       [0, -1, 0],
-                       [0, 0, 1]])
+        r3 = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
+        # todo symmetrize gates one by one, create the matrix and decompose into pauli string
+        # f(R(x)) = f(x)
 
-        assert (r3 @ result == rot_result).all()
+        assert (result == rot_result).all()

@@ -68,7 +68,7 @@ if __name__ == "__main__":
             raise KeyError("YAML file must contain 'QBITS' key")
         num_qubits = data["QBITS"]
         dev = qml.device("default.qubit", wires=num_qubits)
-    dft_qnn = DFTQNN(dev)  # todo start simpler, make sure input output shape
+    dft_qnn = DFTQNN(dev)
 
     mol = gto.M(atom=[["H", (0, 0, 0)], ["F", (0, 0, 1.1)]], basis="def2-tzvp")
     mean_field = dft.UKS(mol)
