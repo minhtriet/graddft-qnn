@@ -1,5 +1,4 @@
 import dataclasses
-import functools
 
 import flax.linen as nn
 import numpy as np
@@ -9,7 +8,7 @@ from flax.typing import Array
 from jaxlib.xla_extension import ArrayImpl
 from scipy.linalg import expm
 
-from graddft_qnn.gates.ansatz import Ansatz
+from graddft_qnn.ansatz import Ansatz
 from graddft_qnn.standard_scaler import StandardScaler
 from graddft_qnn.unitary_rep import O_h
 
@@ -59,12 +58,11 @@ class DFTQNN(nn.Module):
         return result
 
     @staticmethod
-    def twirling(ansatz_gates: list[np.array], unitary_reps: list[np.array]):
-        ansatz = functools.reduce(np.kron, ansatz_gates)
-        generator = np.zeros_like(ansatz_gates)
+    def twirling(ansatz: np.array, unitary_reps: list[np.array]):
+        generator = np.zeros_like(ansatz)
         for unitary_rep in unitary_reps:
             generator += unitary_rep @ ansatz @ unitary_rep.conjugate()
-        generator /= len(unitary_reps) + 1  # + 1 is for the identity transformation
+        generator /= len(unitary_reps)
         return generator
 
     # =========
