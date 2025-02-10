@@ -34,16 +34,24 @@ class MyTestCase(unittest.TestCase):
         unitary_reps = [O_h._180_deg_rot()]
         ansatz = Ansatz()
 
-        invariant_gates = []
-        for wire, gate in ansatz.wire_to_single_qubit_gates.items():
-            generator = DFTQNN.twirling(unitary_reps=unitary_reps, ansatz=gate)
-            invariant_gates.append(expm(-1j * 1 * generator))
-        invariant_gates = functools.reduce(np.kron, invariant_gates)
-        for _, gate in ansatz.wire_to_triple_qubit_gates.items():
-            generator = DFTQNN.twirling(unitary_reps=unitary_reps, ansatz=gate)
-            invariant_gates = invariant_gates @ expm(-1j * 1 * generator)
+        circuit_rep = []
 
-        pauli_gates = qml.pauli_decompose(invariant_gates)
+        ansatz.wire_to_single_qubit_gates.update(ansatz.wire_to_triple_qubit_gates)
+        for wire, gates in all_ansatz_gate.items():
+            invariant_gates = []
+            for gate in gates:
+                generator = DFTQNN.twirling(unitary_reps=unitary_reps, ansatz=gate)
+                invariant_gates.append(expm(-1j * 1 * generator))
+            invariant_gates = functools.reduce(np.matmul, invariant_gates)
+            circuit_rep.append(invariant_gates)
+
+
+        # invariant_gates now has new invariant gate set for each wire
+        # we now pauli decompose that to see the measurement gate, for each wire too
+        for invariant_gate in invariant_gates:
+            pauli_gates = qml.pauli_decompose(invariant_gate, hide_identity=True, check_hermitian=False)
+            print(pauli_gates)
+
 
         #
         # result = MyTestCase.circuit(feature, equivar_gate_matrix)
