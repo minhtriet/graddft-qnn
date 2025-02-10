@@ -24,7 +24,7 @@ class Ansatz(qml.operation.Operation):
         (1,): [qml.X.compute_matrix(), qml.Y.compute_matrix(), qml.Z.compute_matrix()],
         (2,): [qml.X.compute_matrix(), qml.Y.compute_matrix(), qml.Z.compute_matrix()],
     }
-    _wire_to_triple_qubit_gates = {(0, 1, 2): ZZZ_matrix()}
+    _wire_to_triple_qubit_gates = {(0, 1, 2): [ZZZ_matrix()]}
 
     @property
     def wire_to_single_qubit_gates(self) -> float:
