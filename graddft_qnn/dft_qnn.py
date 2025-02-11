@@ -1,4 +1,5 @@
 import dataclasses
+import logging
 
 import flax.linen as nn
 import numpy as np
@@ -59,10 +60,14 @@ class DFTQNN(nn.Module):
 
     @staticmethod
     def twirling(ansatz: np.array, unitary_reps: list[np.array]):
-        generator = np.zeros_like(ansatz)
+        generator = np.zeros_like(ansatz, dtype=np.complex64)
+        ansatz = ansatz.astype(np.complex64)
         for unitary_rep in unitary_reps:
             generator += unitary_rep @ ansatz @ unitary_rep.conjugate()
         generator /= len(unitary_reps)
+        if np.allclose(generator, np.zeros_like(generator)):
+            logging.info("This ansatz gate doesn't work with this group")
+            return None
         return generator
 
     # =========

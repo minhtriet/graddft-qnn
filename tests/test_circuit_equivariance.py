@@ -23,14 +23,15 @@ class MyTestCase(unittest.TestCase):
         return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
         # todo make sure it works with twirling formular <X1><Z2>
 
+    @staticmethod
+
+
     def test_invariant(self):
         numpy.random.seed(42)
-        feature = numpy.random.rand(
-            8
-        )  # todo should also work with tensor, not just vanilla np
+        feature = numpy.random.rand(8)
         rot_feature = O_h._180_deg_rot_matrix() @ feature
 
-        unitary_reps = [O_h._180_deg_rot()]
+        unitary_reps = O_h._180_deg_rot()
         ansatz = Ansatz()
 
         circuit_rep : list[np.array] = []
@@ -62,3 +63,20 @@ class MyTestCase(unittest.TestCase):
         # # f(R(x)) = f(x)
 
         # assert (result == rot_result).all()
+
+    def test_invariant_2(self):
+        @qml.qnode(MyTestCase.dev)
+        def circuit_2(feature):
+            qml.AmplitudeEmbedding(feature, wires=MyTestCase.dev.wires, pad_with=0.0)
+            qml.RX(1, 0)
+            qml.RX(1, 1)
+            qml.RX(1, 2)
+            qml.RY(1, 2)
+            qml.RZ(1, 2)
+            return qml.expval(qml.X(0)), qml.expval(qml.X(1)), qml.expval(qml.X(2) @ qml.Y(2) @ qml.Z(2))
+
+        feature = numpy.random.rand(8)
+        rot_feature = O_h._180_deg_rot_matrix() @ feature
+        lhs = circuit_2(feature)
+        rhs = circuit_2(rot_feature)
+        assert numpy.allclose(lhs, rhs)
