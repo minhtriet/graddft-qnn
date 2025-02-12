@@ -74,7 +74,7 @@ class MyTestCase(unittest.TestCase):
             return qml.expval(qml.X(0)), qml.expval(qml.X(1)), qml.expval(qml.X(2) @ qml.Y(2) @ qml.Z(2))
 
         feature = numpy.random.rand(8)
-        rot_feature = O_h._180_deg_rot_matrix() @ feature
+        rot_feature = O_h._180_deg_z_rot_matrix() @ feature
         lhs = circuit_2(feature)
         rhs = circuit_2(rot_feature)
         assert numpy.allclose(lhs, rhs)
