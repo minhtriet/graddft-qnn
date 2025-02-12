@@ -22,9 +22,7 @@ class MyTestCase(unittest.TestCase):
             qml.QubitUnitary(equivar_gate_matrix, wires=range(i, i + 3))
         return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
         # todo make sure it works with twirling formular <X1><Z2>
-
-    @staticmethod
-
+        # qml.pauli_decompose
 
     def test_invariant(self):
         numpy.random.seed(42)
@@ -46,15 +44,15 @@ class MyTestCase(unittest.TestCase):
             pauli_invar_gate_sets = qml.pauli_decompose(invariant_gates, check_hermitian=False, hide_identity=True, pauli=True)
             circuit_rep.append(invariant_gates)
 
-        circuit_rep = functools.reduce(np.kron, circuit_rep)
+        # invariant_gates now has new invariant gate set for each wire
+        # we now pauli decompose that to see the measurement gate, for each wire too
+        for invariant_gate in invariant_gates:
+            pauli_gates = qml.pauli_decompose(
+                invariant_gate, hide_identity=True, check_hermitian=False
+            )
+            print(pauli_gates)
 
-        for wire, gates in ansatz.wire_to_triple_qubit_gates.items():
-            for gate in gates:
-                generator = DFTQNN.twirling(unitary_reps=unitary_reps, ansatz=gate)
-                circuit_rep = circuit_rep @ expm(-1j * 1 * generator)
-
-        pauli_invar_gate_sets = qml.pauli_decompose(circuit_rep, check_hermitian=False, hide_identity=True)
-        print(pauli_invar_gate_sets)
+        #
         # result = MyTestCase.circuit(feature, equivar_gate_matrix)
         # rot_result = MyTestCase.circuit(rot_feature, equivar_gate_matrix)
         # # same rotation matrix, but for 3d coordinates
