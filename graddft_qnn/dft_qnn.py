@@ -25,7 +25,7 @@ class DFTQNN(nn.Module):
     @nn.compact
     def __call__(self, feature: Array) -> Array:
         @qml.qnode(self.dev)
-        def circuit(feature, psi, theta, phi, equivar_gate_matrix):
+        def circuit(feature, theta):
             """
             :param instance: an instance of the class Functional.
             :param rhoinputs: input to the neural network, in the form of an array.
@@ -33,29 +33,19 @@ class DFTQNN(nn.Module):
             """
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for i in self.dev.wires[::3]:
-                qml.QubitUnitary(equivar_gate_matrix, wires=range(i, i + 3))
+                qml.RX(theta[0], i)
+                qml.RX(theta[0], i+1)
+                qml.RX(theta[0], i+2)
+                qml.RZ(theta[1], i)
+                qml.RZ(theta[1], i+1)
+                qml.RZ(theta[1], i+2)
+                return qml.expval(qml.X(0) @ qml.Z(0)),
+                qml.expval(qml.X(1) @ qml.Z(1)),
+                qml.expval(qml.X(2) @ qml.Z(2))
 
-            return qml.probs()
+        theta = self.param("theta", nn.initializers.normal(), (2,))
 
-        # will calculate the coeff input without any dim reduction, might need to change that later.
-        # feature = self.dim_reduction(feature)
-        psi = self.param("psi", nn.initializers.normal(), (len(self.dev.wires),))
-        theta = self.param("theta", nn.initializers.normal(), (len(self.dev.wires),))
-        phi = self.param("phi", nn.initializers.normal(), (len(self.dev.wires),))
-
-        unitary_reps = [O_h._180_deg_rot()]
-        ansatz = Ansatz(np.pi, np.pi, np.pi, np.pi, [0, 1, 2])
-        generator = DFTQNN.twirling(
-            unitary_reps=unitary_reps, ansatz_gates=qml.matrix(ansatz)
-        )
-
-        # this won't work
-        # generator_op = Operatize(generator)
-        # equivar_gate_matrix = qml.matrix(qml.evolve(generator_op))
-
-        equivar_gate_matrix = expm(-1j * generator)
-
-        result = circuit(feature, psi, theta, phi, equivar_gate_matrix)
+        result = circuit(feature, theta)
         return result
 
     @staticmethod
