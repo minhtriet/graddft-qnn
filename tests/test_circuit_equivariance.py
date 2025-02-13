@@ -78,3 +78,31 @@ class MyTestCase(unittest.TestCase):
         lhs = circuit_2(feature)
         rhs = circuit_2(rot_feature)
         assert numpy.allclose(lhs, rhs)
+
+    def test_invariant_3_axis(self):
+        @qml.qnode(MyTestCase.dev)
+        def circuit(feature):
+            qml.AmplitudeEmbedding(feature, wires=MyTestCase.dev.wires, pad_with=0.0)
+            qml.RX(1, 0)
+            qml.RX(1, 1)
+            qml.RX(1, 2)
+            qml.RZ(1, 0)
+            qml.RZ(1, 1)
+            qml.RZ(1, 2)
+            return qml.expval(qml.X(0) @ qml.Z(0)),
+            qml.expval(qml.X(1) @ qml.Z(1)),
+            qml.expval(qml.X(2) @ qml.Z(2))
+
+        feature = numpy.random.rand(8)
+        rot_feature = O_h._180_deg_x_rot_matrix() @ feature
+        lhs = circuit(feature)
+        rhs = circuit(rot_feature)
+        assert numpy.allclose(lhs, rhs)
+        rot_feature = O_h._180_deg_y_rot_matrix() @ feature
+        lhs = circuit(feature)
+        rhs = circuit(rot_feature)
+        assert numpy.allclose(lhs, rhs)
+        rot_feature = O_h._180_deg_z_rot_matrix() @ feature
+        lhs = circuit(feature)
+        rhs = circuit(rot_feature)
+        assert numpy.allclose(lhs, rhs)
