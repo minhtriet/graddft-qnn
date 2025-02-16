@@ -86,7 +86,7 @@ if __name__ == "__main__":
     )
 
     # Start the training
-    learning_rate = 0.1
+    learning_rate = 1
     momentum = 0.9
     n_epochs = 20
 

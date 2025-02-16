@@ -32,7 +32,7 @@ class MyTestCase(unittest.TestCase):
         unitary_reps = O_h._180_deg_rot()
         ansatz = Ansatz()
 
-        circuit_rep : list[np.array] = []
+        circuit_rep: list[np.array] = []
 
         for wire, gates in ansatz.wire_to_single_qubit_gates.items():
             invariant_gates = []
@@ -41,7 +41,9 @@ class MyTestCase(unittest.TestCase):
                 invariant_gates.append(expm(-1j * 1 * generator))
             invariant_gates = functools.reduce(np.matmul, invariant_gates)
 
-            pauli_invar_gate_sets = qml.pauli_decompose(invariant_gates, check_hermitian=False, hide_identity=True, pauli=True)
+            pauli_invar_gate_sets = qml.pauli_decompose(
+                invariant_gates, check_hermitian=False, hide_identity=True, pauli=True
+            )
             circuit_rep.append(invariant_gates)
 
         # invariant_gates now has new invariant gate set for each wire
@@ -71,13 +73,17 @@ class MyTestCase(unittest.TestCase):
             qml.RX(1, 2)
             qml.RY(1, 2)
             qml.RZ(1, 2)
-            return qml.expval(qml.X(0)), qml.expval(qml.X(1)), qml.expval(qml.X(2) @ qml.Y(2) @ qml.Z(2))
+            return (
+                qml.expval(qml.X(0)),
+                qml.expval(qml.X(1)),
+                qml.expval(qml.X(2) @ qml.Y(2) @ qml.Z(2)),
+            )
 
         feature = numpy.random.rand(8)
         rot_feature = O_h._180_deg_z_rot_matrix() @ feature
         lhs = circuit_2(feature)
         rhs = circuit_2(rot_feature)
-        assert numpy.allclose(lhs, rhs)
+        assert numpy.allclose(lhs, rhs, 1e-14)
 
     def test_invariant_3_axis(self):
         @qml.qnode(MyTestCase.dev)
@@ -89,20 +95,28 @@ class MyTestCase(unittest.TestCase):
             qml.RZ(1, 0)
             qml.RZ(1, 1)
             qml.RZ(1, 2)
-            return qml.expval(qml.X(0) @ qml.Z(0)),
-            qml.expval(qml.X(1) @ qml.Z(1)),
-            qml.expval(qml.X(2) @ qml.Z(2))
+            # return (
+            #     qml.expval(qml.X(0) @ qml.Z(0)),
+            #     qml.expval(qml.X(1) @ qml.Z(1)),
+            #     qml.expval(qml.X(2) @ qml.Z(2)),
+            # )
+            return (
+                qml.expval(qml.X(0)), qml.expval(qml.Z(0)),
+                qml.expval(qml.X(1)), qml.expval(qml.Z(1)),
+                qml.expval(qml.X(2)), qml.expval(qml.Z(2)),
+            )
 
-        feature = numpy.random.rand(8)
+        feature = np.array([1, 2, 3, 4, 5, 6, 7, 8])
         rot_feature = O_h._180_deg_x_rot_matrix() @ feature
         lhs = circuit(feature)
         rhs = circuit(rot_feature)
         assert numpy.allclose(lhs, rhs)
         rot_feature = O_h._180_deg_y_rot_matrix() @ feature
-        lhs = circuit(feature)
         rhs = circuit(rot_feature)
         assert numpy.allclose(lhs, rhs)
         rot_feature = O_h._180_deg_z_rot_matrix() @ feature
-        lhs = circuit(feature)
         rhs = circuit(rot_feature)
+        assert numpy.allclose(lhs, rhs)
+        ref_feature = O_h.reflection_yz() @ feature
+        rhs = circuit(ref_feature)
         assert numpy.allclose(lhs, rhs)

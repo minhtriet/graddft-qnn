@@ -7,11 +7,8 @@ import pcax
 import pennylane as qml
 from flax.typing import Array
 from jaxlib.xla_extension import ArrayImpl
-from scipy.linalg import expm
 
-from graddft_qnn.ansatz import Ansatz
 from graddft_qnn.standard_scaler import StandardScaler
-from graddft_qnn.unitary_rep import O_h
 
 
 @dataclasses.dataclass
@@ -34,16 +31,16 @@ class DFTQNN(nn.Module):
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for i in self.dev.wires[::3]:
                 qml.RX(theta[0], i)
-                qml.RX(theta[0], i+1)
-                qml.RX(theta[0], i+2)
-                qml.RZ(theta[1], i)
-                qml.RZ(theta[1], i+1)
-                qml.RZ(theta[1], i+2)
-                return qml.expval(qml.X(0) @ qml.Z(0)),
-                qml.expval(qml.X(1) @ qml.Z(1)),
+                qml.RX(theta[1], i + 1)
+                qml.RX(theta[2], i + 2)
+                qml.RZ(theta[3], i)
+                qml.RZ(theta[4], i + 1)
+                qml.RZ(theta[5], i + 2)
+                return (qml.expval(qml.X(0) @ qml.Z(0)),)
+                (qml.expval(qml.X(1) @ qml.Z(1)),)
                 qml.expval(qml.X(2) @ qml.Z(2))
 
-        theta = self.param("theta", nn.initializers.normal(), (2,))
+        theta = self.param("theta", nn.initializers.normal(), (6,))
 
         result = circuit(feature, theta)
         return result
