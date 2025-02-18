@@ -26,21 +26,22 @@ class DFTQNN(nn.Module):
             """
             :param instance: an instance of the class Functional.
             :param rhoinputs: input to the neural network, in the form of an array.
-            :return:
+            :return: should be 1 measurement, so that graddft_qnn.qnn_functional.QNNFunctional.xc_energy works
             """
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for i in self.dev.wires[::3]:
                 qml.RX(theta[0], i)
                 qml.RX(theta[1], i + 1)
                 qml.RX(theta[2], i + 2)
-                qml.RZ(theta[3], i)
-                qml.RZ(theta[4], i + 1)
-                qml.RZ(theta[5], i + 2)
-                return (qml.expval(qml.X(0) @ qml.Z(0)),)
-                (qml.expval(qml.X(1) @ qml.Z(1)),)
-                qml.expval(qml.X(2) @ qml.Z(2))
+                qml.MultiRZ(theta[3], [0, 1, 2])
+                return (
+                    qml.expval(qml.X(0)),
+                    qml.expval(qml.X(1)),
+                    qml.expval(qml.X(2)),
+                    qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2)),
+                )
 
-        theta = self.param("theta", nn.initializers.normal(), (6,))
+        theta = self.param("theta", nn.initializers.normal(), (4,))
 
         result = circuit(feature, theta)
         return result
@@ -51,6 +52,7 @@ class DFTQNN(nn.Module):
         ansatz = ansatz.astype(np.complex64)
         for unitary_rep in unitary_reps:
             generator += unitary_rep @ ansatz @ unitary_rep.conjugate()
+        # 0.5 * (ansatz + unitary_rep @ ansatz @ unitary_rep.conjugate()
         generator /= len(unitary_reps)
         if np.allclose(generator, np.zeros_like(generator)):
             logging.info("This ansatz gate doesn't work with this group")

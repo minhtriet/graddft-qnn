@@ -12,7 +12,17 @@ class O_h:
             O_h._180_deg_x_rot_matrix(),
             O_h._180_deg_y_rot_matrix(),
             O_h._180_deg_z_rot_matrix(),
-            np.eye(8),
+            # np.eye(8),
+        ]
+
+    @staticmethod
+    def _180_deg_rot_ref():
+        return [
+            O_h._180_deg_x_rot_matrix(),
+            O_h._180_deg_y_rot_matrix(),
+            O_h._180_deg_z_rot_matrix(),
+            # np.eye(8),
+            O_h.reflection_yz(),
         ]
 
     @staticmethod
