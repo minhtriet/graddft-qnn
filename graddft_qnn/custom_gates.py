@@ -1,11 +1,16 @@
 import numpy as np
 import pennylane as qml
+from scipy.linalg import expm
 
 
-def RXX(theta):
-    return np.cos(theta * 0.5) * np.eye(4) - 1j * np.sin(theta * 0.5) * np.kron(
-        qml.X.compute_matrix(), qml.X.compute_matrix()
-    )
+def U1(theta, i):
+    qml.RX(theta[0], i)
+    qml.RX(theta[1], i + 1)
+    qml.RX(theta[2], i + 2)
+    qml.MultiRZ(theta[3], [i, i+1, i+2])
+
+def RXX(theta=1):
+    return expm(-1j * (0.5 * theta) * qml.matrix(qml.X(0) @ qml.X(1)))
 
 
 def RXXX_matrix(theta=3.1415):
@@ -24,18 +29,3 @@ def RXXX_matrix(theta=3.1415):
         ]
     )
 
-
-def ZZZ_matrix():
-    return np.array(
-        [
-            [1, 0, 0, 0, 0, 0, 0, 0],
-            [0, -1, 0, 0, 0, 0, 0, 0],
-            [0, 0, -1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, -1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, -1],
-        ],
-        dtype=np.float64,
-    )

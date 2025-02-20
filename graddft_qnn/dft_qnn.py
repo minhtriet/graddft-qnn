@@ -8,6 +8,7 @@ import pennylane as qml
 from flax.typing import Array
 from jaxlib.xla_extension import ArrayImpl
 
+from graddft_qnn import custom_gates
 from graddft_qnn.standard_scaler import StandardScaler
 
 
@@ -29,17 +30,16 @@ class DFTQNN(nn.Module):
             :return: should be 1 measurement, so that graddft_qnn.qnn_functional.QNNFunctional.xc_energy works
             """
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
+            # 1st layer
             for i in self.dev.wires[::3]:
-                qml.RX(theta[0], i)
-                qml.RX(theta[1], i + 1)
-                qml.RX(theta[2], i + 2)
-                qml.MultiRZ(theta[3], [0, 1, 2])
-                return (
-                    qml.expval(qml.X(0)),
-                    qml.expval(qml.X(1)),
-                    qml.expval(qml.X(2)),
-                    qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2)),
-                )
+                custom_gates.U1(theta, i)
+
+            return (
+                qml.expval(qml.X(0)),
+                qml.expval(qml.X(1)),
+                qml.expval(qml.X(2)),
+                qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2)),
+            )
 
         theta = self.param("theta", nn.initializers.normal(), (4,))
 
