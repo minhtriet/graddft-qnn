@@ -35,9 +35,15 @@ class QNNFunctional(gd.Functional):
         n_qubits = 9
         # unscaled_coeff_inputs: (xxx, 2)
 
-        assert jnp.array(jnp.allclose(unscaled_coefficient_inputs[:,0], unscaled_coefficient_inputs[:,1]))
+        assert jnp.array(
+            jnp.allclose(
+                unscaled_coefficient_inputs[:, 0], unscaled_coefficient_inputs[:, 1]
+            )
+        )
         nominator = jnp.sum(unscaled_coefficient_inputs, axis=0)
-        indices = jnp.round(jnp.linspace(0, 22248, 2**n_qubits)).astype(jnp.int32)  # taking 2**n_qubits indices
+        indices = jnp.round(
+            jnp.linspace(0, unscaled_coefficient_inputs.shape[0], 2**n_qubits)
+        ).astype(jnp.int32)  # taking 2**n_qubits indices
 
         unnormalized_coefficient_inputs = unscaled_coefficient_inputs[indices]
         denominator = jnp.sum(unnormalized_coefficient_inputs, axis=0)
@@ -59,7 +65,7 @@ class QNNFunctional(gd.Functional):
 
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
-        return self._integrate(xc_energy_density, grid_weights)   # was grid.weights
+        return self._integrate(xc_energy_density, grid_weights)  # was grid.weights
 
     @jax.jit
     def loss_fn(

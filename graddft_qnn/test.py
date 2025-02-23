@@ -1,14 +1,15 @@
 import grad_dft as gd
 import pennylane as qml
 import yaml
-from dft_qnn import DFTQNN
 from jax import numpy as jnp
 from jax.random import PRNGKey
 from jaxtyping import PyTree
 from optax import adam, apply_updates
 from pyscf import dft, gto
-from qnn_functional import QNNFunctional
 from tqdm import tqdm
+
+from graddft_qnn.dft_qnn import DFTQNN
+from graddft_qnn.qnn_functional import QNNFunctional
 
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
