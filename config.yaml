@@ -1,5 +1,4 @@
-#QBITS: 15
-QBITS: 3
+QBITS: 9
 
 TRAINING:
   - N_EPOCH: 4

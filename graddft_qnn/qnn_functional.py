@@ -17,8 +17,8 @@ class QNNFunctional(gd.Functional):
         self,
         params: PyTree,
         grid: Grid,
-        coefficient_inputs: Float[Array, "(n,n)"],
-        densities: Float[Array, "(n,n)"],
+        unscaled_coefficient_inputs: Float[Array, "(n,n)"],
+        unscaled_densities: Float[Array, "(n,n)"],
         clip_cte: float = 1e-30,
     ) -> Scalar:
         """
@@ -29,14 +29,37 @@ class QNNFunctional(gd.Functional):
         :param clip_cte:
         :return:
         """
+        # down-sampling coeff_inputs, densities
+        # rescale densities and grid_weights
+        # todo which carry probability, `density` or `grid`
+        n_qubits = 9
+        # unscaled_coeff_inputs: (xxx, 2)
+
+        assert jnp.array(jnp.allclose(unscaled_coefficient_inputs[:,0], unscaled_coefficient_inputs[:,1]))
+        nominator = jnp.sum(unscaled_coefficient_inputs, axis=0)
+        indices = jnp.round(jnp.linspace(0, 22248, 2**n_qubits)).astype(jnp.int32)  # taking 2**n_qubits indices
+
+        unnormalized_coefficient_inputs = unscaled_coefficient_inputs[indices]
+        denominator = jnp.sum(unnormalized_coefficient_inputs, axis=0)
+        coefficient_inputs = unnormalized_coefficient_inputs / denominator * nominator
+
+        grid_nominator = jnp.sum(grid.weights)
+        grid_weights = grid.weights[indices]
+        grid_weights = grid_weights / jnp.sum(grid_weights) * grid_nominator
+
+        # densities: (xxx, 2)
+        densities = unscaled_densities[indices]
+
+        # calculate
         coefficients = self.coefficients.apply(params, coefficient_inputs)
         coefficients = coefficients[: coefficient_inputs.shape[0]]  # shape: (xxx)
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
         # coeffs have norm of 1, and  we are multiplying with very small number here, should we normalize density for the sake of the neural net optimization, or we want to obey the physics semantic?
         # look at the 3d image, what we have is a molecule. A large part is 0
+
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
-        return self._integrate(xc_energy_density, grid.weights)
+        return self._integrate(xc_energy_density, grid_weights)   # was grid.weights
 
     @jax.jit
     def loss_fn(

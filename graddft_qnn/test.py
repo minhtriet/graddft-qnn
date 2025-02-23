@@ -74,6 +74,7 @@ if __name__ == "__main__":
     mean_field = dft.UKS(mol)
     ground_truth_energy = mean_field.kernel()
     HF_molecule = gd.molecule_from_pyscf(mean_field)
+    # there is a charge density in grad_dft, downsize and set it back to the downsized properties
 
     key = PRNGKey(42)
     coeff_input = coefficient_inputs(HF_molecule)
@@ -84,7 +85,7 @@ if __name__ == "__main__":
         energy_densities=energy_densities,
         coefficient_inputs=coefficient_inputs,
     )
-
+    # sum of all charge density * volume = number of electrons
     # Start the training
     learning_rate = 1
     momentum = 0.9
@@ -94,7 +95,7 @@ if __name__ == "__main__":
     opt_state = tx.init(parameters)
 
     predictor = gd.non_scf_predictor(nf)
-    # pca normalization is correct or not, becasue only coeff inputs is normalized, still have grid, density
+    # pca normalization is correct or not, because only coeff inputs is normalized, still have grid, density
 
     for iteration in tqdm(range(n_epochs), desc="Training epoch"):
         (cost_value, predicted_energy), grads = gd.simple_energy_loss(

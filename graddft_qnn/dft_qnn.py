@@ -33,12 +33,12 @@ class DFTQNN(nn.Module):
             # 1st layer
             for i in self.dev.wires[::3]:
                 custom_gates.U1(theta, i)
-
+            # make sure the measurement is unique for each point
             return (
                 qml.expval(qml.X(0)),
-                qml.expval(qml.X(1)),
-                qml.expval(qml.X(2)),
-                qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2)),
+                # qml.expval(qml.X(1)),
+                # qml.expval(qml.X(2)),
+                # qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2)),
             )
 
         theta = self.param("theta", nn.initializers.normal(), (4,))
