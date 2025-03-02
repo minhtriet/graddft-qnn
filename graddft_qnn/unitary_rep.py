@@ -15,7 +15,7 @@ class O_h:
                     new_y = size - 1 - y
                     new_z = size - 1 - z
                     new_idx = new_x * size * size + new_y * size + new_z
-                    perm_matrix[new_idx, orig_idx] = 1
+                    perm_matrix[orig_idx, new_idx] = 1
 
         return perm_matrix
 
@@ -32,7 +32,7 @@ class O_h:
                     new_z = size - 1 - z
                     new_y = y
                     new_idx = new_x * size * size + new_y * size + new_z
-                    perm_matrix[new_idx, orig_idx] = 1
+                    perm_matrix[orig_idx, new_idx] = 1
         return perm_matrix
 
     @staticmethod
@@ -48,7 +48,7 @@ class O_h:
                     new_x = size - 1 - x
                     new_y = size - 1 - y
                     new_idx = new_x * size * size + new_y * size + new_z
-                    perm_matrix[new_idx, orig_idx] = 1
+                    perm_matrix[orig_idx, new_idx] = 1
 
         return perm_matrix
 

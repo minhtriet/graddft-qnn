@@ -72,18 +72,32 @@ def circuit_2_with_pool_6_wires(feature):
     )
 
 
-@pytest.mark.parametrize("n_wires, circuit_func", [(3, circuit_2), (3, circuit_2)])
+# @qml.qnode(dev_1)
+@qml.qnode(dev)
+def circuit_3_wires(feature):
+    qml.AmplitudeEmbedding(feature, wires=dev.wires, pad_with=0.0)
+    custom_gates.U2(np.array(range(15)) / 15, 0)
+    return custom_gates.U2_measurement(0)
+
+
+@pytest.mark.parametrize(
+    "n_wires, circuit_func",
+    [(3, circuit_2), (3, circuit_3_wires)],
+)
 def test_invariant(n_wires, circuit_func):
     feature = np.random.rand(2**n_wires)
-    rot_feature = O_h._180_deg_x_rot_matrix() @ feature
-    lhs = circuit_2(feature)
-    rhs = circuit_2(rot_feature)
+    cube_dim = np.cbrt(2**n_wires)
+    assert cube_dim.is_integer()
+    cube_dim = int(cube_dim)
+    rot_feature = O_h._180_deg_x_rot_matrix(cube_dim) @ feature
+    lhs = circuit_func(feature)
+    rhs = circuit_func(rot_feature)
     assert numpy.allclose(lhs, rhs)
-    rot_feature = O_h._180_deg_y_rot_matrix() @ feature
-    rhs = circuit_2(rot_feature)
+    rot_feature = O_h._180_deg_y_rot_matrix(cube_dim) @ feature
+    rhs = circuit_func(rot_feature)
     assert numpy.allclose(lhs, rhs)
-    rot_feature = O_h._180_deg_z_rot_matrix() @ feature
-    rhs = circuit_2(rot_feature)
+    rot_feature = O_h._180_deg_z_rot_matrix(cube_dim) @ feature
+    rhs = circuit_func(rot_feature)
     assert numpy.allclose(lhs, rhs)
 
 
@@ -117,7 +131,7 @@ def test_a_training_step(_setup_device):
     parameters = dft_qnn.init(key, mock_coeff_inputs)
 
     result = dft_qnn.apply(parameters, mock_coeff_inputs)
-    result_rot_x = dft_qnn.apply(parameters, rot_mock_coeff_inputs_x)
+    result_rot_x = dft_qnn.apply(parameters, rot_mock_coeff_inputs_x)  # should be 5
     result_rot_y = dft_qnn.apply(parameters, rot_mock_coeff_inputs_y)
     result_rot_z = dft_qnn.apply(parameters, rot_mock_coeff_inputs_z)
 

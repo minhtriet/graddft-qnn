@@ -118,7 +118,7 @@ scale back the electron density to 3d (symetry)
 understand the data a bit better
 
 look at different ways of downscaling (deleting every 3th data point)
-matrix - product state simulator 
+matrix - product state simulator
 embedding 3d point cloud to qnn, convolution quantum neural net
 
 Create training dataset

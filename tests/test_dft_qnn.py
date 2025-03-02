@@ -63,3 +63,16 @@ def test_UO3_gate(feature, psi, theta, phi, group_matrix, expected):
     f_x_rot = fixed_circuit(expected, 0, 0, 0)
     rot_f_x = group_matrix @ f_x
     assert np.allclose(f_x_rot, rot_f_x, atol=1e-6)
+
+
+def test_twirling():
+    X_1 = qml.matrix(qml.X(0) @ qml.I(1))
+    X_2 = qml.matrix(qml.I(0) @ qml.X(1))
+    received = DFTQNN.twirling_(X_1, [qml.SWAP.compute_matrix()])
+    expected = 0.5 * (X_1 + X_2)
+    assert np.allclose(received, expected)
+
+    Y_1 = qml.matrix(qml.Y(0) @ qml.I(1))
+    received = DFTQNN.twirling_(Y_1, [qml.matrix(qml.X(0) @ qml.X(1))])
+    expected = np.zeros(4)
+    assert np.allclose(received, expected)

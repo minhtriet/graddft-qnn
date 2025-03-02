@@ -31,7 +31,6 @@ class QNNFunctional(gd.Functional):
         """
         # down-sampling coeff_inputs, densities
         # rescale densities and grid_weights
-        # todo which carry probability, `density` or `grid`
         n_qubits = 9
         # unscaled_coeff_inputs: (xxx, 2)
 
@@ -44,7 +43,6 @@ class QNNFunctional(gd.Functional):
         indices = jnp.round(
             jnp.linspace(0, unscaled_coefficient_inputs.shape[0], 2**n_qubits)
         ).astype(jnp.int32)  # taking 2**n_qubits indices
-
         unnormalized_coefficient_inputs = unscaled_coefficient_inputs[indices]
         denominator = jnp.sum(unnormalized_coefficient_inputs, axis=0)
         coefficient_inputs = unnormalized_coefficient_inputs / denominator * nominator
@@ -54,6 +52,9 @@ class QNNFunctional(gd.Functional):
         grid_weights = grid_weights / jnp.sum(grid_weights) * grid_nominator
 
         # densities: (xxx, 2)
+        # todo should we rescale density
+        # we should not rescale coefficients_input (should be 512)
+        #
         densities = unscaled_densities[indices]
 
         # calculate
