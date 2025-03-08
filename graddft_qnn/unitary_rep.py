@@ -57,20 +57,20 @@ class O_h:
         return [O_h._180_deg_z_rot_matrix(), np.eye(8)]
 
     @staticmethod
-    def _180_deg_rot_3_axis():
+    def _180_deg_rot_3_axis(size=2):
         return [
-            O_h._180_deg_x_rot_matrix(2),
-            O_h._180_deg_y_rot_matrix(2),
-            O_h._180_deg_z_rot_matrix(2),
+            O_h._180_deg_x_rot_matrix(size),
+            O_h._180_deg_y_rot_matrix(size),
+            O_h._180_deg_z_rot_matrix(size),
             # np.eye(8),
         ]
 
     @staticmethod
-    def _180_deg_rot_ref():
+    def _180_deg_rot_ref(size=2):
         return [
-            O_h._180_deg_x_rot_matrix(2),
-            O_h._180_deg_y_rot_matrix(2),
-            O_h._180_deg_z_rot_matrix(2),
+            O_h._180_deg_x_rot_matrix(size),
+            O_h._180_deg_y_rot_matrix(size),
+            O_h._180_deg_z_rot_matrix(size),
             # np.eye(8),
             O_h.reflection_yz(),
         ]

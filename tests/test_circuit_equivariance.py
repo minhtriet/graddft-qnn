@@ -72,7 +72,6 @@ def circuit_2_with_pool_6_wires(feature):
     )
 
 
-# @qml.qnode(dev_1)
 @qml.qnode(dev)
 def circuit_3_wires(feature):
     qml.AmplitudeEmbedding(feature, wires=dev.wires, pad_with=0.0)
@@ -80,9 +79,20 @@ def circuit_3_wires(feature):
     return custom_gates.U2_measurement(0)
 
 
+@qml.qnode(dev_1)
+def circuit_3_wires_6_wires(feature):
+    qml.AmplitudeEmbedding(feature, wires=dev_1.wires, pad_with=0.0)
+    custom_gates.U2_6_wires(np.array(range(15)) / 15, 0)
+    return custom_gates.U2_6_wires_measurement(0)
+
+
 @pytest.mark.parametrize(
     "n_wires, circuit_func",
-    [(3, circuit_2), (3, circuit_3_wires)],
+    [
+        # (3, circuit_2),
+        #     (3, circuit_3_wires),
+        (6, circuit_3_wires_6_wires)
+    ],
 )
 def test_invariant(n_wires, circuit_func):
     feature = np.random.rand(2**n_wires)

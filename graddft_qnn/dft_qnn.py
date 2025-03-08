@@ -1,6 +1,7 @@
 import dataclasses
 import logging
-
+import jax
+import jax.numpy as jnp
 import flax.linen as nn
 import numpy as np
 import pennylane as qml
@@ -11,9 +12,6 @@ from graddft_qnn import custom_gates
 
 @dataclasses.dataclass
 class DFTQNN(nn.Module):
-    """
-    Here we define the circuit as well as the gates
-    """
 
     dev: qml.device
 
@@ -27,24 +25,13 @@ class DFTQNN(nn.Module):
             :return: should be 1 measurement, so that graddft_qnn.qnn_functional.QNNFunctional.xc_energy works
             """
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
-            # 1st layer
-            for i in self.dev.wires[::3]:
-                custom_gates.U1(theta, i)
-            # make sure the measurement is unique for each point
-            # todo find all invariant Pauli words (2^9N tensor product) (only needs N=9 measurements)
-            # todo the test should return a vector rather than a scalar?
-            # todo run the network of the gradDFT to see the shapes of output
+            custom_gates.U2_6_wires(theta, 0)
+            return custom_gates.U2_6_wires_measurement(0)
 
-            return (
-                qml.expval(qml.X(0)),
-                # qml.expval(qml.X(1)),
-                # qml.expval(qml.X(2)),
-                # qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2)),
-            )
-
-        theta = self.param("theta", nn.initializers.normal(), (4,))
-
+        jax.config.update("jax_enable_x64", True)
+        theta = self.param('theta', nn.initializers.he_normal(), (2**len(self.dev.wires),1), jnp.float32)
         result = circuit(feature, theta)
+        # result shape should be (grid*grid*grid, 1)
         return result
 
     @staticmethod
@@ -62,7 +49,6 @@ class DFTQNN(nn.Module):
 
     @staticmethod
     def twirling_(ansatz: np.array, unitary_reps: list[np.array]):
-        generator = np.zeros_like(ansatz, dtype=np.complex64)
         ansatz = ansatz.astype(np.complex64)
         for unitary_rep in unitary_reps:
             twirled = 0.5 * (ansatz + unitary_rep @ ansatz @ unitary_rep.conjugate())

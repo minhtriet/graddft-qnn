@@ -14,8 +14,6 @@ from graddft_qnn.qnn_functional import QNNFunctional
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
-    # todo down sample the 3d image
-    # todo entry point must be jax array, not a scalar or anything
     return rho
 
 
@@ -79,7 +77,11 @@ if __name__ == "__main__":
 
     key = PRNGKey(42)
     coeff_input = coefficient_inputs(HF_molecule)
-    parameters = dft_qnn.init(key, coeff_input)
+    indices = jnp.round(jnp.linspace(0, coeff_input.shape[0], 2**num_qubits)).astype(
+        jnp.int32
+    )
+    coeff_input = coeff_input[indices]
+    parameters = dft_qnn.init(key, coeff_input)  # why parameters is empty
 
     nf = QNNFunctional(
         coefficients=dft_qnn,
@@ -109,6 +111,8 @@ if __name__ == "__main__":
             predicted_energy,
             "Cost value:",
             cost_value,
+            "Grad: ",
+            (jnp.max(grads['params']['theta']), jnp.min(grads['params']['theta']))
         )
         updates, opt_state = tx.update(grads, opt_state, parameters)
         parameters = apply_updates(parameters, updates)

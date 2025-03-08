@@ -31,7 +31,7 @@ class QNNFunctional(gd.Functional):
         """
         # down-sampling coeff_inputs, densities
         # rescale densities and grid_weights
-        n_qubits = 9
+        n_qubits = 6
         # unscaled_coeff_inputs: (xxx, 2)
 
         assert jnp.array(
@@ -39,13 +39,13 @@ class QNNFunctional(gd.Functional):
                 unscaled_coefficient_inputs[:, 0], unscaled_coefficient_inputs[:, 1]
             )
         )
-        nominator = jnp.sum(unscaled_coefficient_inputs, axis=0)
+        numerator = jnp.sum(unscaled_coefficient_inputs, axis=0)
         indices = jnp.round(
             jnp.linspace(0, unscaled_coefficient_inputs.shape[0], 2**n_qubits)
         ).astype(jnp.int32)  # taking 2**n_qubits indices
         unnormalized_coefficient_inputs = unscaled_coefficient_inputs[indices]
         denominator = jnp.sum(unnormalized_coefficient_inputs, axis=0)
-        coefficient_inputs = unnormalized_coefficient_inputs / denominator * nominator
+        coefficient_inputs = unnormalized_coefficient_inputs / denominator * numerator
 
         grid_nominator = jnp.sum(grid.weights)
         grid_weights = grid.weights[indices]
@@ -59,7 +59,10 @@ class QNNFunctional(gd.Functional):
 
         # calculate
         coefficients = self.coefficients.apply(params, coefficient_inputs)
-        coefficients = coefficients[: coefficient_inputs.shape[0]]  # shape: (xxx)
+        # HACK!!!
+        coefficients = jnp.array([coefficients[i][i] for i in range(len(coefficients))])
+        # end of HACK
+        coefficients = coefficients[: coefficient_inputs.shape[0]]
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
         # coeffs have norm of 1, and  we are multiplying with very small number here, should we normalize density for the sake of the neural net optimization, or we want to obey the physics semantic?
         # look at the 3d image, what we have is a molecule. A large part is 0
