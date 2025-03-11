@@ -1,3 +1,5 @@
+import sys
+
 import grad_dft as gd
 import pennylane as qml
 import yaml
@@ -90,9 +92,9 @@ if __name__ == "__main__":
     )
     # sum of all charge density * volume = number of electrons
     # Start the training
-    learning_rate = 1
+    learning_rate = 0.5
     momentum = 0.9
-    n_epochs = 20
+    n_epochs = 1000
 
     tx = adam(learning_rate=learning_rate, b1=momentum)
     opt_state = tx.init(parameters)
@@ -100,7 +102,7 @@ if __name__ == "__main__":
     predictor = gd.non_scf_predictor(nf)
     # pca normalization is correct or not, because only coeff inputs is normalized, still have grid, density
 
-    for iteration in tqdm(range(n_epochs), desc="Training epoch"):
+    for iteration in tqdm(range(n_epochs), desc="Training epoch", file=sys.stdout):
         (cost_value, predicted_energy), grads = gd.simple_energy_loss(
             parameters, predictor, HF_molecule, ground_truth_energy
         )
