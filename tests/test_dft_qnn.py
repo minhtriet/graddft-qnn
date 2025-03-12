@@ -1,8 +1,12 @@
+import functools
+
 import numpy as np
 import pennylane as qml
 import pytest
 
+from graddft_qnn.custom_gates import words
 from graddft_qnn.dft_qnn import DFTQNN
+from graddft_qnn.unitary_rep import O_h
 
 
 def fixed_circuit(feature, psi, theta, phi):
@@ -66,13 +70,85 @@ def test_UO3_gate(feature, psi, theta, phi, group_matrix, expected):
 
 
 def test_twirling():
-    X_1 = qml.matrix(qml.X(0) @ qml.I(1))
-    X_2 = qml.matrix(qml.I(0) @ qml.X(1))
-    received = DFTQNN.twirling_(X_1, [qml.SWAP.compute_matrix()])
-    expected = 0.5 * (X_1 + X_2)
-    assert np.allclose(received, expected)
+    sentence = ["X"] * 6
+    sentence_matrix = [words[x] for x in sentence]
+    matrix = functools.reduce(np.kron, sentence_matrix)
+    size = np.cbrt(matrix.shape[0])
+    assert size.is_integer()
+    assert np.allclose(matrix, DFTQNN.twirling_(matrix, O_h.C2_group(int(size))))
 
-    Y_1 = qml.matrix(qml.Y(0) @ qml.I(1))
-    received = DFTQNN.twirling_(Y_1, [qml.matrix(qml.X(0) @ qml.X(1))])
-    expected = np.zeros(4)
-    assert np.allclose(received, expected)
+    sentence = ["X", "X", "X", "X", "I", "Z"]
+    sentence_matrix = [words[x] for x in sentence]
+    matrix = functools.reduce(np.kron, sentence_matrix)
+    assert DFTQNN.twirling_(matrix, O_h.C2_group(int(size))) is None
+
+
+def test_gate_design():
+    gate_gen = DFTQNN.gate_design(6, O_h.C2_group(4))
+    gate_gen = ["".join(g) for g in gate_gen]
+    assert gate_gen == [
+        "XXXXXX",
+        "XXXXXI",
+        "XXXXYY",
+        "XXXXYZ",
+        "XXXXZY",
+        "XXXXZZ",
+        "XXXXIX",
+        "XXXXII",
+        "XXXIXX",
+        "XXXIXI",
+        "XXXIYY",
+        "XXXIYZ",
+        "XXXIZY",
+        "XXXIZZ",
+        "XXXIIX",
+        "XXXIII",
+        "XXYYXX",
+        "XXYYXI",
+        "XXYYYY",
+        "XXYYYZ",
+        "XXYYZY",
+        "XXYYZZ",
+        "XXYYIX",
+        "XXYYII",
+        "XXYZXX",
+        "XXYZXI",
+        "XXYZYY",
+        "XXYZYZ",
+        "XXYZZY",
+        "XXYZZZ",
+        "XXYZIX",
+        "XXYZII",
+        "XXZYXX",
+        "XXZYXI",
+        "XXZYYY",
+        "XXZYYZ",
+        "XXZYZY",
+        "XXZYZZ",
+        "XXZYIX",
+        "XXZYII",
+        "XXZZXX",
+        "XXZZXI",
+        "XXZZYY",
+        "XXZZYZ",
+        "XXZZZY",
+        "XXZZZZ",
+        "XXZZIX",
+        "XXZZII",
+        "XXIXXX",
+        "XXIXXI",
+        "XXIXYY",
+        "XXIXYZ",
+        "XXIXZY",
+        "XXIXZZ",
+        "XXIXIX",
+        "XXIXII",
+        "XXIIXX",
+        "XXIIXI",
+        "XXIIYY",
+        "XXIIYZ",
+        "XXIIZY",
+        "XXIIZZ",
+        "XXIIIX",
+        "XXIIII",
+    ]

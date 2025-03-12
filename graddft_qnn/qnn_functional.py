@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 import grad_dft as gd
 import jax
+import yaml
 from grad_dft import Solid, abs_clip
 from grad_dft.molecule import Grid, Molecule
 from jax import numpy as jnp
@@ -31,7 +32,12 @@ class QNNFunctional(gd.Functional):
         """
         # down-sampling coeff_inputs, densities
         # rescale densities and grid_weights
-        n_qubits = 6
+        # todo fine grid goes to non xc energy, coarse grid goes to xc
+        with open("config.yaml") as file:
+            data = yaml.safe_load(file)
+            if "QBITS" not in data:
+                raise KeyError("YAML file must contain 'QBITS' key")
+            n_qubits = data["QBITS"]
         # unscaled_coeff_inputs: (xxx, 2)
 
         assert jnp.array(

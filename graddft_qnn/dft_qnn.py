@@ -1,61 +1,88 @@
 import dataclasses
-import logging
+import functools
+import itertools
+
+import flax.linen as nn
 import jax
 import jax.numpy as jnp
-import flax.linen as nn
 import numpy as np
 import pennylane as qml
 from flax.typing import Array
+from tqdm import tqdm
 
 from graddft_qnn import custom_gates
 
 
 @dataclasses.dataclass
 class DFTQNN(nn.Module):
-
     dev: qml.device
+    ansatz_gen: list[np.array]
+    measurements: list[np.array]
 
     @nn.compact
     def __call__(self, feature: Array) -> Array:
         @qml.qnode(self.dev)
-        def circuit(feature, theta):
+        def circuit(feature, theta, gate_gens, measurements):
             """
             :param instance: an instance of the class Functional.
             :param rhoinputs: input to the neural network, in the form of an array.
             :return: should be 1 measurement, so that graddft_qnn.qnn_functional.QNNFunctional.xc_energy works
-            """
-            qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
+
             custom_gates.U2_6_wires(theta, 0)
             return custom_gates.U2_6_wires_measurement(0)
+            """
+            qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
+            gates = [
+                custom_gates.generate_R_pauli(theta[idx], gen)
+                for idx, gen in enumerate(gate_gens)
+            ]
+            for gate in gates:
+                qml.QubitUnitary(gate, wires=self.dev.wires)
+            return [qml.expval(measurement) for measurement in measurements]
 
         jax.config.update("jax_enable_x64", True)
-        theta = self.param('theta', nn.initializers.he_normal(), (2**len(self.dev.wires),1), jnp.float32)
-        result = circuit(feature, theta)
-        # result shape should be (grid*grid*grid, 1)
+        theta = self.param(
+            "theta",
+            nn.initializers.he_normal(),
+            (2 ** len(self.dev.wires), 1),
+            jnp.float32,
+        )
+        result = circuit(feature, theta, self.ansatz_gen, self.measurements)
         return result
-
-    @staticmethod
-    def twirling(ansatz: np.array, unitary_reps: list[np.array], print_debug=False):
-        ansatz = ansatz.astype(np.complex64)
-        generator = np.array(ansatz)  # deep copy
-        for unitary_rep in unitary_reps:
-            generator += unitary_rep @ ansatz @ unitary_rep.conjugate()
-        generator /= len(unitary_reps) + 1
-        if np.allclose(generator, np.zeros_like(generator)):
-            if print_debug:
-                logging.info("This ansatz gate doesn't work with this group")
-            return None
-        return generator
 
     @staticmethod
     def twirling_(ansatz: np.array, unitary_reps: list[np.array]):
         ansatz = ansatz.astype(np.complex64)
+        coeffs = []
         for unitary_rep in unitary_reps:
             twirled = 0.5 * (ansatz + unitary_rep @ ansatz @ unitary_rep.conjugate())
             if np.allclose(twirled, np.zeros_like(twirled)):
-                print("All zero")
+                return None
             else:
-                print(twirled)
-                print(qml.pauli_decompose(twirled))
-            print()
-        return twirled
+                coeffs.append(qml.pauli_decompose(twirled).coeffs)
+        if np.allclose(coeffs, [[1.0]] * len(unitary_reps)):
+            return ansatz
+        return None
+
+    @staticmethod
+    def _sentence_twirl(sentence: list[str], invariant_rep: list[np.array]):
+        sentence_matrix = [custom_gates.words[x] for x in sentence]
+        matrix = functools.reduce(np.kron, sentence_matrix)
+        return DFTQNN.twirling_(matrix, invariant_rep)
+
+    @staticmethod
+    def gate_design(
+        num_wires: int, invariant_rep: list[np.array]
+    ) -> tuple[list[str], list[str]]:
+        ansatz_gen = []
+        for combination in tqdm(
+            itertools.product(custom_gates.words.keys(), repeat=num_wires),
+            total=len(custom_gates.words) ** num_wires,
+            desc="Creating invariant gates generator",
+        ):
+            if DFTQNN._sentence_twirl(combination, invariant_rep) is not None:
+                ansatz_gen.append(combination)
+                if len(ansatz_gen) == 2**num_wires:
+                    break
+        assert len(ansatz_gen) == 2**num_wires
+        return ansatz_gen

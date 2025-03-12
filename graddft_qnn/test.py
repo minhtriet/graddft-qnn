@@ -1,6 +1,7 @@
 import sys
 
 import grad_dft as gd
+import numpy as np
 import pennylane as qml
 import yaml
 from jax import numpy as jnp
@@ -10,8 +11,10 @@ from optax import adam, apply_updates
 from pyscf import dft, gto
 from tqdm import tqdm
 
+from graddft_qnn import custom_gates
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.qnn_functional import QNNFunctional
+from graddft_qnn.unitary_rep import O_h
 
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
@@ -69,7 +72,15 @@ if __name__ == "__main__":
             raise KeyError("YAML file must contain 'QBITS' key")
         num_qubits = data["QBITS"]
         dev = qml.device("default.qubit", wires=num_qubits)
-    dft_qnn = DFTQNN(dev)
+
+    size = np.cbrt(2 ** len(dev.wires))
+    assert size.is_integer()
+    size = int(size)
+    gates_gen = DFTQNN.gate_design(len(dev.wires), O_h.C2_group(size))
+    measurement_expvals = [
+        custom_gates.generate_operators(measurement) for measurement in gates_gen
+    ]
+    dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals)
 
     mol = gto.M(atom=[["H", (0, 0, 0)], ["F", (0, 0, 1.1)]], basis="def2-tzvp")
     mean_field = dft.UKS(mol)
@@ -83,13 +94,14 @@ if __name__ == "__main__":
         jnp.int32
     )
     coeff_input = coeff_input[indices]
-    parameters = dft_qnn.init(key, coeff_input)  # why parameters is empty
+    parameters = dft_qnn.init(key, coeff_input)
 
     nf = QNNFunctional(
         coefficients=dft_qnn,
         energy_densities=energy_densities,
         coefficient_inputs=coefficient_inputs,
     )
+    # todo run on different molecule, compare to classical results
     # sum of all charge density * volume = number of electrons
     # Start the training
     learning_rate = 0.5
@@ -100,7 +112,6 @@ if __name__ == "__main__":
     opt_state = tx.init(parameters)
 
     predictor = gd.non_scf_predictor(nf)
-    # pca normalization is correct or not, because only coeff inputs is normalized, still have grid, density
 
     for iteration in tqdm(range(n_epochs), desc="Training epoch", file=sys.stdout):
         (cost_value, predicted_energy), grads = gd.simple_energy_loss(
@@ -114,27 +125,16 @@ if __name__ == "__main__":
             "Cost value:",
             cost_value,
             "Grad: ",
-            (jnp.max(grads['params']['theta']), jnp.min(grads['params']['theta']))
+            (jnp.max(grads["params"]["theta"]), jnp.min(grads["params"]["theta"])),
         )
         updates, opt_state = tx.update(grads, opt_state, parameters)
         parameters = apply_updates(parameters, updates)
 
 
 """
-scale back the electron density to 3d (symetry)
-understand the data a bit better
-
-look at different ways of downscaling (deleting every 3th data point)
-matrix - product state simulator
-embedding 3d point cloud to qnn, convolution quantum neural net
-
-Create training dataset
-Better strategy than just amplitude embedding
-
-Coeff inputs of E_xc is standardized from 0 mean, unitary variance.
-    The loss is to what range, do we need some post processing
-
-To compare, we need to compare with classic conv net
-
-loss - iteration vs equivariant approach
+1. automate the twirling, measurement + ansatz
+1. do 2 3 molecules, compare to classical
+2. increase finess of grids
+3. log the xc_energy + total_energy
+4. regularization (params 0 - 2pi)
 """

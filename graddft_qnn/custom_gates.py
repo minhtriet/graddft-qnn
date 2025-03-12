@@ -3,7 +3,6 @@ import functools
 import numpy as np
 import pennylane as qml
 from jax.scipy.linalg import expm
-import jax
 
 
 def U1(theta, i):
@@ -303,3 +302,11 @@ def generate_operators(pauli_string: str) -> qml.ops.op_math.prod:
     operators = [op(wires=i) for i, op in enumerate(ops)]
     combined_op = functools.reduce(lambda op1, op2: op1 @ op2, operators)
     return combined_op
+
+
+words = {
+    "X": qml.X.compute_matrix(),
+    "Y": qml.Y.compute_matrix(),
+    "Z": qml.Z.compute_matrix(),
+    "I": qml.I.compute_matrix(),
+}
