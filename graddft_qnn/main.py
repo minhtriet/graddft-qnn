@@ -1,3 +1,5 @@
+import logging
+import pathlib
 import sys
 
 import grad_dft as gd
@@ -13,6 +15,7 @@ from tqdm import tqdm
 
 from graddft_qnn import custom_gates
 from graddft_qnn.dft_qnn import DFTQNN
+from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.qnn_functional import QNNFunctional
 from graddft_qnn.unitary_rep import O_h
 
@@ -77,10 +80,14 @@ if __name__ == "__main__":
     assert size.is_integer()
     size = int(size)
 
-    gates_gen = DFTQNN.gate_design(
-        len(dev.wires), [O_h._180_deg_x_rot_matrix(size, True)]
-    )
-    # gates_gen = DFTQNN.gate_design(len(dev.wires), O_h.C2_group(size, True))
+    ansatz_io = AnsatzIO()
+    filename = f"ansatz_{num_qubits}_qubits.txt"
+    if pathlib.Path(filename).exists():
+        gates_gen = ansatz_io.read_from_file(filename)
+        logging.info(f"Loaded ansatz from {filename}")
+    else:
+        gates_gen = DFTQNN.gate_design(len(dev.wires), O_h.C2_group(size, True))
+        ansatz_io.write_to_file(filename, gates_gen)
     measurement_expvals = [
         custom_gates.generate_operators(measurement) for measurement in gates_gen
     ]

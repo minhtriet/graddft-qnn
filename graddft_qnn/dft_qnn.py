@@ -73,7 +73,7 @@ class DFTQNN(nn.Module):
             else:
                 coeffs.append(twirled)
         for i in range(1, len(coeffs)):
-            if not np.allclose(coeffs[i], coeffs[0]):
+            if not np.allclose(qml.matrix(coeffs[i]), qml.matrix(coeffs[0])):
                 return None
         return ansatz
 
@@ -93,7 +93,7 @@ class DFTQNN(nn.Module):
         for combination in tqdm(
             itertools.product(custom_gates.words.keys(), repeat=num_wires),
             total=len(custom_gates.words) ** num_wires,
-            desc="Creating invariant gates generator",
+            desc=f"Creating {2**num_wires} invariant gates generator",
         ):
             if DFTQNN._sentence_twirl(combination, invariant_rep) is not None:
                 ansatz_gen.append(combination)
