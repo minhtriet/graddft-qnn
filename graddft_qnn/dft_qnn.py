@@ -32,11 +32,14 @@ class DFTQNN(nn.Module):
             """
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             gates = [
-                custom_gates.generate_R_pauli(theta[idx], gen)
+                # custom_gates.generate_R_pauli(theta[idx], gen)
+                custom_gates.generate_R_pauli(
+                    theta[idx][0], gen
+                )  # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
                 for idx, gen in enumerate(gate_gens)
             ]
-            for gate in gates:
-                qml.QubitUnitary(gate, wires=self.dev.wires)
+            for i, gate in enumerate(gates):
+                qml.QubitUnitary(qml.matrix(gate), wires=self.dev.wires)
             return [qml.expval(measurement) for measurement in measurements]
 
         jax.config.update("jax_enable_x64", True)
@@ -46,7 +49,9 @@ class DFTQNN(nn.Module):
             (2 ** len(self.dev.wires), 1),
             jnp.float32,
         )
-        result = circuit(feature, theta, self.ansatz_gen, self.measurements)
+        result = circuit(
+            feature, theta, list(self.ansatz_gen), list(self.measurements)
+        )  # self.ansatz_gen becomes a tuple
         return result
 
     @staticmethod

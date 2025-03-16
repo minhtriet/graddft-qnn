@@ -2,6 +2,7 @@ import functools
 
 import numpy as np
 import pennylane as qml
+import scipy
 from jax.scipy.linalg import expm
 
 
@@ -259,7 +260,9 @@ def RYYZ(theta=3.1415):
 
 
 def RYZY(theta=3.1415):
-    return expm([-0.5j * theta * qml.matrix(qml.Y(0) @ qml.Z(1) @ qml.Y(2))])
+    return scipy.linalg.expm(
+        [-0.5j * theta * qml.matrix(qml.Y(0) @ qml.Z(1) @ qml.Y(2))]
+    )
 
 
 def RYZZ(theta=3.1415):
@@ -275,14 +278,16 @@ def RZYZ(theta=3.1415):
 
 
 def RZZZ(theta=3.1415):
-    return expm([-0.5j * theta * qml.matrix(qml.Z(0) @ qml.Z(1) @ qml.Z(2))])
+    return scipy.linalg.expm(
+        [-0.5j * theta * qml.matrix(qml.Z(0) @ qml.Z(1) @ qml.Z(2))]
+    )
 
 
 def RZZY(theta=3.1415):
     return expm([-0.5j * theta * qml.matrix(qml.Z(0) @ qml.Z(1) @ qml.Y(2))])
 
 
-def generate_R_pauli(theta: float, pauli_string: list | str):
+def generate_R_pauli(theta: float, pauli_string: list | str) -> qml.ops.op_math.Exp:
     """
     Takes in a p={X,Y,Z,I}^n string and output Rp
     For example: generate_R_pauli(pi, ["X", "Y", "Z", "X"] generates a R_XYZX gate
@@ -290,11 +295,13 @@ def generate_R_pauli(theta: float, pauli_string: list | str):
     if isinstance(pauli_string, str):
         pauli_string = list(pauli_string)
     assert set(pauli_string).issubset({"X", "Y", "Z", "I"})
-    ops = [getattr(qml, word).compute_matrix() for word in pauli_string]
-    return expm(-0.5j * theta * functools.reduce(np.kron, ops))
+    ops_prod = qml.prod(
+        *[getattr(qml, word)(idx) for idx, word in enumerate(pauli_string)]
+    )
+    return qml.exp(-0.5j * theta * ops_prod)
 
 
-def generate_operators(pauli_string: str) -> qml.ops.op_math.prod:
+def generate_operators(pauli_string: str) -> qml.ops.op_math.Prod:
     if isinstance(pauli_string, str):
         pauli_string = list(pauli_string)
     assert set(pauli_string).issubset({"X", "Y", "Z", "I"})
