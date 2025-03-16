@@ -19,6 +19,8 @@ from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.qnn_functional import QNNFunctional
 from graddft_qnn.unitary_rep import O_h
 
+logging.getLogger().setLevel(logging.INFO)
+
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
@@ -84,7 +86,7 @@ if __name__ == "__main__":
     filename = f"ansatz_{num_qubits}_qubits.txt"
     if pathlib.Path(filename).exists():
         gates_gen = ansatz_io.read_from_file(filename)
-        logging.info(f"Loaded ansatz from {filename}")
+        logging.info(f"Loaded ansatz generator from {filename}")
     else:
         gates_gen = DFTQNN.gate_design(len(dev.wires), O_h.C2_group(size, True))
         ansatz_io.write_to_file(filename, gates_gen)
@@ -117,7 +119,7 @@ if __name__ == "__main__":
     # Start the training
     learning_rate = 0.5
     momentum = 0.9
-    n_epochs = 1000
+    n_epochs = 20
 
     tx = adam(learning_rate=learning_rate, b1=momentum)
     opt_state = tx.init(parameters)

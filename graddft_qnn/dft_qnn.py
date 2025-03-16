@@ -90,14 +90,16 @@ class DFTQNN(nn.Module):
         num_wires: int, invariant_rep: list[np.array]
     ) -> tuple[list[str], list[str]]:
         ansatz_gen = []
-        for combination in tqdm(
-            itertools.product(custom_gates.words.keys(), repeat=num_wires),
-            total=len(custom_gates.words) ** num_wires,
-            desc=f"Creating {2**num_wires} invariant gates generator",
-        ):
-            if DFTQNN._sentence_twirl(combination, invariant_rep) is not None:
-                ansatz_gen.append(combination)
-                if len(ansatz_gen) == 2**num_wires:
-                    break
+        with tqdm(
+            total=2**num_wires, desc="Creating invariant gates generator"
+        ) as pbar:
+            for combination in itertools.product(
+                custom_gates.words.keys(), repeat=num_wires
+            ):
+                if DFTQNN._sentence_twirl(combination, invariant_rep) is not None:
+                    ansatz_gen.append(combination)
+                    pbar.update()
+                    if len(ansatz_gen) == 2**num_wires:
+                        break
         assert len(ansatz_gen) == 2**num_wires
         return ansatz_gen
