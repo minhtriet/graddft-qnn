@@ -1,5 +1,4 @@
 import dataclasses
-import functools
 import itertools
 
 import flax.linen as nn
@@ -65,10 +64,26 @@ class DFTQNN(nn.Module):
         return None
 
     @staticmethod
+    def twirling_2_(ansatz: np.array, unitary_reps: list[np.array]):
+        coeffs = []
+        for unitary_rep in unitary_reps:
+            twirled = 0.5 * (ansatz + unitary_rep @ ansatz @ qml.adjoint(unitary_rep))
+            if np.allclose(qml.matrix(twirled), np.zeros_like(qml.matrix(twirled))):
+                return None
+            else:
+                coeffs.append(twirled)
+        for i in range(1, len(coeffs)):
+            if not np.allclose(coeffs[i], coeffs[0]):
+                return None
+        return ansatz
+
+    @staticmethod
     def _sentence_twirl(sentence: list[str], invariant_rep: list[np.array]):
-        sentence_matrix = [custom_gates.words[x] for x in sentence]
-        matrix = functools.reduce(np.kron, sentence_matrix)
-        return DFTQNN.twirling_(matrix, invariant_rep)
+        sentence = qml.prod(
+            *[getattr(qml, word)(idx) for idx, word in enumerate(sentence)]
+        )
+        # return DFTQNN.twirling_(matrix, invariant_rep)
+        return DFTQNN.twirling_2_(sentence, invariant_rep)
 
     @staticmethod
     def gate_design(

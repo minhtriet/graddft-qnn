@@ -76,7 +76,11 @@ if __name__ == "__main__":
     size = np.cbrt(2 ** len(dev.wires))
     assert size.is_integer()
     size = int(size)
-    gates_gen = DFTQNN.gate_design(len(dev.wires), O_h.C2_group(size))
+
+    gates_gen = DFTQNN.gate_design(
+        len(dev.wires), [O_h._180_deg_x_rot_matrix(size, True)]
+    )
+    # gates_gen = DFTQNN.gate_design(len(dev.wires), O_h.C2_group(size, True))
     measurement_expvals = [
         custom_gates.generate_operators(measurement) for measurement in gates_gen
     ]
