@@ -38,8 +38,8 @@ class DFTQNN(nn.Module):
                 )  # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
                 for idx, gen in enumerate(gate_gens)
             ]
-            for i, gate in enumerate(gates):
-                qml.QubitUnitary(qml.matrix(gate), wires=self.dev.wires)
+            for gate in gates:
+                gate
             return [qml.expval(measurement) for measurement in measurements]
 
         jax.config.update("jax_enable_x64", True)

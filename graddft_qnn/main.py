@@ -1,7 +1,7 @@
 import logging
 import pathlib
 import sys
-
+import jax
 import grad_dft as gd
 import numpy as np
 import pennylane as qml
@@ -76,6 +76,9 @@ if __name__ == "__main__":
         if "QBITS" not in data:
             raise KeyError("YAML file must contain 'QBITS' key")
         num_qubits = data["QBITS"]
+        n_epochs = data["TRAINING"]["N_EPOCHS"]
+        learning_rate = data["TRAINING"]["LEARNING_RATE"]
+        momentum = data["TRAINING"]["MOMENTUM"]
         dev = qml.device("default.qubit", wires=num_qubits)
 
     size = np.cbrt(2 ** len(dev.wires))
@@ -107,20 +110,15 @@ if __name__ == "__main__":
         jnp.int32
     )
     coeff_input = coeff_input[indices]
+    logging.info("Initializing the params")
     parameters = dft_qnn.init(key, coeff_input)
+    logging.info("Finished initializing the params")
 
     nf = QNNFunctional(
         coefficients=dft_qnn,
         energy_densities=energy_densities,
         coefficient_inputs=coefficient_inputs,
     )
-    # todo run on different molecule, compare to classical results
-    # sum of all charge density * volume = number of electrons
-    # Start the training
-    learning_rate = 0.5
-    momentum = 0.9
-    n_epochs = 20
-
     tx = adam(learning_rate=learning_rate, b1=momentum)
     opt_state = tx.init(parameters)
 
@@ -142,12 +140,11 @@ if __name__ == "__main__":
         )
         updates, opt_state = tx.update(grads, opt_state, parameters)
         parameters = apply_updates(parameters, updates)
-
-
 """
 1. automate the twirling, measurement + ansatz
 1. do 2 3 molecules, compare to classical
 2. increase finess of grids
 3. log the xc_energy + total_energy
 4. regularization (params 0 - 2pi)
+# todo calculate the number of symmetric equivalent pixel rather than all pixels
 """
