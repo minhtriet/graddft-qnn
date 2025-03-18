@@ -1,7 +1,7 @@
 import logging
 import pathlib
 import sys
-import jax
+
 import grad_dft as gd
 import numpy as np
 import pennylane as qml

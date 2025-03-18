@@ -36,7 +36,7 @@ class DFTQNN(nn.Module):
                 custom_gates.generate_R_pauli(
                     theta[idx][0], gen
                 )  # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
-                for idx, gen in enumerate(gate_gens)
+                for idx, gen in enumerate(gate_gens[3:33])
             ]
             for gate in gates:
                 gate
