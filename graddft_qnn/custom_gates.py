@@ -315,5 +315,5 @@ words = {
     "X": qml.X.compute_matrix(),
     "Y": qml.Y.compute_matrix(),
     "Z": qml.Z.compute_matrix(),
-    # "I": qml.I.compute_matrix(),
+    "I": qml.I.compute_matrix(),
 }

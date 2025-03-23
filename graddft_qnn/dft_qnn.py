@@ -1,8 +1,6 @@
-import dataclasses
 import itertools
 
 import flax.linen as nn
-import jax
 import jax.numpy as jnp
 import numpy as np
 import pennylane as qml
@@ -12,16 +10,15 @@ from tqdm import tqdm
 from graddft_qnn import custom_gates
 
 
-@dataclasses.dataclass
 class DFTQNN(nn.Module):
     dev: qml.device
     ansatz_gen: list[np.array]
     measurements: list[np.array]
+    gate_indices: list[int]
 
-    @nn.compact
-    def __call__(self, feature: Array) -> Array:
+    def circuit(self, feature, theta, gate_gens, measurements):
         @qml.qnode(self.dev)
-        def circuit(feature, theta, gate_gens, measurements):
+        def _circuit(feature, theta, gate_gens, measurements):
             """
             :param instance: an instance of the class Functional.
             :param rhoinputs: input to the neural network, in the form of an array.
@@ -30,29 +27,34 @@ class DFTQNN(nn.Module):
             custom_gates.U2_6_wires(theta, 0)
             return custom_gates.U2_6_wires_measurement(0)
             """
+            # if type(theta) == jax._src.interpreters.ad.JVPTracer:
+            #     print(jnp.max(theta).aval, jnp.min(theta).aval, jnp.var(theta).aval, np.mean(theta).aval)
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
-            gates = [
-                # custom_gates.generate_R_pauli(theta[idx], gen)
+            [
                 custom_gates.generate_R_pauli(
                     theta[idx][0], gen
                 )  # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
-                for idx, gen in enumerate(gate_gens[3:33])
+                for idx, gen in enumerate(gate_gens)
             ]
-            for gate in gates:
-                gate
+            # return [qml.expval(measurements[0])]
             return [qml.expval(measurement) for measurement in measurements]
 
-        jax.config.update("jax_enable_x64", True)
+        result = jnp.array(_circuit(feature, theta, gate_gens, measurements))
+        return result
+
+    @nn.compact
+    def __call__(self, feature: Array) -> Array:
         theta = self.param(
             "theta",
             nn.initializers.he_normal(),
-            (2 ** len(self.dev.wires), 1),
+            # (2 ** len(self.dev.wires), 1),
+            (10, 1),
             jnp.float32,
         )
-        result = circuit(
-            feature, theta, list(self.ansatz_gen), list(self.measurements)
+        selected_gates_gen = list(map(lambda i: self.ansatz_gen[i], self.gate_indices))
+        return self.circuit(
+            feature, theta, selected_gates_gen, list(self.measurements)
         )  # self.ansatz_gen becomes a tuple
-        return result
 
     @staticmethod
     def twirling_(ansatz: np.array, unitary_reps: list[np.array]):
@@ -94,6 +96,7 @@ class DFTQNN(nn.Module):
     def gate_design(
         num_wires: int, invariant_rep: list[np.array]
     ) -> tuple[list[str], list[str]]:
+        switch_threshold = int(np.ceil(2**num_wires / len(custom_gates.words)))
         ansatz_gen = []
         with tqdm(
             total=2**num_wires, desc="Creating invariant gates generator"
@@ -102,6 +105,13 @@ class DFTQNN(nn.Module):
                 custom_gates.words.keys(), repeat=num_wires
             ):
                 if DFTQNN._sentence_twirl(combination, invariant_rep) is not None:
+                    if (
+                        combination[0]
+                        != list(custom_gates.words)[len(ansatz_gen) // switch_threshold]
+                    ):
+                        # E.g we want 10 ansatz and 3 options (x,y,z) then the first 3 ansatz should start
+                        # with x, then next 3 with y, then next with z
+                        continue
                     ansatz_gen.append(combination)
                     pbar.update()
                     if len(ansatz_gen) == 2**num_wires:

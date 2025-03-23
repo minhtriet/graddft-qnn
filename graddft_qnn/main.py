@@ -3,6 +3,7 @@ import pathlib
 import sys
 
 import grad_dft as gd
+import jax
 import numpy as np
 import pennylane as qml
 import yaml
@@ -20,11 +21,13 @@ from graddft_qnn.qnn_functional import QNNFunctional
 from graddft_qnn.unitary_rep import O_h
 
 logging.getLogger().setLevel(logging.INFO)
+np.random.seed(42)
 
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
-    return rho
+    # change: total spin, also why it is not +/-0.5?
+    return jnp.sum(rho, 1)
 
 
 def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
@@ -81,28 +84,49 @@ if __name__ == "__main__":
         momentum = data["TRAINING"]["MOMENTUM"]
         dev = qml.device("default.qubit", wires=num_qubits)
 
+    jax.config.update("jax_enable_x64", True)
     size = np.cbrt(2 ** len(dev.wires))
     assert size.is_integer()
     size = int(size)
 
-    ansatz_io = AnsatzIO()
     filename = f"ansatz_{num_qubits}_qubits.txt"
     if pathlib.Path(filename).exists():
-        gates_gen = ansatz_io.read_from_file(filename)
+        gates_gen = AnsatzIO.read_from_file(filename)
         logging.info(f"Loaded ansatz generator from {filename}")
     else:
         gates_gen = DFTQNN.gate_design(len(dev.wires), O_h.C2_group(size, True))
-        ansatz_io.write_to_file(filename, gates_gen)
+        AnsatzIO.write_to_file(filename, gates_gen)
     measurement_expvals = [
         custom_gates.generate_operators(measurement) for measurement in gates_gen
     ]
-    dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals)
+    gates_indices = sorted(np.random.choice(len(gates_gen), 10))
+    dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals, gates_indices)
 
-    mol = gto.M(atom=[["H", (0, 0, 0)], ["F", (0, 0, 1.1)]], basis="def2-tzvp")
+    # mol = gto.M(atom=[["H", (0, 0, 0)], ["F", (0, 0, 1.1)]], basis="def2-tzvp")
+    mol = gto.M(
+        atom=[
+            ["N", (0, 0, 0)],
+            ["H", (0, 0, 1.008)],
+            ["H", (0.950353, 0, -0.336)],
+            ["H", (-0.475176, -0.823029, -0.336)],
+        ],
+        basis="def2-tzvp",
+    )  # https://www.researchgate.net/figure/Cartesian-coordinates-and-atomic-masses-of-ammonia_tbl2_259630381
+    mol = gto.M(
+        atom=[
+            ["N", (0.0, 1.36627479, -0.21221668)],
+            ["N", (0.0, -1.36627479, -0.21221668)],
+            ["H", (-0.84470931, 1.89558816, 1.42901383)],
+            ["H", (0.84470931, -1.89558816, 1.42901383)],
+            ["H", (1.8260461, 1.89558816, 0.05688087)],
+            ["H", (-1.8260461, -1.89558816, 0.05688087)],
+        ],
+    )
     mean_field = dft.UKS(mol)
     ground_truth_energy = mean_field.kernel()
     HF_molecule = gd.molecule_from_pyscf(mean_field)
-    # there is a charge density in grad_dft, downsize and set it back to the downsized properties
+    # there is a charge density in grad_dft, downsize and
+    # set it back to the downsized properties
 
     key = PRNGKey(42)
     coeff_input = coefficient_inputs(HF_molecule)

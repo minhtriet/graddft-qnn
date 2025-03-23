@@ -7,6 +7,7 @@ from jax.random import PRNGKey
 
 from graddft_qnn import custom_gates
 from graddft_qnn.dft_qnn import DFTQNN
+from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.unitary_rep import O_h
 
 dev = qml.device("default.qubit", wires=3)
@@ -122,13 +123,17 @@ def _setup_device():
     return device
 
 
-@pytest.mark.skip(
-    "todo: new call for DFTQNN here after running all the group rep as qu gates"
-)
 def test_a_training_step(_setup_device):
-    dft_qnn = DFTQNN(_setup_device)
     num_wires = len(_setup_device.wires)
+    gates_indices = [7, 10, 14, 18, 20, 22, 38, 42, 57, 60]
+    filename = "ansatz_6_qubits.txt"
+    gates_gen = AnsatzIO.read_from_file(filename)
+    measurement_expvals = [
+        custom_gates.generate_operators(measurement) for measurement in gates_gen
+    ]
     mock_coeff_inputs = np.random.rand(2**num_wires)
+    dft_qnn = DFTQNN(_setup_device, gates_gen, measurement_expvals, gates_indices)
+
     rot_mock_coeff_inputs_x = (
         O_h._180_deg_x_rot_matrix(int(np.cbrt(2**num_wires))) @ mock_coeff_inputs
     )
@@ -144,10 +149,10 @@ def test_a_training_step(_setup_device):
     parameters = dft_qnn.init(key, mock_coeff_inputs)
 
     result = dft_qnn.apply(parameters, mock_coeff_inputs)
-    result_rot_x = dft_qnn.apply(parameters, rot_mock_coeff_inputs_x)  # should be 5
+    result_rot_x = dft_qnn.apply(parameters, rot_mock_coeff_inputs_x)
     result_rot_y = dft_qnn.apply(parameters, rot_mock_coeff_inputs_y)
     result_rot_z = dft_qnn.apply(parameters, rot_mock_coeff_inputs_z)
 
-    assert np.isclose(result_rot_x, result)
-    assert np.isclose(result_rot_y, result)
-    assert np.isclose(result_rot_z, result)
+    assert np.allclose(result_rot_x, result, atol=1e-6)
+    assert np.allclose(result_rot_y, result, atol=1e-6)
+    assert np.allclose(result_rot_z, result, atol=1e-6)
