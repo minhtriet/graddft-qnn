@@ -2,7 +2,7 @@
 name = "graddft-qnn"
 version = "0.1.0"
 description = ""
-authors = ["Your Name <minh.triet.chau@dsv.com>"]
+authors = ["Minh Chau <minhtriet09@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -21,8 +21,10 @@ pcax = "^0.1.0"
 optax = "0.2.1"
 ase = "^3.24.0"
 rdkit = "^2024.9.4"
-tensorflow-datasets = "^4.9.7"
 mlcroissant = "^1.0.12"
+requests = "^2.32.3"
+aiohttp = "^3.11.14"
+datasets = "^3.4.1"
 
 
 [tool.poetry.group.macos]

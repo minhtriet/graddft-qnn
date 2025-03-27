@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-import grad_dft as gd
+from grad_dft import Functional
 import jax
 import yaml
 from grad_dft import Solid, abs_clip
@@ -9,10 +9,7 @@ from jax import numpy as jnp
 from jaxtyping import Array, Float, PyTree, Scalar
 
 
-class QNNFunctional(gd.Functional):
-    """
-    This functional uses more jax API than flax
-    """
+class QNNFunctional(Functional):
 
     def xc_energy(
         self,

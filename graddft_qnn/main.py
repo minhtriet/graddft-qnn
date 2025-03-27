@@ -1,3 +1,5 @@
+import tensorflow as tf
+
 import logging
 import pathlib
 
@@ -6,15 +8,15 @@ import jax
 import numpy as np
 import pennylane as qml
 import yaml
+from datasets import DatasetDict
 from jax import numpy as jnp
 from jax.random import PRNGKey
 from jaxtyping import PyTree
 from optax import adam, apply_updates
-from tqdm import tqdm
-import tensorflow as tf
+from pyscf import dft, gto
 
 from graddft_qnn import custom_gates
-from graddft_qnn.cube_dataset.cube_dataset import CubeDataset
+from graddft_qnn.cube_dataset.cube_dataset_hf import CubeDataset
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.qnn_functional import QNNFunctional
@@ -22,6 +24,7 @@ from graddft_qnn.unitary_rep import O_h
 
 logging.getLogger().setLevel(logging.INFO)
 np.random.seed(42)
+key = PRNGKey(42)
 
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
@@ -74,7 +77,6 @@ def simple_energy_loss(
 
 
 if __name__ == "__main__":
-    tf.compat.v1.enable_eager_execution()
     with open("config.yaml") as file:
         data = yaml.safe_load(file)
         if "QBITS" not in data:
@@ -91,6 +93,7 @@ if __name__ == "__main__":
     assert size.is_integer()
     size = int(size)
 
+    # define the QNN
     filename = f"ansatz_{num_qubits}_qubits.txt"
     if pathlib.Path(filename).exists():
         gates_gen = AnsatzIO.read_from_file(filename)
@@ -105,14 +108,9 @@ if __name__ == "__main__":
     dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals, gates_indices)
 
     # load dataset
-    builder = CubeDataset()
-    builder.download_and_prepare()
-    train_dataset = builder.as_dataset(split="train", batch_size=1)
-    # test_dataset = builder.as_dataset(split="test", batch_size=1)
 
     # get a sample batch for initialization
-    key = PRNGKey(42)
-    coeff_input = jnp.zeros(2 ** len(dev.wires,))
+    coeff_input = jnp.zeros((2 ** len(dev.wires),))
     logging.info("Initializing the params")
     parameters = dft_qnn.init(key, coeff_input)
     logging.info("Finished initializing the params")
@@ -126,23 +124,35 @@ if __name__ == "__main__":
     tx = adam(learning_rate=learning_rate, b1=momentum)
     opt_state = tx.init(parameters)
 
-    # start training
     predictor = gd.non_scf_predictor(nf)
-    for batch in tqdm(train_dataset):
-        molecule = gd.molecule_from_pyscf(batch["mean_field"])
-        (cost_value, predicted_energy), grads = gd.simple_energy_loss(
-            parameters, predictor, molecule, batch["groundtruth"]
-        )
-        print(
-            "Predicted energy:",
-            predicted_energy,
-            "Cost value:",
-            cost_value,
-            "Grad: ",
-            (jnp.max(grads["params"]["theta"]), jnp.min(grads["params"]["theta"])),
-        )
-        updates, opt_state = tx.update(grads, opt_state, parameters)
-        parameters = apply_updates(parameters, updates)
+    # start training
+    if pathlib.Path("datasets/hf_dataset").exists():
+        dataset = DatasetDict.load_from_disk(pathlib.Path("datasets/hf_dataset"))
+    else:
+        dataset = CubeDataset.get_dataset()
+        dataset.save_to_disk("datasets/hf_dataset")
+
+    for epoch in range(n_epochs):
+        train_ds = dataset["train"].shuffle(seed=42)
+        for batch in train_ds:
+            atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
+            mol = gto.M(atom=atom_coords, basis="def2-tzvp")
+            mean_field = dft.UKS(mol)
+            mean_field.kernel()
+            molecule = gd.molecule_from_pyscf(mean_field)
+            (cost_value, predicted_energy), grads = gd.simple_energy_loss(
+                parameters, predictor, molecule, batch["groundtruth"]
+            )
+            print(
+                "Predicted energy:",
+                predicted_energy,
+                "Cost value:",
+                cost_value,
+                "Grad: ",
+                (jnp.max(grads["params"]["theta"]), jnp.min(grads["params"]["theta"])),
+            )
+            updates, opt_state = tx.update(grads, opt_state, parameters)
+            parameters = apply_updates(parameters, updates)
 """
 1. automate the twirling, measurement + ansatz
 1. do 2 3 molecules, compare to classical
@@ -150,4 +160,11 @@ if __name__ == "__main__":
 3. log the xc_energy + total_energy
 4. regularization (params 0 - 2pi)
 # todo calculate the number of symmetric equivalent pixel rather than all pixels
+----
+25th
+Make sure Jax has same num of params, downsized grid
+Metric of success
+- Testing on unseen data
+- Add / remove symetry for the ansatz
+    - gradients steeper / smaller number of interations when adding more group
 """
