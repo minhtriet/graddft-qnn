@@ -7,6 +7,7 @@ import grad_dft as gd
 import jax
 import numpy as np
 import pennylane as qml
+import tqdm
 import yaml
 from datasets import DatasetDict
 from jax import numpy as jnp
@@ -132,9 +133,11 @@ if __name__ == "__main__":
         dataset = CubeDataset.get_dataset()
         dataset.save_to_disk("datasets/hf_dataset")
 
+    # train
     for epoch in range(n_epochs):
         train_ds = dataset["train"].shuffle(seed=42)
-        for batch in train_ds:
+        aggregated_train_loss = 0
+        for batch in tqdm.tqdm(train_ds):
             atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
             mol = gto.M(atom=atom_coords, basis="def2-tzvp")
             mean_field = dft.UKS(mol)
@@ -143,16 +146,32 @@ if __name__ == "__main__":
             (cost_value, predicted_energy), grads = gd.simple_energy_loss(
                 parameters, predictor, molecule, batch["groundtruth"]
             )
-            print(
-                "Predicted energy:",
-                predicted_energy,
-                "Cost value:",
-                cost_value,
-                "Grad: ",
-                (jnp.max(grads["params"]["theta"]), jnp.min(grads["params"]["theta"])),
-            )
+            aggregated_train_loss += cost_value
+            # print(
+            #     "Predicted energy:",
+            #     predicted_energy,
+            #     "Cost value:",
+            #     cost_value,
+            #     "Grad: ",
+            #     (jnp.max(grads["params"]["theta"]), jnp.min(grads["params"]["theta"])),
+            # )
             updates, opt_state = tx.update(grads, opt_state, parameters)
             parameters = apply_updates(parameters, updates)
+        print(f"Root mean squared train loss: {np.sqrt(aggregated_train_loss / len(train_ds))}")
+
+    # test
+    aggregated_cost = 0
+    for batch in dataset["test"]:
+        atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
+        mol = gto.M(atom=atom_coords, basis="def2-tzvp")
+        mean_field = dft.UKS(mol)
+        mean_field.kernel()
+        molecule = gd.molecule_from_pyscf(mean_field)
+        (cost_value, predicted_energy), grads = gd.simple_energy_loss(
+            parameters, predictor, molecule, batch["groundtruth"]
+        )
+        aggregated_cost += cost_value
+    print(np.sqrt(aggregated_cost / len(dataset["test"])))
 """
 1. automate the twirling, measurement + ansatz
 1. do 2 3 molecules, compare to classical
