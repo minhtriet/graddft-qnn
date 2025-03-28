@@ -107,7 +107,7 @@ def test_invariant(n_wires, circuit_func):
     rot_feature = O_h._180_deg_y_rot_matrix(cube_dim) @ feature
     rhs = circuit_func(rot_feature)
     assert numpy.allclose(lhs, rhs)
-    rot_feature = O_h._180_deg_z_rot_matrix(cube_dim) @ feature
+    rot_feature = O_h._180_deg_z_rot(cube_dim) @ feature
     rhs = circuit_func(rot_feature)
     assert numpy.allclose(lhs, rhs)
 
@@ -141,7 +141,7 @@ def test_a_training_step(_setup_device):
         O_h._180_deg_y_rot_matrix(int(np.cbrt(2**num_wires))) @ mock_coeff_inputs
     )
     rot_mock_coeff_inputs_z = (
-        O_h._180_deg_z_rot_matrix(int(np.cbrt(2**num_wires))) @ mock_coeff_inputs
+            O_h._180_deg_z_rot(int(np.cbrt(2 ** num_wires))) @ mock_coeff_inputs
     )
 
     key = PRNGKey(42)

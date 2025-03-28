@@ -47,14 +47,11 @@ class DFTQNN(nn.Module):
         theta = self.param(
             "theta",
             nn.initializers.he_normal(),
-            # (2 ** len(self.dev.wires), 1),
-            (10, 1),
+            (len(self.gate_indices), 1),
             jnp.float32,
         )
         selected_gates_gen = list(map(lambda i: self.ansatz_gen[i], self.gate_indices))
-        return self.circuit(
-            feature, theta, selected_gates_gen, list(self.measurements)
-        )  # self.ansatz_gen becomes a tuple
+        return self.circuit(feature, theta, selected_gates_gen, list(self.measurements))
 
     @staticmethod
     def twirling_(ansatz: np.array, unitary_reps: list[np.array]):
@@ -109,8 +106,9 @@ class DFTQNN(nn.Module):
                         combination[0]
                         != list(custom_gates.words)[len(ansatz_gen) // switch_threshold]
                     ):
-                        # E.g we want 10 ansatz and 3 options (x,y,z) then the first 3 ansatz should start
-                        # with x, then next 3 with y, then next with z
+                        # E.g we want 10 ansatz and 3 options (x,y,z)
+                        # then the first 3 ansatz should start with x,
+                        # then next 3 with y, then next with z
                         continue
                     ansatz_gen.append(combination)
                     pbar.update()

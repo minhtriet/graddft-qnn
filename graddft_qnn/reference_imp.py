@@ -1,3 +1,4 @@
+# ruff: noqa
 import grad_dft as gd
 from pyscf import dft, gto
 

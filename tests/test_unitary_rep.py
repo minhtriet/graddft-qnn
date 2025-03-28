@@ -36,5 +36,5 @@ def test_y_axis_180_permutation_matrix(size):
 
 @pytest.mark.parametrize("size", [2, 4, 8, 16, 32])
 def test_z_axis_180_permutation_matrix(size):
-    prod = O_h._180_deg_z_rot_matrix(size, True)
-    assert np.allclose(O_h._180_deg_z_rot_matrix(size), qml.matrix(prod))
+    prod = O_h._180_deg_z_rot(size, True)
+    assert np.allclose(O_h._180_deg_z_rot(size), qml.matrix(prod))

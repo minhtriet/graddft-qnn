@@ -1,17 +1,34 @@
-from datasets import Dataset, DatasetDict, Features, Value, Sequence
 import pennylane as qml
+
+from datasets import Dataset, DatasetDict, Features, Sequence, Value
+
 
 class CubeDataset:
     """
-    A class to create and manage a molecular dataset using the Hugging Face datasets library.
-    The dataset contains quantum chemistry data for a fixed list of molecules, split into
-    train and test sets.
+    The dataset contains quantum chemistry data for a fixed list of molecules
     """
 
     # List of molecule names as a class attribute
     mol_names = [
-        "BH3", "BeH2", "C2", "C2H4", "C2H6", "CH2", "CH2O", "CH4", "CO", "H2O2",
-        "HCN", "Li2", "LiH", "N2", "N2H2", "N2H4", "NH3", "O2", "O3"
+        "BH3",
+        "BeH2",
+        "C2",
+        "C2H4",
+        "C2H6",
+        "CH2",
+        "CH2O",
+        "CH4",
+        "CO",
+        "H2O2",
+        "HCN",
+        "Li2",
+        "LiH",
+        "N2",
+        "N2H2",
+        "N2H4",
+        "NH3",
+        "O2",
+        "O3",
     ]
 
     # Class attribute to cache the dataset
@@ -54,15 +71,14 @@ class CubeDataset:
                 "name": Value("string"),  # Molecule name
                 "groundtruth": Value("float64"),  # FCI energy
                 "symbols": Sequence(Value("string")),  # List of atomic symbols
-                "coordinates": Sequence(Sequence(Value("float64"), length=3)),  # List of 3D coordinates
+                "coordinates": Sequence(
+                    Sequence(Value("float64"), length=3)
+                ),  # List of 3D coordinates
             }
         )
 
-        # Create Hugging Face datasets from the data
         train_dataset = Dataset.from_list(train_data, features=features)
         test_dataset = Dataset.from_list(test_data, features=features)
-
-        # Combine into a DatasetDict
         return DatasetDict({"train": train_dataset, "test": test_dataset})
 
     @staticmethod

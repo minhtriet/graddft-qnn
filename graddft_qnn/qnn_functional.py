@@ -1,16 +1,14 @@
 from collections.abc import Callable
 
-from grad_dft import Functional
 import jax
 import yaml
-from grad_dft import Solid, abs_clip
+from grad_dft import Functional, Solid, abs_clip
 from grad_dft.molecule import Grid, Molecule
 from jax import numpy as jnp
 from jaxtyping import Array, Float, PyTree, Scalar
 
 
 class QNNFunctional(Functional):
-
     def xc_energy(
         self,
         params: PyTree,
@@ -36,11 +34,6 @@ class QNNFunctional(Functional):
             n_qubits = data["QBITS"]
         # unscaled_coeff_inputs: (xxx, 2)
 
-        # assert jnp.array(
-        #     jnp.allclose(
-        #         unscaled_coefficient_inputs[:, 0], unscaled_coefficient_inputs[:, 1]
-        #     )
-        # )
         numerator = jnp.sum(unscaled_coefficient_inputs, axis=0)
         indices = jnp.round(
             jnp.linspace(0, unscaled_coefficient_inputs.shape[0], 2**n_qubits)

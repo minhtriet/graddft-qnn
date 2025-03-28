@@ -1,7 +1,7 @@
-import tensorflow as tf
-
+import json
 import logging
 import pathlib
+from datetime import datetime
 
 import grad_dft as gd
 import jax
@@ -9,13 +9,14 @@ import numpy as np
 import pennylane as qml
 import tqdm
 import yaml
-from datasets import DatasetDict
+from evaluate.metric_name import MetricName
 from jax import numpy as jnp
 from jax.random import PRNGKey
 from jaxtyping import PyTree
 from optax import adam, apply_updates
 from pyscf import dft, gto
 
+from datasets import DatasetDict
 from graddft_qnn import custom_gates
 from graddft_qnn.cube_dataset.cube_dataset_hf import CubeDataset
 from graddft_qnn.dft_qnn import DFTQNN
@@ -28,12 +29,14 @@ np.random.seed(42)
 key = PRNGKey(42)
 
 
+@jax.jit
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
     # change: total spin, also why it is not +/-0.5?
     return jnp.sum(rho, 1)
 
 
+@jax.jit
 def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     r"""Auxiliary function to generate the features of LSDA."""
     # Molecule can compute the density matrix.
@@ -86,6 +89,14 @@ if __name__ == "__main__":
         n_epochs = data["TRAINING"]["N_EPOCHS"]
         learning_rate = data["TRAINING"]["LEARNING_RATE"]
         momentum = data["TRAINING"]["MOMENTUM"]
+        num_gates = data["N_GATES"]
+        assert (
+            isinstance(num_gates, int) or num_gates == "full"
+        ), f"N_GATES must be integer or 'full', got {num_gates}"
+        num_measurements = data["N_MEASUREMENTS"]
+        assert isinstance(
+            num_gates, int
+        ), f"N_MEASUREMENTS must be integer, got {num_measurements}"
         dev = qml.device("default.qubit", wires=num_qubits)
 
     # config model params
@@ -105,7 +116,8 @@ if __name__ == "__main__":
     measurement_expvals = [
         custom_gates.generate_operators(measurement) for measurement in gates_gen
     ]
-    gates_indices = sorted(np.random.choice(len(gates_gen), 10))
+    if isinstance(num_gates, int):
+        gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
     dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals, gates_indices)
 
     # load dataset
@@ -135,9 +147,9 @@ if __name__ == "__main__":
 
     # train
     for epoch in range(n_epochs):
-        train_ds = dataset["train"].shuffle(seed=42)
+        train_ds = dataset["train"].shuffle(seed=42).take(4)  # todo change take 4
         aggregated_train_loss = 0
-        for batch in tqdm.tqdm(train_ds):
+        for batch in tqdm.tqdm(train_ds, desc="Train"):
             atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
             mol = gto.M(atom=atom_coords, basis="def2-tzvp")
             mean_field = dft.UKS(mol)
@@ -157,11 +169,13 @@ if __name__ == "__main__":
             # )
             updates, opt_state = tx.update(grads, opt_state, parameters)
             parameters = apply_updates(parameters, updates)
-        print(f"Root mean squared train loss: {np.sqrt(aggregated_train_loss / len(train_ds))}")
-
+        logging.info(
+            f"Epoch {epoch + 1}. RMS loss: {np.sqrt(aggregated_train_loss / len(train_ds))}"
+        )
+    logging.info("Start evaluating")
     # test
     aggregated_cost = 0
-    for batch in dataset["test"]:
+    for batch in tqdm.tqdm(dataset["test"], desc="Evaluate"):
         atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
         mol = gto.M(atom=atom_coords, basis="def2-tzvp")
         mean_field = dft.UKS(mol)
@@ -171,9 +185,30 @@ if __name__ == "__main__":
             parameters, predictor, molecule, batch["groundtruth"]
         )
         aggregated_cost += cost_value
-    print(np.sqrt(aggregated_cost / len(dataset["test"])))
+    test_loss = np.sqrt(aggregated_cost / len(dataset["test"]))
+    logging.info(f"Test loss {test_loss}")
+    # report
+    now = datetime.now()
+    date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
+    report = {
+        MetricName.DATE: date_time,
+        MetricName.N_QUBITS: num_qubits,
+        MetricName.TEST_LOSS: test_loss,
+        MetricName.N_GATES: num_gates,
+        MetricName.N_MEASUREMENTS: num_measurements,
+    }
+    if pathlib.Path("report.json").exists():
+        with open("report.json") as f:
+            try:
+                history_report = json.load(f)
+            except json.decoder.JSONDecodeError:
+                history_report = []
+    else:
+        history_report = []
+    history_report.append(report)
+    with open("report.json", "w") as f:
+        json.dump(history_report, f)
 """
-1. automate the twirling, measurement + ansatz
 1. do 2 3 molecules, compare to classical
 2. increase finess of grids
 3. log the xc_energy + total_energy
