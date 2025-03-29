@@ -112,33 +112,38 @@ class O_h:
 
     @staticmethod
     def _270_deg_x_rot(size=2, pauli_word=False):
+        total_elements = size * size * size
+        perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
+        for x in range(size):
+            for y in range(size):
+                for z in range(size):
+                    orig_idx = x * size * size + y * size + z
+                    new_x = x
+                    new_y = size - 1 - z
+                    new_z = y
+                    new_idx = new_x * size * size + new_y * size + new_z
+                    perm_matrix[orig_idx, new_idx] = 1
         if pauli_word:
-            n_qubits = np.log2(size**3)
-            assert n_qubits.is_integer()
-            n_qubits = int(n_qubits)
-            num_Is = np.log2(size)
-            assert num_Is.is_integer()
-            num_Is = int(num_Is)
-            prods = (
-                    [qml.X(i) for i in range(num_Is)]
-                    + [qml.X(i) for i in range(num_Is, num_Is * 2)]
-                    + [qml.I(i) for i in range(num_Is * 2, num_Is * 3)]
-            )
-            return qml.prod(*prods)
+            return qml.pauli_decompose(matrix, check_hermitian=False, hide_identity=True)
         else:
-            # z stays the same, x and y change sign
-            total_elements = size * size * size
-            perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
-            for x in range(size):
-                for y in range(size):
-                    for z in range(size):
-                        orig_idx = x * size * size + y * size + z
-                        new_z = z
-                        new_x = size - 1 - x
-                        new_y = size - 1 - y
-                        new_idx = new_x * size * size + new_y * size + new_z
-                        perm_matrix[orig_idx, new_idx] = 1
+            return perm_matrix
 
+    @staticmethod
+    def _90_deg_x_rot(size=2, pauli_word=False):
+        total_elements = size * size * size
+        perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
+        for x in range(size):
+            for y in range(size):
+                for z in range(size):
+                    orig_idx = x * size * size + y * size + z
+                    new_x = x
+                    new_y = z
+                    new_z = size - 1 - y
+                    new_idx = new_x * size * size + new_y * size + new_z
+                    perm_matrix[orig_idx, new_idx] = 1
+        if pauli_word:
+            return qml.pauli_decompose(matrix, check_hermitian=False, hide_identity=True)
+        else:
             return perm_matrix
 
     @staticmethod
