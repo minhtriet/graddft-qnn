@@ -217,7 +217,7 @@ if __name__ == "__main__":
         history_report = []
     history_report.append(report)
     with open("report.json", "w") as f:
-        json.dump(history_report, f)
+        json.dump(history_report, f, indent=4)
     pd.DataFrame(history_report.items()).to_excel("report.xlsx")
 
 """
