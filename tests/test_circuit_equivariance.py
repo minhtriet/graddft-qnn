@@ -100,11 +100,11 @@ def test_invariant(n_wires, circuit_func):
     cube_dim = np.cbrt(2**n_wires)
     assert cube_dim.is_integer()
     cube_dim = int(cube_dim)
-    rot_feature = O_h._180_deg_x_rot_matrix(cube_dim) @ feature
+    rot_feature = O_h._180_deg_x_rot(cube_dim) @ feature
     lhs = circuit_func(feature)
     rhs = circuit_func(rot_feature)
     assert numpy.allclose(lhs, rhs)
-    rot_feature = O_h._180_deg_y_rot_matrix(cube_dim) @ feature
+    rot_feature = O_h._180_deg_y_rot(cube_dim) @ feature
     rhs = circuit_func(rot_feature)
     assert numpy.allclose(lhs, rhs)
     rot_feature = O_h._180_deg_z_rot(cube_dim) @ feature
@@ -135,13 +135,13 @@ def test_a_training_step(_setup_device):
     dft_qnn = DFTQNN(_setup_device, gates_gen, measurement_expvals, gates_indices)
 
     rot_mock_coeff_inputs_x = (
-        O_h._180_deg_x_rot_matrix(int(np.cbrt(2**num_wires))) @ mock_coeff_inputs
+        O_h._180_deg_x_rot(int(np.cbrt(2**num_wires))) @ mock_coeff_inputs
     )
     rot_mock_coeff_inputs_y = (
-        O_h._180_deg_y_rot_matrix(int(np.cbrt(2**num_wires))) @ mock_coeff_inputs
+        O_h._180_deg_y_rot(int(np.cbrt(2**num_wires))) @ mock_coeff_inputs
     )
     rot_mock_coeff_inputs_z = (
-            O_h._180_deg_z_rot(int(np.cbrt(2 ** num_wires))) @ mock_coeff_inputs
+        O_h._180_deg_z_rot(int(np.cbrt(2**num_wires))) @ mock_coeff_inputs
     )
 
     key = PRNGKey(42)

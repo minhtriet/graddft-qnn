@@ -6,6 +6,7 @@ from datetime import datetime
 import grad_dft as gd
 import jax
 import numpy as np
+import pandas as pd
 import pennylane as qml
 import tqdm
 import yaml
@@ -15,6 +16,7 @@ from jax.random import PRNGKey
 from jaxtyping import PyTree
 from optax import adam, apply_updates
 from pyscf import dft, gto
+from unitary_rep import is_group
 
 from datasets import DatasetDict
 from graddft_qnn import custom_gates
@@ -86,6 +88,9 @@ if __name__ == "__main__":
         if "QBITS" not in data:
             raise KeyError("YAML file must contain 'QBITS' key")
         num_qubits = data["QBITS"]
+        size = np.cbrt(2**num_qubits)
+        assert size.is_integer()
+        size = int(size)
         n_epochs = data["TRAINING"]["N_EPOCHS"]
         learning_rate = data["TRAINING"]["LEARNING_RATE"]
         momentum = data["TRAINING"]["MOMENTUM"]
@@ -93,29 +98,34 @@ if __name__ == "__main__":
         assert (
             isinstance(num_gates, int) or num_gates == "full"
         ), f"N_GATES must be integer or 'full', got {num_gates}"
-        num_measurements = data["N_MEASUREMENTS"]
-        assert isinstance(
-            num_gates, int
-        ), f"N_MEASUREMENTS must be integer, got {num_measurements}"
+        full_measurements = data["FULL_MEASUREMENTS"]
+        group = data["GROUP"]
+        group_str_rep = "]_[".join(group)
+        group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
+        if not is_group(group_matrix_reps, group):
+            raise ValueError("Not forming a group")
         dev = qml.device("default.qubit", wires=num_qubits)
 
     # config model params
     jax.config.update("jax_enable_x64", True)
-    size = np.cbrt(2 ** len(dev.wires))
-    assert size.is_integer()
-    size = int(size)
 
     # define the QNN
-    filename = f"ansatz_{num_qubits}_qubits.txt"
+    filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits.txt"
     if pathlib.Path(filename).exists():
         gates_gen = AnsatzIO.read_from_file(filename)
         logging.info(f"Loaded ansatz generator from {filename}")
     else:
         gates_gen = DFTQNN.gate_design(len(dev.wires), O_h.C2_group(size, True))
         AnsatzIO.write_to_file(filename, gates_gen)
-    measurement_expvals = [
-        custom_gates.generate_operators(measurement) for measurement in gates_gen
-    ]
+    if full_measurements:
+        measurement_expvals = [
+            custom_gates.generate_operators(measurement) for measurement in gates_gen
+        ]
+    else:
+        measurement_expvals = [
+            custom_gates.generate_operators(measurement)
+            for measurement in gates_gen[:1]
+        ]
     if isinstance(num_gates, int):
         gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
     dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals, gates_indices)
@@ -147,9 +157,9 @@ if __name__ == "__main__":
 
     # train
     for epoch in range(n_epochs):
-        train_ds = dataset["train"].shuffle(seed=42).take(4)  # todo change take 4
+        train_ds = dataset["train"].shuffle(seed=42)
         aggregated_train_loss = 0
-        for batch in tqdm.tqdm(train_ds, desc="Train"):
+        for batch in tqdm.tqdm(train_ds, desc=f"Epoch {epoch + 1}"):
             atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
             mol = gto.M(atom=atom_coords, basis="def2-tzvp")
             mean_field = dft.UKS(mol)
@@ -169,9 +179,7 @@ if __name__ == "__main__":
             # )
             updates, opt_state = tx.update(grads, opt_state, parameters)
             parameters = apply_updates(parameters, updates)
-        logging.info(
-            f"Epoch {epoch + 1}. RMS loss: {np.sqrt(aggregated_train_loss / len(train_ds))}"
-        )
+        logging.info(f"RMS loss: {np.sqrt(aggregated_train_loss / len(train_ds))}")
     logging.info("Start evaluating")
     # test
     aggregated_cost = 0
@@ -195,7 +203,9 @@ if __name__ == "__main__":
         MetricName.N_QUBITS: num_qubits,
         MetricName.TEST_LOSS: test_loss,
         MetricName.N_GATES: num_gates,
-        MetricName.N_MEASUREMENTS: num_measurements,
+        MetricName.N_MEASUREMENTS: full_measurements,
+        MetricName.GROUP_MEMBER: group,
+        MetricName.EPOCHS: n_epochs,
     }
     if pathlib.Path("report.json").exists():
         with open("report.json") as f:
@@ -208,6 +218,8 @@ if __name__ == "__main__":
     history_report.append(report)
     with open("report.json", "w") as f:
         json.dump(history_report, f)
+    pd.DataFrame(history_report.items()).to_excel("report.xlsx")
+
 """
 1. do 2 3 molecules, compare to classical
 2. increase finess of grids

@@ -1,10 +1,13 @@
+import logging
+from itertools import product
+
 import numpy as np
 import pennylane as qml
 
 
 class O_h:
     @staticmethod
-    def _180_deg_x_rot_matrix(size=2, pauli_word=False) -> np.array:
+    def _180_deg_x_rot(size=2, pauli_word=False) -> np.array:
         if pauli_word:
             n_qubits = np.log2(size**3)
             assert n_qubits.is_integer()
@@ -32,7 +35,7 @@ class O_h:
         return perm_matrix
 
     @staticmethod
-    def _180_deg_y_rot_matrix(size=2, pauli_word=False):
+    def _180_deg_y_rot(size=2, pauli_word=False):
         """
         2 qubits -> qml.prod(X(0), I(1), X(2)))
         4 qubits -> qml.prod(X(0), X(1), I(2), I(3), X(4), X(5)))
@@ -103,15 +106,19 @@ class O_h:
             return perm_matrix
 
     @staticmethod
-    def C2_group(size=2, pauli_word=False):
+    def C2_group(
+        size=2, pauli_word=False
+    ) -> list[qml.Hamiltonian | qml.pauli.PauliSentence]:
         return [
-            O_h._180_deg_x_rot_matrix(size, pauli_word),
-            O_h._180_deg_y_rot_matrix(size, pauli_word),
+            O_h._180_deg_x_rot(size, pauli_word),
+            O_h._180_deg_y_rot(size, pauli_word),
             O_h._180_deg_z_rot(size, pauli_word),
         ]
 
     @staticmethod
-    def _270_deg_x_rot(size=2, pauli_word=False):
+    def _270_deg_x_rot(
+        size=2, pauli_word=False
+    ) -> np.ndarray | qml.Hamiltonian | qml.pauli.PauliSentence:
         total_elements = size * size * size
         perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
         for x in range(size):
@@ -124,7 +131,9 @@ class O_h:
                     new_idx = new_x * size * size + new_y * size + new_z
                     perm_matrix[orig_idx, new_idx] = 1
         if pauli_word:
-            return qml.pauli_decompose(matrix, check_hermitian=False, hide_identity=True)
+            return qml.pauli_decompose(
+                perm_matrix, check_hermitian=False, hide_identity=True
+            )
         else:
             return perm_matrix
 
@@ -142,15 +151,17 @@ class O_h:
                     new_idx = new_x * size * size + new_y * size + new_z
                     perm_matrix[orig_idx, new_idx] = 1
         if pauli_word:
-            return qml.pauli_decompose(matrix, check_hermitian=False, hide_identity=True)
+            return qml.pauli_decompose(
+                perm_matrix, check_hermitian=False, hide_identity=True
+            )
         else:
             return perm_matrix
 
     @staticmethod
     def _180_deg_rot_ref(size=2):
         return [
-            O_h._180_deg_x_rot_matrix(size),
-            O_h._180_deg_y_rot_matrix(size),
+            O_h._180_deg_x_rot(size),
+            O_h._180_deg_y_rot(size),
             O_h._180_deg_z_rot(size),
             # np.eye(8),
             O_h.reflection_yz(),
@@ -174,3 +185,33 @@ class O_h:
                 [0, 0, 0, 1, 0, 0, 0, 0],
             ]
         )
+
+
+def is_group(matrices: list[np.ndarray], group_name: list[str]) -> bool:
+    """
+    Check if a list of matrices forms a group.
+
+    Args:
+        matrices: List of numpy arrays representing matrices
+        tolerance: Floating point comparison tolerance
+
+    Returns:
+        bool: True if matrices form a group, False otherwise
+    """
+    group_products = list(product(group_name, group_name))
+    size = matrices[0].shape[0]
+    for i, mat_tuple in enumerate(product(matrices, matrices)):
+        product_matrix = mat_tuple[0] @ mat_tuple[1]
+        if not any(np.allclose(product_matrix, M) for M in matrices + [np.eye(size)]):
+            logging.info(
+                f"Closure failed: Product {group_products[i]} not in the group"
+            )
+            return False
+
+    for i, matrix in enumerate(matrices):
+        inverse = np.linalg.inv(matrix)
+        if not any(np.allclose(inverse, M) for M in matrices):
+            logging.info(f"Inverse not found for matrix: {group_name[i]}")
+            return False
+
+    return True

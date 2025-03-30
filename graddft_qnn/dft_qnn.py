@@ -36,7 +36,6 @@ class DFTQNN(nn.Module):
                 )  # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
                 for idx, gen in enumerate(gate_gens)
             ]
-            # return [qml.expval(measurements[0])]
             return [qml.expval(measurement) for measurement in measurements]
 
         result = jnp.array(_circuit(feature, theta, gate_gens, measurements))
@@ -102,14 +101,14 @@ class DFTQNN(nn.Module):
                 custom_gates.words.keys(), repeat=num_wires
             ):
                 if DFTQNN._sentence_twirl(combination, invariant_rep) is not None:
-                    if (
-                        combination[0]
-                        != list(custom_gates.words)[len(ansatz_gen) // switch_threshold]
-                    ):
-                        # E.g we want 10 ansatz and 3 options (x,y,z)
-                        # then the first 3 ansatz should start with x,
-                        # then next 3 with y, then next with z
-                        continue
+                    # if (
+                    #     combination[0]
+                    #     != list(custom_gates.words)[len(ansatz_gen) // switch_threshold]
+                    # ):
+                    #     # E.g we want 10 ansatz and 3 options (x,y,z)
+                    #     # then the first 3 ansatz should start with x,
+                    #     # then next 3 with y, then next with z
+                    #     continue
                     ansatz_gen.append(combination)
                     pbar.update()
                     if len(ansatz_gen) == 2**num_wires:

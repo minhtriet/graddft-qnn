@@ -6,5 +6,6 @@ class MetricName(str, Enum):
     GROUP_MEMBER = "Group members"
     N_QUBITS = "Num qubits"
     N_GATES = "Num gates"
-    N_MEASUREMENTS = "Num measurements"
+    N_MEASUREMENTS = "Full measurements"
+    EPOCHS = "Epochs"
     TEST_LOSS = "Test loss"
