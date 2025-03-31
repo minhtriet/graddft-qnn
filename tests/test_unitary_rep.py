@@ -38,3 +38,51 @@ def test_y_axis_180_permutation_matrix(size):
 def test_z_axis_180_permutation_matrix(size):
     prod = O_h._180_deg_z_rot(size, True)
     assert np.allclose(O_h._180_deg_z_rot(size), qml.matrix(prod))
+
+
+def test_x_reflect():
+    expected_array = np.array(
+        [
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+        ]
+    )
+    assert np.allclose(O_h._x0_reflection(2), expected_array)
+
+
+def test_y_reflect():
+    expected_array = np.array(
+        [
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+        ]
+    )
+    assert np.allclose(O_h._y0_reflection(2), expected_array)
+
+
+def test_z_reflect():
+    expected_array = np.array(
+        [
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+        ]
+    )
+    assert np.allclose(O_h._z0_reflection(2), expected_array)
