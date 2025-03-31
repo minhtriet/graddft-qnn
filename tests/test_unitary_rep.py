@@ -53,7 +53,7 @@ def test_x_reflect():
             [0, 0, 0, 1, 0, 0, 0, 0],
         ]
     )
-    assert np.allclose(O_h._x0_reflection(2), expected_array)
+    assert np.allclose(O_h._x_eq_0_reflection(2), expected_array)
 
 
 def test_y_reflect():
@@ -69,7 +69,7 @@ def test_y_reflect():
             [0, 0, 0, 0, 0, 1, 0, 0],
         ]
     )
-    assert np.allclose(O_h._y0_reflection(2), expected_array)
+    assert np.allclose(O_h._y_eq_0_reflection(2), expected_array)
 
 
 def test_z_reflect():
@@ -86,3 +86,34 @@ def test_z_reflect():
         ]
     )
     assert np.allclose(O_h._z0_reflection(2), expected_array)
+
+
+def test_y_eq_z_reflect():
+    expected_array = np.array(
+        [
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+        ]
+    )
+    assert np.allclose(O_h.y_eq_z_rot(2), expected_array)
+
+def test_y_eq_neg_z_reflect():
+    expected_array = np.array(
+        [
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0],
+        ]
+    )
+    assert np.allclose(O_h.y_eq_neg_z_rot(2), expected_array)
