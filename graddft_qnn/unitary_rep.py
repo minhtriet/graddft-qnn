@@ -228,7 +228,7 @@ class O_h:
             return perm_matrix
 
     @staticmethod
-    def y_eq_neg_z_rot(size=2, pauli_word=False):
+    def y_eq_z_rot(size=2, pauli_word=False):
         total_elements = size * size * size
         perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
         for x in range(size):
@@ -236,8 +236,8 @@ class O_h:
                 for z in range(size):
                     orig_idx = x * size * size + y * size + z
                     new_x = size - 1 - x
-                    new_y = y if z != y else size - y - 1
-                    new_z = z if z != y else size - z - 1
+                    new_y = size - 1 - z
+                    new_z = size - 1 - y
                     new_idx = new_x * size * size + new_y * size + new_z
                     perm_matrix[orig_idx, new_idx] = 1
         if pauli_word:
@@ -248,7 +248,7 @@ class O_h:
             return perm_matrix
 
     @staticmethod
-    def y_eq_z_rot(size=2, pauli_word=False):
+    def y_eq_neg_z_rot(size=2, pauli_word=False):
         total_elements = size * size * size
         perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
         for x in range(size):

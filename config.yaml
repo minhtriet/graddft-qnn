@@ -1,11 +1,11 @@
-QBITS: 3  # 3 6 9 12
+QBITS: 6  # 3 6 9 12
 FULL_MEASUREMENTS: False
 N_GATES: 6
 GROUP:
 #===   c3 group
-#  - _270_deg_rot
-#  - _180_deg_x_rot
 #  - _90_deg_x_rot
+#  - _180_deg_x_rot
+#  - _270_deg_x_rot
 #===   d4 group
   - _90_deg_x_rot
   - _180_deg_x_rot
