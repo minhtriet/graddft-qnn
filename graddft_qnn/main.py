@@ -218,7 +218,7 @@ if __name__ == "__main__":
     history_report.append(report)
     with open("report.json", "w") as f:
         json.dump(history_report, f)
-    pd.DataFrame(history_report.items()).to_excel("report.xlsx")
+    pd.DataFrame(history_report).to_excel("report.xlsx")
 
 """
 1. do 2 3 molecules, compare to classical
