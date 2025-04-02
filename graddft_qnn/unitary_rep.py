@@ -164,11 +164,11 @@ class O_h:
             O_h._180_deg_y_rot(size),
             O_h._180_deg_z_rot(size),
             # np.eye(8),
-            O_h.reflection_yz(),
+            O_h.yz_reflection(),
         ]
 
     @staticmethod
-    def _z0_reflection(size=2, pauli_word=False):
+    def xy_reflection(size=2, pauli_word=False):
         total_elements = size * size * size
         perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
         for x in range(size):
@@ -188,7 +188,7 @@ class O_h:
             return perm_matrix
 
     @staticmethod
-    def _x_eq_0_reflection(size=2, pauli_word=False):
+    def yz_reflection(size=2, pauli_word=False):
         total_elements = size * size * size
         perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
         for x in range(size):
@@ -208,7 +208,7 @@ class O_h:
             return perm_matrix
 
     @staticmethod
-    def _y_eq_0_reflection(size=2, pauli_word=False):
+    def xz_reflection(size=2, pauli_word=False):
         total_elements = size * size * size
         perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
         for x in range(size):
@@ -266,25 +266,30 @@ class O_h:
             )
         else:
             return perm_matrix
+
+    @staticmethod
+    def inversion(size=2, pauli_word=False):
+        total_elements = size * size * size
+        perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
+        for x in range(size):
+            for y in range(size):
+                for z in range(size):
+                    orig_idx = x * size * size + y * size + z
+                    new_x = size-1-x
+                    new_z = size-1-y
+                    new_y = size-1-z
+                    new_idx = new_x * size * size + new_y * size + new_z
+                    perm_matrix[orig_idx, new_idx] = 1
+        if pauli_word:
+            return qml.pauli_decompose(
+                perm_matrix, check_hermitian=False, hide_identity=True
+            )
+        else:
+            return perm_matrix
+
     @staticmethod
     def rz():
         return np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
-
-    @staticmethod
-    def reflection_yz():
-        return np.array(
-            [
-                [0, 0, 0, 0, 1, 0, 0, 0],
-                [0, 0, 0, 0, 0, 1, 0, 0],
-                [0, 0, 0, 0, 0, 0, 1, 0],
-                [0, 0, 0, 0, 0, 0, 0, 1],
-                [1, 0, 0, 0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0, 0, 0, 0],
-                [0, 0, 1, 0, 0, 0, 0, 0],
-                [0, 0, 0, 1, 0, 0, 0, 0],
-            ]
-        )
-
 
 def is_group(matrices: list[np.ndarray], group_name: list[str]) -> bool:
     """
