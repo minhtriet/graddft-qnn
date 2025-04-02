@@ -111,7 +111,6 @@ class DFTQNN(nn.Module):
                     #     continue
                     ansatz_gen.append(combination)
                     pbar.update()
-                    if len(ansatz_gen) == 2**num_wires:
-                        break
-        assert len(ansatz_gen) == 2**num_wires
+        #            if len(ansatz_gen) == 2**num_wires:
+        #                break
         return ansatz_gen

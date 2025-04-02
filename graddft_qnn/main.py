@@ -115,7 +115,7 @@ if __name__ == "__main__":
         gates_gen = AnsatzIO.read_from_file(filename)
         logging.info(f"Loaded ansatz generator from {filename}")
     else:
-        gates_gen = DFTQNN.gate_design(len(dev.wires), [getattr(O_h, gr)(size, True) for gr in group]))
+        gates_gen = DFTQNN.gate_design(len(dev.wires), [getattr(O_h, gr)(size, True) for gr in group])
         AnsatzIO.write_to_file(filename, gates_gen)
     if full_measurements:
         measurement_expvals = [
