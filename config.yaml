@@ -1,4 +1,4 @@
-QBITS: 9  # 3 6 9 12
+QBITS: 6  # 3 6 9 12
 FULL_MEASUREMENTS: False
 N_GATES: 16
 GROUP:
@@ -26,6 +26,10 @@ GROUP:
   - xy_reflection
   - yz_reflection
   - xz_reflection
+  - y_equal_neg_z_reflection
+  - y_equal_z_reflection
+  - _90_roto_x_reflect_yz
+  - _270_roto_x_reflect_yz
 TRAINING:
   N_EPOCHS: 10
   LEARNING_RATE: 0.7

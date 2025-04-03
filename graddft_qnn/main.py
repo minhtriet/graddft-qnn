@@ -100,7 +100,7 @@ if __name__ == "__main__":
         ), f"N_GATES must be integer or 'full', got {num_gates}"
         full_measurements = data["FULL_MEASUREMENTS"]
         group = data["GROUP"]
-        group_str_rep = "]_[".join(group)
+        group_str_rep = "]_[".join(group)[:230]
         group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
         if not is_group(group_matrix_reps, group):
             raise ValueError("Not forming a group")
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     jax.config.update("jax_enable_x64", True)
 
     # define the QNN
-    filename = f"[full]_ansatz_{num_qubits}_{group_str_rep}_qubits.txt"
+    filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits.txt"
     if pathlib.Path(filename).exists():
         gates_gen = AnsatzIO.read_from_file(filename)
         logging.info(f"Loaded ansatz generator from {filename}")

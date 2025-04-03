@@ -269,11 +269,23 @@ class O_h:
 
     @staticmethod
     def _90_roto_x_reflect_yz(size = 2, pauli_word=False):
-        pass
+        perm_matrix = O_h._90_deg_x_rot(size) @ O_h.yz_reflection(size)
+        if pauli_word:
+            return qml.pauli_decompose(
+                perm_matrix, check_hermitian=False, hide_identity=True
+            )
+        else:
+            return perm_matrix
 
     @staticmethod
     def _270_roto_x_reflect_yz(size = 2, pauli_word=False):
-        pass
+        perm_matrix = O_h._270_deg_x_rot(size) @ O_h.yz_reflection(size)
+        if pauli_word:
+            return qml.pauli_decompose(
+                perm_matrix, check_hermitian=False, hide_identity=True
+            )
+        else:
+            return perm_matrix
 
     @staticmethod
     def y_eq_z_rot(size=2, pauli_word=False):
