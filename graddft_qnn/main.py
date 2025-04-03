@@ -110,12 +110,12 @@ if __name__ == "__main__":
     jax.config.update("jax_enable_x64", True)
 
     # define the QNN
-    filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits.txt"
+    filename = f"[full]_ansatz_{num_qubits}_{group_str_rep}_qubits.txt"
     if pathlib.Path(filename).exists():
         gates_gen = AnsatzIO.read_from_file(filename)
         logging.info(f"Loaded ansatz generator from {filename}")
     else:
-        gates_gen = DFTQNN.gate_design(len(dev.wires), O_h.C2_group(size, True))
+        gates_gen = DFTQNN.gate_design(len(dev.wires), [getattr(O_h, gr)(size, True) for gr in group])
         AnsatzIO.write_to_file(filename, gates_gen)
     if full_measurements:
         measurement_expvals = [
@@ -129,8 +129,6 @@ if __name__ == "__main__":
     if isinstance(num_gates, int):
         gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
     dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals, gates_indices)
-
-    # load dataset
 
     # get a sample batch for initialization
     coeff_input = jnp.zeros((2 ** len(dev.wires),))
@@ -156,6 +154,7 @@ if __name__ == "__main__":
         dataset.save_to_disk("datasets/hf_dataset")
 
     # train
+    train_losses = []
     for epoch in range(n_epochs):
         train_ds = dataset["train"].shuffle(seed=42)
         aggregated_train_loss = 0
@@ -179,7 +178,9 @@ if __name__ == "__main__":
             # )
             updates, opt_state = tx.update(grads, opt_state, parameters)
             parameters = apply_updates(parameters, updates)
-        logging.info(f"RMS loss: {np.sqrt(aggregated_train_loss / len(train_ds))}")
+        train_loss = np.sqrt(aggregated_train_loss / len(train_ds))
+        logging.info(f"RMS loss: {train_loss}")
+        train_losses.append(train_loss)
     logging.info("Start evaluating")
     # test
     aggregated_cost = 0
@@ -206,6 +207,7 @@ if __name__ == "__main__":
         MetricName.N_MEASUREMENTS: full_measurements,
         MetricName.GROUP_MEMBER: group,
         MetricName.EPOCHS: n_epochs,
+        MetricName.TRAIN_LOSSES: train_losses
     }
     if pathlib.Path("report.json").exists():
         with open("report.json") as f:
