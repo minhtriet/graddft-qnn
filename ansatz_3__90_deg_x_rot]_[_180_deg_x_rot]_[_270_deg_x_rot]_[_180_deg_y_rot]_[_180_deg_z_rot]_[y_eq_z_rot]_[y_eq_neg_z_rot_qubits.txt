@@ -1,0 +1,8 @@
+X,X,X
+X,X,I
+X,I,X
+X,I,I
+Y,Y,Y
+Y,Y,Z
+Y,Z,Y
+Y,Z,Z

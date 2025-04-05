@@ -100,7 +100,7 @@ if __name__ == "__main__":
         ), f"N_GATES must be integer or 'full', got {num_gates}"
         full_measurements = data["FULL_MEASUREMENTS"]
         group = data["GROUP"]
-        group_str_rep = "]_[".join(group)
+        group_str_rep = "]_[".join(group)[:230]
         group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
         if not is_group(group_matrix_reps, group):
             raise ValueError("Not forming a group")
@@ -130,8 +130,6 @@ if __name__ == "__main__":
         gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
     dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals, gates_indices)
 
-    # load dataset
-
     # get a sample batch for initialization
     coeff_input = jnp.zeros((2 ** len(dev.wires),))
     logging.info("Initializing the params")
@@ -156,6 +154,7 @@ if __name__ == "__main__":
         dataset.save_to_disk("datasets/hf_dataset")
 
     # train
+    train_losses = []
     for epoch in range(n_epochs):
         train_ds = dataset["train"].shuffle(seed=42)
         aggregated_train_loss = 0
@@ -179,7 +178,9 @@ if __name__ == "__main__":
             # )
             updates, opt_state = tx.update(grads, opt_state, parameters)
             parameters = apply_updates(parameters, updates)
-        logging.info(f"RMS loss: {np.sqrt(aggregated_train_loss / len(train_ds))}")
+        train_loss = np.sqrt(aggregated_train_loss / len(train_ds))
+        logging.info(f"RMS loss: {train_loss}")
+        train_losses.append(train_loss)
     logging.info("Start evaluating")
     # test
     aggregated_cost = 0
@@ -206,6 +207,7 @@ if __name__ == "__main__":
         MetricName.N_MEASUREMENTS: full_measurements,
         MetricName.GROUP_MEMBER: group,
         MetricName.EPOCHS: n_epochs,
+        MetricName.TRAIN_LOSSES: train_losses
     }
     if pathlib.Path("report.json").exists():
         with open("report.json") as f:

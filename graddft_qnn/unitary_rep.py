@@ -228,6 +228,66 @@ class O_h:
             return perm_matrix
 
     @staticmethod
+    def y_equal_neg_z_reflection(size = 2, pauli_word=False):
+        total_elements = size * size * size
+        perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
+        for x in range(size):
+            for y in range(size):
+                for z in range(size):
+                    orig_idx = x * size * size + y * size + z
+                    new_x = x
+                    new_y = z
+                    new_z = y
+                    new_idx = new_x * size * size + new_y * size + new_z
+                    perm_matrix[orig_idx, new_idx] = 1
+        if pauli_word:
+            return qml.pauli_decompose(
+                perm_matrix, check_hermitian=False, hide_identity=True
+            )
+        else:
+            return perm_matrix
+
+    @staticmethod
+    def y_equal_z_reflection(size = 2, pauli_word=False):
+        total_elements = size * size * size
+        perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
+        for x in range(size):
+            for y in range(size):
+                for z in range(size):
+                    orig_idx = x * size * size + y * size + z
+                    new_x = x
+                    new_y = size - z - 1
+                    new_z = size - y - 1
+                    new_idx = new_x * size * size + new_y * size + new_z
+                    perm_matrix[orig_idx, new_idx] = 1
+        if pauli_word:
+            return qml.pauli_decompose(
+                perm_matrix, check_hermitian=False, hide_identity=True
+            )
+        else:
+            return perm_matrix
+
+    @staticmethod
+    def _90_roto_x_reflect_yz(size = 2, pauli_word=False):
+        perm_matrix = O_h._90_deg_x_rot(size) @ O_h.yz_reflection(size)
+        if pauli_word:
+            return qml.pauli_decompose(
+                perm_matrix, check_hermitian=False, hide_identity=True
+            )
+        else:
+            return perm_matrix
+
+    @staticmethod
+    def _270_roto_x_reflect_yz(size = 2, pauli_word=False):
+        perm_matrix = O_h._270_deg_x_rot(size) @ O_h.yz_reflection(size)
+        if pauli_word:
+            return qml.pauli_decompose(
+                perm_matrix, check_hermitian=False, hide_identity=True
+            )
+        else:
+            return perm_matrix
+
+    @staticmethod
     def y_eq_z_rot(size=2, pauli_word=False):
         total_elements = size * size * size
         perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
@@ -275,9 +335,9 @@ class O_h:
             for y in range(size):
                 for z in range(size):
                     orig_idx = x * size * size + y * size + z
-                    new_x = size-1-x
-                    new_z = size-1-y
-                    new_y = size-1-z
+                    new_x = size - 1 - x
+                    new_y = size - 1 - y
+                    new_z = size - 1 - z
                     new_idx = new_x * size * size + new_y * size + new_z
                     perm_matrix[orig_idx, new_idx] = 1
         if pauli_word:
@@ -287,9 +347,6 @@ class O_h:
         else:
             return perm_matrix
 
-    @staticmethod
-    def rz():
-        return np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
 
 def is_group(matrices: list[np.ndarray], group_name: list[str]) -> bool:
     """
