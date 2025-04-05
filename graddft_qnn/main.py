@@ -115,8 +115,11 @@ if __name__ == "__main__":
         gates_gen = AnsatzIO.read_from_file(filename)
         logging.info(f"Loaded ansatz generator from {filename}")
     else:
-        gates_gen = DFTQNN.gate_design(len(dev.wires), [getattr(O_h, gr)(size, True) for gr in group])
+        gates_gen = DFTQNN.gate_design(
+            len(dev.wires), [getattr(O_h, gr)(size, True) for gr in group]
+        )
         AnsatzIO.write_to_file(filename, gates_gen)
+    gates_gen = gates_gen[: 2**num_qubits]
     if full_measurements:
         measurement_expvals = [
             custom_gates.generate_operators(measurement) for measurement in gates_gen
@@ -202,12 +205,12 @@ if __name__ == "__main__":
     report = {
         MetricName.DATE: date_time,
         MetricName.N_QUBITS: num_qubits,
-        MetricName.TEST_LOSS: test_loss,
+        MetricName.TEST_LOSSES: test_loss,
         MetricName.N_GATES: num_gates,
         MetricName.N_MEASUREMENTS: full_measurements,
         MetricName.GROUP_MEMBER: group,
         MetricName.EPOCHS: n_epochs,
-        MetricName.TRAIN_LOSSES: train_losses
+        MetricName.TRAIN_LOSSES: train_losses,
     }
     if pathlib.Path("report.json").exists():
         with open("report.json") as f:

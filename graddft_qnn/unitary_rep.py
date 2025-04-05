@@ -228,7 +228,7 @@ class O_h:
             return perm_matrix
 
     @staticmethod
-    def y_equal_neg_z_reflection(size = 2, pauli_word=False):
+    def y_equal_neg_z_reflection(size=2, pauli_word=False):
         total_elements = size * size * size
         perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
         for x in range(size):
@@ -248,7 +248,7 @@ class O_h:
             return perm_matrix
 
     @staticmethod
-    def y_equal_z_reflection(size = 2, pauli_word=False):
+    def y_equal_z_reflection(size=2, pauli_word=False):
         total_elements = size * size * size
         perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
         for x in range(size):
@@ -268,7 +268,7 @@ class O_h:
             return perm_matrix
 
     @staticmethod
-    def _90_roto_x_reflect_yz(size = 2, pauli_word=False):
+    def _90_roto_x_reflect_yz(size=2, pauli_word=False):
         perm_matrix = O_h._90_deg_x_rot(size) @ O_h.yz_reflection(size)
         if pauli_word:
             return qml.pauli_decompose(
@@ -278,7 +278,7 @@ class O_h:
             return perm_matrix
 
     @staticmethod
-    def _270_roto_x_reflect_yz(size = 2, pauli_word=False):
+    def _270_roto_x_reflect_yz(size=2, pauli_word=False):
         perm_matrix = O_h._270_deg_x_rot(size) @ O_h.yz_reflection(size)
         if pauli_word:
             return qml.pauli_decompose(

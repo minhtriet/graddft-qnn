@@ -1,10 +1,10 @@
-QBITS: 9  # 3 6 9 12
+QBITS: 3  # 3 6 9 12
 FULL_MEASUREMENTS: True
 N_GATES: 16
 GROUP:
-#=== test group
+#=== demo
 #  - _180_deg_x_rot
-#=== c3 group
+#===   c3 group
   - _90_deg_x_rot
   - _180_deg_x_rot
   - _270_deg_x_rot
@@ -17,23 +17,23 @@ GROUP:
 #  - y_eq_z_rot
 #  - y_eq_neg_z_rot
 #===   d4h group
-  - _90_deg_x_rot
-  - _180_deg_x_rot
-  - _270_deg_x_rot
-  - _180_deg_y_rot
-  - _180_deg_z_rot
-  - y_eq_z_rot
-  - y_eq_neg_z_rot
-  - inversion
-  - xy_reflection
-  - yz_reflection
-  - xz_reflection
-  - y_equal_neg_z_reflection
-  - y_equal_z_reflection
-  - _90_roto_x_reflect_yz
-  - _270_roto_x_reflect_yz
+#  - _90_deg_x_rot
+#  - _180_deg_x_rot
+#  - _270_deg_x_rot
+#  - _180_deg_y_rot
+#  - _180_deg_z_rot
+#  - y_eq_z_rot
+#  - y_eq_neg_z_rot
+#  - inversion
+#  - xy_reflection
+#  - yz_reflection
+#  - xz_reflection
+#  - y_equal_neg_z_reflection
+#  - y_equal_z_reflection
+#  - _90_roto_x_reflect_yz
+#  - _270_roto_x_reflect_yz
 TRAINING:
   N_EPOCHS: 10
-  LEARNING_RATE: 0.7
+  LEARNING_RATE: 0.1
   MOMENTUM: 0.9
   PER_EPOCH_EVAL: 3

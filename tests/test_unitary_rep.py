@@ -136,6 +136,7 @@ def test_inversion():
     )
     assert np.allclose(O_h.inversion(2), expected_array)
 
+
 def test_y_equal_z_reflection():
     expected_array = np.array(
         [
@@ -150,6 +151,7 @@ def test_y_equal_z_reflection():
         ]
     )
     assert np.allclose(O_h.y_equal_z_reflection(2), expected_array)
+
 
 def test_y_equal_neg_z_reflection():
     expected_array = np.array(
