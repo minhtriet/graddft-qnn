@@ -95,6 +95,7 @@ if __name__ == "__main__":
         learning_rate = data["TRAINING"]["LEARNING_RATE"]
         momentum = data["TRAINING"]["MOMENTUM"]
         num_gates = data["N_GATES"]
+        eval_per_x_epoch = data["TRAINING"]["EVAL_PER_X_EPOCH"]
         assert (
             isinstance(num_gates, int) or num_gates == "full"
         ), f"N_GATES must be integer or 'full', got {num_gates}"
@@ -158,8 +159,9 @@ if __name__ == "__main__":
 
     # train
     train_losses = []
+    train_ds = dataset["train"]
     for epoch in range(n_epochs):
-        train_ds = dataset["train"].shuffle(seed=42)
+        train_ds = train_ds.shuffle(seed=42)
         aggregated_train_loss = 0
         for batch in tqdm.tqdm(train_ds, desc=f"Epoch {epoch + 1}"):
             atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
@@ -211,6 +213,7 @@ if __name__ == "__main__":
         MetricName.GROUP_MEMBER: group,
         MetricName.EPOCHS: n_epochs,
         MetricName.TRAIN_LOSSES: train_losses,
+        MetricName.LEARNING_RATE: learning_rate
     }
     if pathlib.Path("report.json").exists():
         with open("report.json") as f:

@@ -15,20 +15,20 @@ class CubeDataset:
         "C2",
         "C2H4",
         "C2H6",
-        # "CH2",
-        "CH2O",
+        # "CH2",   open shell
+        "CH2O",  # not converged scf calculation
         "CH4",
-        "CO",
+        "CO",    # not converged scf calculation
         "H2O2",
         "HCN",
-        # "Li2",
+        # "Li2",   open shell
         "LiH",
         "N2",
         "N2H2",
         "N2H4",
         "NH3",
-        # "O2",
-        # "O3",
+        # "O2",    open shell
+        # "O3",    open shell
     ]
 
     # Class attribute to cache the dataset

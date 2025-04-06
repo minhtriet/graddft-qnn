@@ -10,3 +10,4 @@ class MetricName(str, Enum):
     EPOCHS = "Epochs"
     TEST_LOSSES = "Test loss"
     TRAIN_LOSSES = "Train losses"
+    LEARNING_RATE = "LR"

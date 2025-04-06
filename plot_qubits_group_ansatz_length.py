@@ -89,7 +89,6 @@ for qubits, data in qubits_data.items():
 
 plt.xlabel("Group")
 plt.ylabel("Number of Ansatz by groups")
-plt.title("Number of Ansatz")
 plt.yscale("log")
 plt.legend(title="Number of Qubits")
 
