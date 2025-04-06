@@ -21,18 +21,30 @@ COLOR_DICT = {
     frozenset(["_90_deg_x_rot", "_180_deg_x_rot", "_270_deg_x_rot"]): to_rgb("green"),
 }
 
+NAME_DICT = {
+    frozenset(
+        [
+            "_90_deg_x_rot",
+            "_180_deg_x_rot",
+            "_270_deg_x_rot",
+            "_180_deg_y_rot",
+            "_180_deg_z_rot",
+            "y_eq_z_rot",
+            "y_eq_neg_z_rot",
+        ]
+    ): "D4",
+    frozenset(["_90_deg_x_rot", "_180_deg_x_rot", "_270_deg_x_rot"]): "C3",
+
+}
+
 # Example data as a list of dictionaries
-with open("report.json") as f:
+with open("_report.json") as f:
     data_list = json.load(f)
-    data_list = data_list[39:]
+    data_list = data_list[-1:]
 
 
-def plot_losses(data_input):
-    # Handle both single dict and list of dicts
-    data_entries = [data_input] if isinstance(data_input, dict) else data_input
-
+def plot_losses(data_entries):
     plt.figure(figsize=(12, 6))
-
     for data in data_entries:
         # Validate Train losses length
         assert (
@@ -44,27 +56,27 @@ def plot_losses(data_input):
         test_loss_values = []
         for test_dict in data[MetricName.TEST_LOSSES]:
             for epoch, loss in test_dict.items():
-                test_epochs.append(epoch)
+                test_epochs.append(int(epoch))
                 test_loss_values.append(loss)
 
         # Get color based on Group members
         group_members = frozenset(data[MetricName.GROUP_MEMBER])
         color = COLOR_DICT[group_members]
-        label = ", ".join(data[MetricName.GROUP_MEMBER])
+        label = NAME_DICT[group_members]
 
         # Plot training and test losses with the same color
-        epochs = range(1, data[MetricName.EPOCHS] + 1)
+        epochs = range(data[MetricName.EPOCHS])
         plt.plot(
             epochs,
             data[MetricName.TRAIN_LOSSES],
-            label=f"Train Loss ({label})",
+            label=f"Train Loss ({data[MetricName.N_QUBITS]} qubits-{label})",
             color=color,
             linewidth=2,
         )
         plt.plot(
             test_epochs,
             test_loss_values,
-            label=f"Test Loss ({label})",
+            label=f"Test Loss ({data[MetricName.N_QUBITS]} qubits-{label})",
             color=color,
             linestyle="--",
             marker="o",
@@ -78,9 +90,7 @@ def plot_losses(data_input):
     plt.legend()
     plt.grid(True, linestyle="--", alpha=0.7)
 
-    # Show the plot
     plt.show()
 
 
-# Test with a list of dictionaries
 plot_losses(data_list)
