@@ -1,6 +1,6 @@
 QBITS: 3  # 3 6 9 12
 FULL_MEASUREMENTS: True
-N_GATES: 16
+N_GATES: 32
 GROUP:
 #=== demo
 #  - _180_deg_x_rot
@@ -34,6 +34,6 @@ GROUP:
 #  - _270_roto_x_reflect_yz
 TRAINING:
   N_EPOCHS: 30
-  LEARNING_RATE: 0.05
+  LEARNING_RATE: 0.3
   MOMENTUM: 0.9
   EVAL_PER_X_EPOCH: 3

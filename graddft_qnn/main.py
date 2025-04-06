@@ -14,12 +14,11 @@ from evaluate.metric_name import MetricName
 from jax import numpy as jnp
 from jax.random import PRNGKey
 from jaxtyping import PyTree
-from optax import adam, apply_updates
-from pyscf import dft, gto
+from optax import adam
 from unitary_rep import is_group
 
 from datasets import DatasetDict
-from graddft_qnn import custom_gates
+from graddft_qnn import custom_gates, helper
 from graddft_qnn.cube_dataset.cube_dataset_hf import CubeDataset
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.io.ansatz_io import AnsatzIO
@@ -159,45 +158,38 @@ if __name__ == "__main__":
 
     # train
     train_losses = []
+    test_losses = []
     train_ds = dataset["train"]
     for epoch in range(n_epochs):
         train_ds = train_ds.shuffle(seed=42)
         aggregated_train_loss = 0
+
         for batch in tqdm.tqdm(train_ds, desc=f"Epoch {epoch + 1}"):
-            atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
-            mol = gto.M(atom=atom_coords, basis="def2-tzvp")
-            mean_field = dft.UKS(mol)
-            mean_field.kernel()
-            molecule = gd.molecule_from_pyscf(mean_field)
-            (cost_value, predicted_energy), grads = gd.simple_energy_loss(
-                parameters, predictor, molecule, batch["groundtruth"]
+            parameters, opt_state, cost_value = helper.training.train_step(
+                parameters, predictor, batch, opt_state, tx
             )
             aggregated_train_loss += cost_value
-            # print(
-            #     "Predicted energy:",
-            #     predicted_energy,
-            #     "Cost value:",
-            #     cost_value,
-            #     "Grad: ",
-            #     (jnp.max(grads["params"]["theta"]), jnp.min(grads["params"]["theta"])),
-            # )
-            updates, opt_state = tx.update(grads, opt_state, parameters)
-            parameters = apply_updates(parameters, updates)
+
         train_loss = np.sqrt(aggregated_train_loss / len(train_ds))
-        logging.info(f"RMS loss: {train_loss}")
+        logging.info(f"RMS train loss: {train_loss}")
         train_losses.append(train_loss)
+
+        if (epoch + 1) % eval_per_x_epoch == 0:
+            aggregated_cost = 0
+            for batch in tqdm.tqdm(
+                dataset["test"], desc=f"Evaluate per {eval_per_x_epoch} epoch"
+            ):
+                cost_value = helper.training.eval_step(parameters, predictor, batch)
+                aggregated_cost += cost_value
+            test_loss = np.sqrt(aggregated_cost / len(dataset["test"]))
+            test_losses.append({epoch: test_loss})
+            logging.info(f"Test loss: {test_loss}")
+
     logging.info("Start evaluating")
     # test
     aggregated_cost = 0
     for batch in tqdm.tqdm(dataset["test"], desc="Evaluate"):
-        atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
-        mol = gto.M(atom=atom_coords, basis="def2-tzvp")
-        mean_field = dft.UKS(mol)
-        mean_field.kernel()
-        molecule = gd.molecule_from_pyscf(mean_field)
-        (cost_value, predicted_energy), grads = gd.simple_energy_loss(
-            parameters, predictor, molecule, batch["groundtruth"]
-        )
+        cost_value = helper.training.eval_step(parameters, predictor, batch)
         aggregated_cost += cost_value
     test_loss = np.sqrt(aggregated_cost / len(dataset["test"]))
     logging.info(f"Test loss {test_loss}")
@@ -207,13 +199,14 @@ if __name__ == "__main__":
     report = {
         MetricName.DATE: date_time,
         MetricName.N_QUBITS: num_qubits,
-        MetricName.TEST_LOSSES: test_loss,
+        MetricName.TEST_LOSS: test_loss,
         MetricName.N_GATES: num_gates,
         MetricName.N_MEASUREMENTS: full_measurements,
         MetricName.GROUP_MEMBER: group,
         MetricName.EPOCHS: n_epochs,
         MetricName.TRAIN_LOSSES: train_losses,
-        MetricName.LEARNING_RATE: learning_rate
+        MetricName.TEST_LOSSES: test_losses,
+        MetricName.LEARNING_RATE: learning_rate,
     }
     if pathlib.Path("report.json").exists():
         with open("report.json") as f:

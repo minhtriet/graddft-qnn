@@ -18,7 +18,7 @@ class CubeDataset:
         # "CH2",   open shell
         "CH2O",  # not converged scf calculation
         "CH4",
-        "CO",    # not converged scf calculation
+        "CO",  # not converged scf calculation
         "H2O2",
         "HCN",
         # "Li2",   open shell
