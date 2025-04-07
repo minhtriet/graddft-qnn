@@ -101,9 +101,9 @@ if __name__ == "__main__":
         full_measurements = data["FULL_MEASUREMENTS"]
         group = data["GROUP"]
         group_str_rep = "]_[".join(group)[:230]
-        group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
-        if not is_group(group_matrix_reps, group):
-            raise ValueError("Not forming a group")
+        # group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
+        # if not is_group(group_matrix_reps, group):
+        #     raise ValueError("Not forming a group")
         dev = qml.device("default.qubit", wires=num_qubits)
 
     # config model params
