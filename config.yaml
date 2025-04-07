@@ -33,7 +33,7 @@ GROUP:
 #  - _90_roto_x_reflect_yz
 #  - _270_roto_x_reflect_yz
 TRAINING:
-  N_EPOCHS: 3
+  N_EPOCHS: 30
   LEARNING_RATE: 0.3
   MOMENTUM: 0.9
   EVAL_PER_X_EPOCH: 3
