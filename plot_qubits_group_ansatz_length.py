@@ -46,6 +46,10 @@ file_name_params_map = {
         "qubits": 9,
         "group": "D4",
     },
+    "ansatz_9__90_deg_x_rot]_[_180_deg_x_rot]_[_270_deg_x_rot]_[_180_deg_y_rot]_[_180_deg_z_rot]_[y_eq_z_rot]_[y_eq_neg_z_rot]_[inversion]_[xy_reflection]_[yz_reflection]_[xz_reflection]_[y_equal_neg_z_reflection]_[y_equal_z_reflection]_[_90_ro_qubits.txt": {
+        "qubits": 9,
+        "group": "D4h",
+    },
 }
 
 
@@ -86,6 +90,8 @@ for qubits, data in qubits_data.items():
         linestyle="-",
         color=color[qubits],
     )
+    for d in range(len(data["groups"])):
+        plt.text(y=int(data["lines"][d])*1.2, x=d+0.01, s=data["lines"][d])
 
 plt.xlabel("Group")
 plt.ylabel("Number of Ansatz by groups")

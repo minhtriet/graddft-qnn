@@ -38,9 +38,8 @@ NAME_DICT = {
 }
 
 # Example data as a list of dictionaries
-with open("_report.json") as f:
+with open("report.json") as f:
     data_list = json.load(f)
-    data_list = data_list[-1:]
 
 
 def plot_losses(data_entries):
