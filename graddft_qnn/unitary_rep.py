@@ -3,8 +3,7 @@ from itertools import product
 
 import numpy as np
 import pennylane as qml
-from jax.experimental.sparse import BCOO, COO
-from scipy.sparse import coo_matrix
+from jax.experimental.sparse import COO
 
 
 class O_h:
@@ -246,8 +245,9 @@ class O_h:
                     row_indices.append(orig_idx)
                     col_indices.append(new_idx)
                     data.append(1)
-        perm_matrix = COO((data, (row_indices, col_indices)),
-                                 shape=(total_elements, total_elements))
+        perm_matrix = COO(
+            (data, (row_indices, col_indices)), shape=(total_elements, total_elements)
+        )
 
         if pauli_word:
             return qml.pauli_decompose(

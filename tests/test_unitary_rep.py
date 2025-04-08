@@ -71,6 +71,7 @@ def test_y_reflect():
     )
     assert np.allclose(O_h.xz_reflection(2), expected_array)
 
+
 def test_y_reflect_sparse():
     expected_array = np.array(
         [
