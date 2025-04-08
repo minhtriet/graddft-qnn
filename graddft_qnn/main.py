@@ -15,7 +15,6 @@ from jax import numpy as jnp
 from jax.random import PRNGKey
 from jaxtyping import PyTree
 from optax import adam
-from unitary_rep import is_group
 
 from datasets import DatasetDict
 from graddft_qnn import custom_gates, helper
@@ -95,6 +94,7 @@ if __name__ == "__main__":
         momentum = data["TRAINING"]["MOMENTUM"]
         num_gates = data["N_GATES"]
         eval_per_x_epoch = data["TRAINING"]["EVAL_PER_X_EPOCH"]
+        batch_size = data["TRAINING"]["BATCH_SIZE"]
         assert (
             isinstance(num_gates, int) or num_gates == "full"
         ), f"N_GATES must be integer or 'full', got {num_gates}"
@@ -164,7 +164,10 @@ if __name__ == "__main__":
         train_ds = train_ds.shuffle(seed=42)
         aggregated_train_loss = 0
 
-        for batch in tqdm.tqdm(train_ds, desc=f"Epoch {epoch + 1}"):
+        for i in tqdm.tqdm(
+            range(0, len(train_ds), batch_size), desc=f"Epoch {epoch + 1}"
+        ):
+            batch = train_ds[i : i + batch_size]
             parameters, opt_state, cost_value = helper.training.train_step(
                 parameters, predictor, batch, opt_state, tx
             )
@@ -207,6 +210,7 @@ if __name__ == "__main__":
         MetricName.TRAIN_LOSSES: train_losses,
         MetricName.TEST_LOSSES: test_losses,
         MetricName.LEARNING_RATE: learning_rate,
+        MetricName.BATCH_SIZE: batch_size,
     }
     if pathlib.Path("report.json").exists():
         with open("report.json") as f:
@@ -234,4 +238,8 @@ Metric of success
 - Testing on unseen data
 - Add / remove symetry for the ansatz
     - gradients steeper / smaller number of interations when adding more group
+    
+Average ONLY THE test loss for every epoch, of 9 qubits, for different groups 
+
+Smaller qubits count, bigger batches
 """

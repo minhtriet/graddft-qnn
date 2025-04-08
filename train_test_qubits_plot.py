@@ -19,6 +19,7 @@ COLOR_DICT = {
         ]
     ): to_rgb("blue"),
     frozenset(["_90_deg_x_rot", "_180_deg_x_rot", "_270_deg_x_rot"]): to_rgb("green"),
+    frozenset(["_180_deg_x_rot"]): to_rgb("red"),
 }
 
 NAME_DICT = {
@@ -34,7 +35,7 @@ NAME_DICT = {
         ]
     ): "D4",
     frozenset(["_90_deg_x_rot", "_180_deg_x_rot", "_270_deg_x_rot"]): "C3",
-
+    frozenset(["_180_deg_x_rot"]): "180 deg rotation",
 }
 
 # Example data as a list of dictionaries
@@ -45,6 +46,8 @@ with open("report.json") as f:
 def plot_losses(data_entries):
     plt.figure(figsize=(12, 6))
     for data in data_entries:
+        if data[MetricName.N_QUBITS] != 9:
+            continue
         # Validate Train losses length
         assert (
             len(data[MetricName.TRAIN_LOSSES]) == data[MetricName.EPOCHS]
@@ -68,14 +71,14 @@ def plot_losses(data_entries):
         plt.plot(
             epochs,
             data[MetricName.TRAIN_LOSSES],
-            label=f"Train Loss ({data[MetricName.N_QUBITS]} qubits-{label})",
+            label=f"Train Loss {label})",
             color=color,
             linewidth=2,
         )
         plt.plot(
             test_epochs,
             test_loss_values,
-            label=f"Test Loss ({data[MetricName.N_QUBITS]} qubits-{label})",
+            label=f"Test Loss {label})",
             color=color,
             linestyle="--",
             marker="o",

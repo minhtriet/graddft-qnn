@@ -91,7 +91,7 @@ for qubits, data in qubits_data.items():
         color=color[qubits],
     )
     for d in range(len(data["groups"])):
-        plt.text(y=int(data["lines"][d])*1.2, x=d+0.01, s=data["lines"][d])
+        plt.text(y=int(data["lines"][d]) * 1.2, x=d + 0.01, s=data["lines"][d])
 
 plt.xlabel("Group")
 plt.ylabel("Number of Ansatz by groups")
