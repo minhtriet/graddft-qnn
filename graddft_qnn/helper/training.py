@@ -11,7 +11,7 @@ def train_step(parameters, predictor, batch, opt_state, tx):
         atom_coords = list(
             zip(batch["symbols"][example_id], batch["coordinates"][example_id])
         )
-        mol = gto.M(atom=atom_coords, basis="STO-3G")
+        mol = gto.M(atom=atom_coords, basis="def2-tzvp")
         mean_field = dft.UKS(mol)
         mean_field.kernel()
         molecule = gd.molecule_from_pyscf(mean_field)
