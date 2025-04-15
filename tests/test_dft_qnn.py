@@ -1,53 +1,19 @@
-import functools
-
 import numpy as np
+import pennylane as qml
 
-from graddft_qnn.custom_gates import words
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.unitary_rep import O_h
 
-x_rot_matrix = np.array(
-    [
-        [0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0],
-        [1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0],
-    ]
-)
-y_rot_matrix = np.array([])
-z_rot_matrix = np.array(
-    [
-        [0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0],
-        [1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0],
-    ]
-)
-x_reflect_matrix = []
-y_reflect_matrix = []
-z_reflect_matrix = []
-
 
 def test_twirling():
-    sentence = ["X"] * 6
-    sentence_matrix = [words[x] for x in sentence]
-    matrix = functools.reduce(np.kron, sentence_matrix)
-    size = np.cbrt(matrix.shape[0])
-    assert size.is_integer()
-    assert np.allclose(matrix, DFTQNN.twirling_2_(matrix, O_h.C2_group(int(size))))
+    # eq.60 in https://doi.org/10.1103/PRXQuantum.4.010328
+    twirled = DFTQNN._twirling(qml.X(0) @ qml.I(1), [qml.SWAP([0, 1])])
+    expected = 0.5 * (qml.X(0) + qml.X(1))
+    assert np.allclose(qml.matrix(twirled[0]), qml.matrix(expected))
 
-    sentence = ["X", "X", "X", "X", "I", "Z"]
-    sentence_matrix = [words[x] for x in sentence]
-    matrix = functools.reduce(np.kron, sentence_matrix)
-    assert DFTQNN.twirling_2_(matrix, O_h.C2_group(int(size))) is None
+    # eq.65 in https://doi.org/10.1103/PRXQuantum.4.010328
+    twirled = DFTQNN._twirling(qml.I(0) @ qml.Y(1), [qml.X(0) @ qml.X(1)])
+    assert twirled is None
 
 
 def test_gate_design():

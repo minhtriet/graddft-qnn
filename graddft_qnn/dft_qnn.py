@@ -20,15 +20,14 @@ class DFTQNN(nn.Module):
         @qml.qnode(self.dev)
         def _circuit(feature, theta, gate_gens, measurements):
             """
-            :param instance: an instance of the class Functional.
-            :param rhoinputs: input to the neural network, in the form of an array.
-            :return: should be 1 measurement, so that graddft_qnn.qnn_functional.QNNFunctional.xc_energy works
+            :return: should be full measurement or just 1 measurement,
+            so that graddft_qnn.qnn_functional.QNNFunctional.xc_energy works
 
             custom_gates.U2_6_wires(theta, 0)
             return custom_gates.U2_6_wires_measurement(0)
             """
             # if type(theta) == jax._src.interpreters.ad.JVPTracer:
-            #     print(jnp.max(theta).aval, jnp.min(theta).aval, jnp.var(theta).aval, np.mean(theta).aval)
+            #     print(jnp.max(theta).aval, jnp.min(theta).aval, jnp.var(theta).aval, np.mean(theta).aval)   # noqa: E501
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             [
                 custom_gates.generate_R_pauli(
@@ -53,21 +52,15 @@ class DFTQNN(nn.Module):
         return self.circuit(feature, theta, selected_gates_gen, list(self.measurements))
 
     @staticmethod
-    def twirling_(ansatz: np.array, unitary_reps: list[np.array]):
-        ansatz = ansatz.astype(np.complex64)
-        coeffs = []
-        for unitary_rep in unitary_reps:
-            twirled = 0.5 * (ansatz + unitary_rep @ ansatz @ unitary_rep.conjugate())
-            if np.allclose(twirled, np.zeros_like(twirled)):
-                return None
-            else:
-                coeffs.append(qml.pauli_decompose(twirled).coeffs)
-        if np.allclose(coeffs, [[1.0]] * len(unitary_reps)):
-            return ansatz
-        return None
-
-    @staticmethod
-    def twirling_2_(ansatz: np.array, unitary_reps: list[np.array]):
+    def _twirling(
+        ansatz: np.ndarray | qml.operation.Operator,
+        unitary_reps: list[np.ndarray | qml.operation.Operator],
+    ):
+        """
+        :param ansatz:
+        :param unitary_reps:
+        :return:
+        """
         coeffs = []
         for unitary_rep in unitary_reps:
             twirled = 0.5 * (ansatz + unitary_rep @ ansatz @ qml.adjoint(unitary_rep))
@@ -78,21 +71,20 @@ class DFTQNN(nn.Module):
         for i in range(1, len(coeffs)):
             if not np.allclose(qml.matrix(coeffs[i]), qml.matrix(coeffs[0])):
                 return None
-        return ansatz
+        return coeffs
 
     @staticmethod
     def _sentence_twirl(sentence: list[str], invariant_rep: list[np.array]):
         sentence = qml.prod(
             *[getattr(qml, word)(idx) for idx, word in enumerate(sentence)]
         )
-        # return DFTQNN.twirling_(matrix, invariant_rep)
-        return DFTQNN.twirling_2_(sentence, invariant_rep)
+        return DFTQNN._twirling(sentence, invariant_rep)
 
     @staticmethod
     def gate_design(
-        num_wires: int, invariant_rep: list[np.array]
+        num_wires: int, invariant_rep: list[np.ndarray | qml.ops.op_math.Prod]
     ) -> tuple[list[str], list[str]]:
-        switch_threshold = int(np.ceil(2**num_wires / len(custom_gates.words)))
+        # switch_threshold = int(np.ceil(2**num_wires / len(custom_gates.words)))
         ansatz_gen = []
         with tqdm(
             total=2**num_wires, desc="Creating invariant gates generator"
@@ -103,7 +95,7 @@ class DFTQNN(nn.Module):
                 if DFTQNN._sentence_twirl(combination, invariant_rep) is not None:
                     # if (
                     #     combination[0]
-                    #     != list(custom_gates.words)[len(ansatz_gen) // switch_threshold]
+                    #     != list(custom_gates.words)[len(ansatz_gen) // switch_threshold]    # noqa: E501
                     # ):
                     #     # E.g we want 10 ansatz and 3 options (x,y,z)
                     #     # then the first 3 ansatz should start with x,
