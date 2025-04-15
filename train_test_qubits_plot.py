@@ -46,8 +46,8 @@ with open("report.json") as f:
 def plot_losses(data_entries):
     plt.figure(figsize=(12, 6))
     for data in data_entries:
-        if data[MetricName.N_QUBITS] != 9:
-            continue
+        # if data[MetricName.N_QUBITS] != 9:
+        #     continue
         # Validate Train losses length
         assert (
             len(data[MetricName.TRAIN_LOSSES]) == data[MetricName.EPOCHS]

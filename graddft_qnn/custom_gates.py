@@ -22,7 +22,6 @@ def U2(theta, i):
     :param i:
     :return:
     """
-    assert len(theta) == 15
     qml.QubitUnitary(RXXX(theta[0]), [i, i + 1, i + 2])
     qml.QubitUnitary(RXX(theta[1]), [i, i + 1])  # XXI
     qml.QubitUnitary(RXIX(theta[2]), [i, i + 1, i + 2])
@@ -61,7 +60,7 @@ def U2_measurement(i):
     ]
 
 
-def U2_6_wires(theta, i):
+def U2_6_wires(theta, i):  # noqa: PLR0915
     """
     The 16 invariant Pauli words with C2 are
     - XXX, XXI, XIX, IXX, XII, IXI, IIX
@@ -134,27 +133,6 @@ def U2_6_wires(theta, i):
     qml.QubitUnitary(generate_R_pauli(theta[0], "XXIIZZ"), range(i, i + 6))
     qml.QubitUnitary(generate_R_pauli(theta[0], "XXIIIX"), range(i, i + 6))
     qml.QubitUnitary(generate_R_pauli(theta[0], "XXIIII"), range(i, i + 6))
-
-
-def U2_measurement(i):
-    return [
-        qml.expval(qml.X(i) @ qml.X(i + 1) @ qml.X(i + 2)),
-        qml.expval(qml.X(i) @ qml.X(i + 1)),
-        qml.expval(qml.X(i) @ qml.I(i + 1) @ qml.X(i + 2)),
-        qml.expval(qml.X(i)),
-        qml.expval(qml.Y(i) @ qml.Y(i + 1) @ qml.Y(i + 2)),
-        qml.expval(qml.Y(i) @ qml.Y(i + 1) @ qml.Z(i + 2)),
-        qml.expval(qml.Y(i) @ qml.Z(i + 1) @ qml.Y(i + 2)),
-        qml.expval(qml.Y(i) @ qml.Z(i + 1) @ qml.Z(i + 2)),
-        qml.expval(qml.Z(i) @ qml.Y(i + 1) @ qml.Y(i + 2)),
-        qml.expval(qml.Z(i) @ qml.Y(i + 1) @ qml.Z(i + 2)),
-        qml.expval(qml.Z(i) @ qml.Z(i + 1) @ qml.Z(i + 2)),
-        qml.expval(qml.Z(i) @ qml.Z(i + 1) @ qml.Y(i + 2)),
-        qml.expval(qml.X(i + 1) @ qml.X(i + 2)),
-        qml.expval(qml.X(i + 1)),
-        qml.expval(qml.X(i + 2)),
-        qml.expval(qml.I(i) @ qml.I(i + 1) @ qml.I(i + 2)),
-    ]
 
 
 def U2_6_wires_measurement(i):

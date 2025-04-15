@@ -238,8 +238,7 @@ Metric of success
 - Testing on unseen data
 - Add / remove symetry for the ansatz
     - gradients steeper / smaller number of interations when adding more group
-    
-Average ONLY THE test loss for every epoch, of 9 qubits, for different groups 
+Average ONLY THE test loss for every epoch, of 9 qubits, for different groups
 
 Smaller qubits count, bigger batches
 """

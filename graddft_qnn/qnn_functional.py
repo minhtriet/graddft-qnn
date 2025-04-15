@@ -13,8 +13,8 @@ class QNNFunctional(Functional):
         self,
         params: PyTree,
         grid: Grid,
-        unscaled_coefficient_inputs: Float[Array, "(n,n)"],
-        unscaled_densities: Float[Array, "(n,n)"],
+        unscaled_coefficient_inputs: Float[Array, "(n,n)"],  # noqa: F821
+        unscaled_densities: Float[Array, "(n,n)"],  # noqa: F821
         clip_cte: float = 1e-30,
     ) -> Scalar:
         """
