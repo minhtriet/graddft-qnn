@@ -99,6 +99,6 @@ class DFTQNN(nn.Module):
                     #     continue
                     ansatz_gen.append(invariant_gate)
                     pbar.update()
-                    if len(ansatz_gen) == 2**num_wires:
-                        break
+                    # if len(ansatz_gen) == 2**num_wires:
+                    #     break
         return ansatz_gen
