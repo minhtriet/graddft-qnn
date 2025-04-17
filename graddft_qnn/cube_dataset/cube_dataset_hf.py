@@ -1,4 +1,8 @@
+import logging
+import time
+
 import pennylane as qml
+import tqdm
 
 from datasets import Dataset, DatasetDict, Features, Sequence, Value
 
@@ -10,9 +14,11 @@ class CubeDataset:
 
     # List of molecule names as a class attribute
     mol_names = [
+        "N2H2",
+        "N2H4",
+        "C2H2",
         "BH3",
         "BeH2",
-        "C2",
         "C2H4",
         "C2H6",
         # "CH2",   open shell
@@ -24,9 +30,13 @@ class CubeDataset:
         # "Li2",   open shell
         "LiH",
         "N2",
-        "N2H2",
-        "N2H4",
         "NH3",
+        "C2",
+        "CO2",
+        # "HF",    somehow stuck here
+        # "He2",   it's a lie Pennylane doesn't have it
+        "H2",
+        "H2O",
         # "O2",    open shell
         # "O3",    open shell
     ]
@@ -56,7 +66,7 @@ class CubeDataset:
         Returns:
             DatasetDict: A dictionary with 'train' and 'test' datasets.
         """
-        # Calculate train and test splits (70% train, 30% test)
+        logging.info("Start building dataset")
         train_size = int(0.7 * len(cls.mol_names))
         train_mols = cls.mol_names[:train_size]
         test_mols = cls.mol_names[train_size:]
@@ -65,15 +75,12 @@ class CubeDataset:
         train_data = cls.generate_data(train_mols)
         test_data = cls.generate_data(test_mols)
 
-        # Define the dataset features
         features = Features(
             {
                 "name": Value("string"),  # Molecule name
                 "groundtruth": Value("float64"),  # FCI energy
                 "symbols": Sequence(Value("string")),  # List of atomic symbols
-                "coordinates": Sequence(
-                    Sequence(Value("float64"), length=3)
-                ),  # List of 3D coordinates
+                "coordinates": Sequence(Sequence(Value("float64"), length=3)),
             }
         )
 
@@ -93,8 +100,7 @@ class CubeDataset:
             list: List of dictionaries containing molecule data.
         """
         data = []
-        for molecule in mol_list:
-            # Load data using qml.data.load
+        for molecule in tqdm.tqdm(mol_list):
             data_entry = qml.data.load("qchem", molname=molecule, basis="STO-3G")[0]
             symbols = data_entry.molecule.symbols
             coordinates = data_entry.molecule.coordinates.astype(float)
@@ -106,4 +112,5 @@ class CubeDataset:
                 "coordinates": coordinates,
             }
             data.append(example)
+            time.sleep(3)  # leave sometime for lock to release?
         return data
