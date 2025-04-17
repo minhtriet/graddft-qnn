@@ -29,12 +29,9 @@ class DFTQNN(nn.Module):
             # if type(theta) == jax._src.interpreters.ad.JVPTracer:
             #     print(jnp.max(theta).aval, jnp.min(theta).aval, jnp.var(theta).aval, np.mean(theta).aval)   # noqa: E501
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
-            [
-                custom_gates.generate_R_pauli(
-                    theta[idx][0], gen
-                )  # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
-                for idx, gen in enumerate(gate_gens)
-            ]
+            for idx, gen in enumerate(gate_gens):
+                # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
+                qml.exp(-0.5j * theta[idx][0] * gen)
             return [qml.expval(measurement) for measurement in measurements]
 
         result = jnp.array(_circuit(feature, theta, gate_gens, measurements))
@@ -53,7 +50,7 @@ class DFTQNN(nn.Module):
 
     @staticmethod
     def _twirling(
-        ansatz: np.ndarray | qml.operation.Operator,
+        ansatz: tuple,
         unitary_reps: list[np.ndarray | qml.operation.Operator],
     ):
         """
@@ -71,13 +68,13 @@ class DFTQNN(nn.Module):
         for i in range(1, len(coeffs)):
             if not np.allclose(qml.matrix(coeffs[i]), qml.matrix(coeffs[0])):
                 return None
-        return coeffs
+        return coeffs[0]
 
     @staticmethod
-    def _sentence_twirl(sentence: list[str], invariant_rep: list[np.array]):
+    def _sentence_twirl(sentence: tuple, invariant_rep: list[qml.ops.op_math.Prod]):
         sentence = qml.prod(
             *[getattr(qml, word)(idx) for idx, word in enumerate(sentence)]
-        )
+        )  # e.g, create qml.X(0) @ qml.Y(1) from X,Y
         return DFTQNN._twirling(sentence, invariant_rep)
 
     @staticmethod
@@ -92,7 +89,8 @@ class DFTQNN(nn.Module):
             for combination in itertools.product(
                 custom_gates.words.keys(), repeat=num_wires
             ):
-                if DFTQNN._sentence_twirl(combination, invariant_rep) is not None:
+                invariant_gate = DFTQNN._sentence_twirl(combination, invariant_rep)
+                if invariant_gate is not None:
                     # if (
                     #     combination[0]
                     #     != list(custom_gates.words)[len(ansatz_gen) // switch_threshold]    # noqa: E501
@@ -101,7 +99,7 @@ class DFTQNN(nn.Module):
                     #     # then the first 3 ansatz should start with x,
                     #     # then next 3 with y, then next with z
                     #     continue
-                    ansatz_gen.append(combination)
+                    ansatz_gen.append(invariant_gate)
                     pbar.update()
                     if len(ansatz_gen) == 2**num_wires:
                         break
