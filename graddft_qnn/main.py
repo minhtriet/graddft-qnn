@@ -17,7 +17,7 @@ from jaxtyping import PyTree
 from optax import adam
 
 from datasets import DatasetDict
-from graddft_qnn import custom_gates, helper
+from graddft_qnn import helper
 from graddft_qnn.cube_dataset.cube_dataset_hf import CubeDataset
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.io.ansatz_io import AnsatzIO
@@ -120,15 +120,7 @@ if __name__ == "__main__":
         )
         AnsatzIO.write_to_file(filename, gates_gen)
     gates_gen = gates_gen[: 2**num_qubits]
-    if full_measurements:
-        measurement_expvals = [
-            custom_gates.generate_operators(measurement) for measurement in gates_gen
-        ]
-    else:
-        measurement_expvals = [
-            custom_gates.generate_operators(measurement)
-            for measurement in gates_gen[:1]
-        ]
+    measurement_expvals = gates_gen if full_measurements else gates_gen[:1]
     if isinstance(num_gates, int):
         gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
     dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals, gates_indices)
