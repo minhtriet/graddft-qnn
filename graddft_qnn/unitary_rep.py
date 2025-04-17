@@ -3,7 +3,6 @@ from itertools import product
 
 import numpy as np
 import pennylane as qml
-from jax.experimental.sparse import COO
 
 
 class O_h:
@@ -221,34 +220,6 @@ class O_h:
                     new_y = size - y - 1
                     new_idx = new_x * size * size + new_y * size + new_z
                     perm_matrix[orig_idx, new_idx] = 1
-        if pauli_word:
-            return qml.pauli_decompose(
-                perm_matrix, check_hermitian=False, hide_identity=True
-            )
-        else:
-            return perm_matrix
-
-    @staticmethod
-    def xz_reflection_sparse(size=2, pauli_word=False):
-        total_elements = size * size * size
-        row_indices = []
-        col_indices = []
-        data = []
-        for x in range(size):
-            for y in range(size):
-                for z in range(size):
-                    orig_idx = x * size * size + y * size + z
-                    new_x = x
-                    new_z = z
-                    new_y = size - y - 1
-                    new_idx = new_x * size * size + new_y * size + new_z
-                    row_indices.append(orig_idx)
-                    col_indices.append(new_idx)
-                    data.append(1)
-        perm_matrix = COO(
-            (data, (row_indices, col_indices)), shape=(total_elements, total_elements)
-        )
-
         if pauli_word:
             return qml.pauli_decompose(
                 perm_matrix, check_hermitian=False, hide_identity=True
