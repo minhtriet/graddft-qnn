@@ -112,6 +112,7 @@ if __name__ == "__main__":
     # define the QNN
     filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits.txt"
     if pathlib.Path(filename).exists():
+        filename += ".pkl"
         gates_gen = AnsatzIO.read_from_file(filename)
         logging.info(f"Loaded ansatz generator from {filename}")
     else:

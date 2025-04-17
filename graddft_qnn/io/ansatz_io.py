@@ -15,6 +15,6 @@ class AnsatzIO:
 
     @staticmethod
     def read_from_file(file_path):
-        with open(f"{file_path}.pkl", "rb") as file:
+        with open(file_path, "rb") as file:
             data = pickle.load(file)
         return data

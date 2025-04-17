@@ -22,16 +22,14 @@ class DFTQNN(nn.Module):
             """
             :return: should be full measurement or just 1 measurement,
             so that graddft_qnn.qnn_functional.QNNFunctional.xc_energy works
-
-            custom_gates.U2_6_wires(theta, 0)
-            return custom_gates.U2_6_wires_measurement(0)
             """
+            # debugging
             # if type(theta) == jax._src.interpreters.ad.JVPTracer:
             #     print(jnp.max(theta).aval, jnp.min(theta).aval, jnp.var(theta).aval, np.mean(theta).aval)   # noqa: E501
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for idx, gen in enumerate(gate_gens):
                 # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
-                qml.exp(-0.5j * theta[idx][0] * gen)
+                qml.exp(-1j * theta[idx][0] * gen)
             return [qml.expval(measurement) for measurement in measurements]
 
         result = jnp.array(_circuit(feature, theta, gate_gens, measurements))
