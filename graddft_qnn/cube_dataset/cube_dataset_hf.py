@@ -38,7 +38,7 @@ class CubeDataset:
         "H2",
         "H2O",
         # "O2",    open shell
-        # "O3",    open shell
+        "O3",
     ]
 
     # Class attribute to cache the dataset
