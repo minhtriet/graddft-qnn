@@ -1,5 +1,4 @@
 import logging
-import time
 
 import pennylane as qml
 import tqdm
@@ -112,5 +111,4 @@ class CubeDataset:
                 "coordinates": coordinates,
             }
             data.append(example)
-            time.sleep(3)  # leave sometime for lock to release?
         return data
