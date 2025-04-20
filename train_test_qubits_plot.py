@@ -22,6 +22,8 @@ COLOR_DICT = {
     frozenset(["_180_deg_x_rot"]): to_rgb("red"),
 }
 
+MARKER_DICT = {6: "D", 9: "X", 3: "1"}
+
 NAME_DICT = {
     frozenset(
         [
@@ -42,12 +44,14 @@ NAME_DICT = {
 with open("report.json") as f:
     data_list = json.load(f)
 
+data_list = data_list[-5:]
+
 
 def plot_losses(data_entries):
     plt.figure(figsize=(12, 6))
     for data in data_entries:
-        # if data[MetricName.N_QUBITS] != 9:
-        #     continue
+        if data[MetricName.N_QUBITS] not in [6, 9]:
+            continue
         # Validate Train losses length
         assert (
             len(data[MetricName.TRAIN_LOSSES]) == data[MetricName.EPOCHS]
@@ -62,7 +66,9 @@ def plot_losses(data_entries):
                 test_loss_values.append(loss)
 
         # Get color based on Group members
-        group_members = frozenset(data[MetricName.GROUP_MEMBER])
+        group_members = frozenset(
+            data[MetricName.GROUP_MEMBER]
+        )  # h4ck! list cannot be key of dict
         color = COLOR_DICT[group_members]
         label = NAME_DICT[group_members]
 
@@ -71,17 +77,18 @@ def plot_losses(data_entries):
         plt.plot(
             epochs,
             data[MetricName.TRAIN_LOSSES],
-            label=f"Train Loss {label})",
+            label=f"Train Loss {label} {data[MetricName.N_QUBITS]} qb",
             color=color,
             linewidth=2,
+            marker=MARKER_DICT[data[MetricName.N_QUBITS]],
         )
         plt.plot(
             test_epochs,
             test_loss_values,
-            label=f"Test Loss {label})",
+            label=f"Test Loss {label} {data[MetricName.N_QUBITS]} qb",
             color=color,
-            linestyle="--",
-            marker="o",
+            linestyle="-.",
+            marker=MARKER_DICT[data[MetricName.N_QUBITS]],
             linewidth=2,
         )
 
