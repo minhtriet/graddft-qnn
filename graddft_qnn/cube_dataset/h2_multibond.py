@@ -1,4 +1,5 @@
 import logging
+import random
 
 import pennylane as qml
 import tqdm
@@ -43,6 +44,8 @@ class H2MultibondDataset:
         data_entries = qml.data.load(
             "qchem", molname=cls.mol_name, basis="STO-3G", bondlength="full"
         )
+        random.seed(77)
+        random.shuffle(data_entries)
         train_size = int(0.7 * len(data_entries))
         train_mols = data_entries[:train_size]
         test_mols = data_entries[train_size:]
