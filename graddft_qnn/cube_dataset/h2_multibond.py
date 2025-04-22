@@ -6,39 +6,13 @@ import tqdm
 from datasets import Dataset, DatasetDict, Features, Sequence, Value
 
 
-class CubeDataset:
+class H2MultibondDataset:
     """
     The dataset contains quantum chemistry data for a fixed list of molecules
     """
 
     # List of molecule names as a class attribute
-    mol_names = [
-        "N2H2",
-        "N2H4",
-        "C2H2",
-        "BH3",
-        "BeH2",
-        "C2H4",
-        "C2H6",
-        # "CH2",   open shell
-        "CH2O",  # not converged scf calculation
-        "CH4",
-        "CO",  # not converged scf calculation
-        "H2O2",
-        "HCN",
-        # "Li2",   open shell
-        "LiH",
-        "N2",
-        "NH3",
-        "C2",
-        "CO2",
-        # "HF",    somehow stuck here
-        # "He2",   it's a lie Pennylane doesn't have it
-        "H2",  # 100 bond length, some train, some test
-        "H2O",
-        # "O2",    open shell
-        "O3",
-    ]
+    mol_name = "H2"
 
     # Class attribute to cache the dataset
     _dataset = None
@@ -66,9 +40,12 @@ class CubeDataset:
             DatasetDict: A dictionary with 'train' and 'test' datasets.
         """
         logging.info("Start building dataset")
-        train_size = int(0.7 * len(cls.mol_names))
-        train_mols = cls.mol_names[:train_size]
-        test_mols = cls.mol_names[train_size:]
+        data_entries = qml.data.load(
+            "qchem", molname=cls.mol_name, basis="STO-3G", bondlength="full"
+        )
+        train_size = int(0.7 * len(data_entries))
+        train_mols = data_entries[:train_size]
+        test_mols = data_entries[train_size:]
 
         # Generate data for train and test sets
         train_data = cls.generate_data(train_mols)
@@ -87,8 +64,8 @@ class CubeDataset:
         test_dataset = Dataset.from_list(test_data, features=features)
         return DatasetDict({"train": train_dataset, "test": test_dataset})
 
-    @staticmethod
-    def generate_data(mol_list):
+    @classmethod
+    def generate_data(cls, data_entries):
         """
         Generates data for a list of molecules by loading quantum chemistry data.
 
@@ -99,13 +76,12 @@ class CubeDataset:
             list: List of dictionaries containing molecule data.
         """
         data = []
-        for molecule in tqdm.tqdm(mol_list):
-            data_entry = qml.data.load("qchem", molname=molecule, basis="STO-3G")[0]
+        for data_entry in tqdm.tqdm(data_entries):
             symbols = data_entry.molecule.symbols
             coordinates = data_entry.molecule.coordinates.astype(float)
             fci_e = data_entry.fci_energy
             example = {
-                "name": molecule,
+                "name": cls.mol_name,
                 "groundtruth": fci_e,
                 "symbols": symbols,
                 "coordinates": coordinates,

@@ -1,4 +1,5 @@
 import json
+from datetime import date, datetime
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb
@@ -44,14 +45,19 @@ NAME_DICT = {
 with open("report.json") as f:
     data_list = json.load(f)
 
-data_list = data_list[-5:]
+data_list = [
+    data
+    for data in data_list
+    if datetime.strptime(data["Date"], "%m/%d/%Y, %H:%M:%S").date() > date(2025, 4, 18)
+]
+data_list = data_list[-2:-1]
 
 
 def plot_losses(data_entries):
     plt.figure(figsize=(12, 6))
     for data in data_entries:
-        if data[MetricName.N_QUBITS] not in [6, 9]:
-            continue
+        # if data[MetricName.N_QUBITS] not in [6]:
+        #     continue
         # Validate Train losses length
         assert (
             len(data[MetricName.TRAIN_LOSSES]) == data[MetricName.EPOCHS]

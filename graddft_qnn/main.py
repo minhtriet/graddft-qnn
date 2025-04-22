@@ -18,7 +18,7 @@ from optax import adam
 
 from datasets import DatasetDict
 from graddft_qnn import helper
-from graddft_qnn.cube_dataset.cube_dataset_hf import CubeDataset
+from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.qnn_functional import QNNFunctional
@@ -143,11 +143,11 @@ if __name__ == "__main__":
 
     predictor = gd.non_scf_predictor(nf)
     # start training
-    if pathlib.Path("datasets/hf_dataset").exists():
-        dataset = DatasetDict.load_from_disk(pathlib.Path("datasets/hf_dataset"))
+    if pathlib.Path("datasets/h2_dataset").exists():
+        dataset = DatasetDict.load_from_disk(pathlib.Path("datasets/h2_dataset"))
     else:
-        dataset = CubeDataset.get_dataset()
-        dataset.save_to_disk("datasets/hf_dataset")
+        dataset = H2MultibondDataset.get_dataset()
+        dataset.save_to_disk("datasets/h2_dataset")
 
     # train
     train_losses = []
