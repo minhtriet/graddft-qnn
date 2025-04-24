@@ -11,6 +11,7 @@ from graddft_qnn.unitary_rep import O_h
 
 def test_a_training_step():
     num_wires = 3
+    np.random.seed(17)
     _setup_device = qml.device("default.qubit", num_wires)
     gates_indices = list(np.random.choice(2**num_wires, num_wires, replace=False))
     filename = pathlib.Path("tests") / "ansatz_3_qubits_180_x.pkl"
@@ -34,6 +35,7 @@ def test_a_training_step():
 
 def test_a_training_step_6qb_d4():
     num_wires = 6
+    np.random.seed(17)
     _setup_device = qml.device("default.qubit", num_wires)
     gates_indices = list(np.random.choice(2**num_wires, num_wires, replace=False))
     filename = pathlib.Path("tests") / "ansatz_6_d4.pkl"
@@ -68,7 +70,34 @@ def test_a_training_step_6qb_d4():
         parameters, rot_mock_coeff_inputs_x_y_eq_z
     )
 
-    assert np.allclose(result_rot_x, result, 2e-5)
-    assert np.allclose(result_rot_y, result, 2e-5)
-    assert np.allclose(result_rot_z, result, 2e-5)
-    assert np.allclose(result_rot_mock_coeff_inputs_x_y_eq_z, result, 2e-5)
+    assert np.allclose(result_rot_x, result)
+    assert np.allclose(result_rot_y, result)
+    assert np.allclose(result_rot_z, result)
+    assert np.allclose(result_rot_mock_coeff_inputs_x_y_eq_z, result)
+
+
+def test_270_x_rot_sparse_matrix():
+    num_wire = 6
+    dev = qml.device("lightning.qubit", wires=num_wire)
+
+    @qml.qnode(dev)
+    def six_qubit_circuit_dense(params):
+        qml.AmplitudeEmbedding(params, wires=range(6), normalize=True)
+        qml.X(0)
+        qml.Y(1)
+        qml.RZ(1.23, 2)
+        return qml.expval(O_h._270_deg_x_rot(4, pauli_word=True))
+
+    @qml.qnode(dev)
+    def six_qubit_circuit_sparse(params):
+        qml.AmplitudeEmbedding(params, wires=range(6), normalize=True)
+        qml.X(0)
+        qml.Y(1)
+        qml.RZ(1.23, 2)
+        return qml.expval(O_h._270_deg_x_rot_sparse(4, pauli_word=True))
+
+    np.random.seed(14)
+    mock_coeff_inputs = np.random.rand(2**num_wire)
+    dense_result = six_qubit_circuit_dense(mock_coeff_inputs)
+    sparse_result = six_qubit_circuit_sparse(mock_coeff_inputs)
+    assert np.allclose(dense_result, sparse_result)

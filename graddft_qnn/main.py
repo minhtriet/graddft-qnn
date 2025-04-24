@@ -22,7 +22,7 @@ from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.qnn_functional import QNNFunctional
-from graddft_qnn.unitary_rep import O_h
+from graddft_qnn.unitary_rep import O_h, is_group
 
 logging.getLogger().setLevel(logging.INFO)
 np.random.seed(42)
@@ -101,9 +101,9 @@ if __name__ == "__main__":
         full_measurements = data["FULL_MEASUREMENTS"]
         group = data["GROUP"]
         group_str_rep = "]_[".join(group)[:230]
-        # group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
-        # if not is_group(group_matrix_reps, group):
-        #     raise ValueError("Not forming a group")
+        group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
+        if not is_group(group_matrix_reps, group):
+            raise ValueError("Not forming a group")
         dev = qml.device("default.qubit", wires=num_qubits)
 
     # config model params
