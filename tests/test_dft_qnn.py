@@ -33,4 +33,4 @@ def test_gate_design():
     input = np.random.rand(2**6)
     output_dense = six_qubit_circuit(input, gates_gen_dense)
     output_sparse = six_qubit_circuit(input, gates_gen_sparse)
-    np.allclose(output_dense, output_sparse)
+    assert np.allclose(output_dense, output_sparse)

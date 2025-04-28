@@ -95,6 +95,7 @@ if __name__ == "__main__":
         num_gates = data["N_GATES"]
         eval_per_x_epoch = data["TRAINING"]["EVAL_PER_X_EPOCH"]
         batch_size = data["TRAINING"]["BATCH_SIZE"]
+        check_group = data["CHECK_GROUP"]
         assert (
             isinstance(num_gates, int) or num_gates == "full"
         ), f"N_GATES must be integer or 'full', got {num_gates}"
@@ -102,7 +103,7 @@ if __name__ == "__main__":
         group = data["GROUP"]
         group_str_rep = "]_[".join(group)[:230]
         group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
-        if not is_group(group_matrix_reps, group):
+        if (check_group) and (not is_group(group_matrix_reps, group)):
             raise ValueError("Not forming a group")
         dev = qml.device("default.qubit", wires=num_qubits)
 

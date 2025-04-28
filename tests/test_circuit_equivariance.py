@@ -101,3 +101,9 @@ def test_270_x_rot_sparse_matrix():
     dense_result = six_qubit_circuit_dense(mock_coeff_inputs)
     sparse_result = six_qubit_circuit_sparse(mock_coeff_inputs)
     assert np.allclose(dense_result, sparse_result)
+
+
+def test_180_x_rot_matrix():
+    a = O_h._180_deg_x_rot_sparse(4, False).todense()
+    b = O_h._180_deg_x_rot(4, False)
+    assert np.allclose(a, b)

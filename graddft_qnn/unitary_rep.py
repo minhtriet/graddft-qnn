@@ -12,7 +12,8 @@ class O_h:
         size=2, pauli_word=False
     ) -> csr_matrix | qml.SparseHamiltonian:
         total_elements = size * size * size
-        row_indices = col_indices = []
+        row_indices = []
+        col_indices = []
         for x in range(size):
             for y in range(size):
                 for z in range(size):
@@ -410,7 +411,6 @@ def is_group(matrices: list[np.ndarray], group_name: list[str]) -> bool:
 
     Args:
         matrices: List of numpy arrays representing matrices
-        tolerance: Floating point comparison tolerance
 
     Returns:
         bool: True if matrices form a group, False otherwise
@@ -432,3 +432,9 @@ def is_group(matrices: list[np.ndarray], group_name: list[str]) -> bool:
             return False
 
     return True
+
+
+def is_zero_matrix_combination(op: qml.operation.Operator):
+    """ """
+    eigvals = op.eigvals()
+    return np.allclose(eigvals, np.zeros_like(eigvals))
