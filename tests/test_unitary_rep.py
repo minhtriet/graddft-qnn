@@ -189,6 +189,16 @@ def test_is_zero_matrix_combination():
         exp1 + exp2_sparse @ exp1 @ qml.adjoint(exp2_sparse)
     )
 
+    exp1_3 = qml.X(0) @ qml.X(1) @ qml.X(2) @ qml.X(3) @ qml.Y(4) @ qml.Y(5)
+    exp2_1_sparse = O_h._180_deg_x_rot_sparse(4, True)
+    exp2_1 = O_h._180_deg_x_rot(4, True)
+    assert not is_zero_matrix_combination(
+        exp1_3 + exp2_1 @ exp1_3 @ qml.adjoint(exp2_1)
+    )
+    assert not is_zero_matrix_combination(
+        exp1_3 + exp2_1_sparse @ exp1_3 @ qml.adjoint(exp2_1_sparse)
+    )
+
 
 def test_sparse_vs_dense():
     with open("tests/ansatz_6_180_deg_x_rot.pkl", "rb") as f:

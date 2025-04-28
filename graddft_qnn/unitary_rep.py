@@ -435,6 +435,5 @@ def is_group(matrices: list[np.ndarray], group_name: list[str]) -> bool:
 
 
 def is_zero_matrix_combination(op: qml.operation.Operator):
-    """ """
-    eigvals = op.eigvals()
-    return np.allclose(eigvals, np.zeros_like(eigvals))
+    data = op.sparse_matrix().data
+    return np.allclose(np.zeros_like(data), data)
