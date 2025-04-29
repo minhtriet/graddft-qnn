@@ -1,9 +1,7 @@
-from collections.abc import Callable
-
 import jax
 import yaml
-from grad_dft import Functional, Solid, abs_clip
-from grad_dft.molecule import Grid, Molecule
+from grad_dft import Functional, abs_clip
+from grad_dft.molecule import Grid
 from jax import numpy as jnp
 from jaxtyping import Array, Float, PyTree, Scalar
 
@@ -68,16 +66,3 @@ class QNNFunctional(Functional):
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
         return self._integrate(xc_energy_density, grid_weights)  # was grid.weights
-
-    @jax.jit
-    def loss_fn(
-        params,
-        data,
-        compute_energy: Callable,
-        atoms: Molecule | Solid,
-        truth_energy: Float,
-    ):
-        atoms_out = compute_energy(params, atoms)
-        E_predict = atoms_out.energy
-        diff = E_predict - truth_energy
-        return diff**2, E_predict

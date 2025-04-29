@@ -32,7 +32,6 @@ key = PRNGKey(42)
 @jax.jit
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
-    # change: total spin, also why it is not +/-0.5?
     return jnp.sum(rho, 1)
 
 
@@ -105,7 +104,8 @@ if __name__ == "__main__":
         group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
         if (check_group) and (not is_group(group_matrix_reps, group)):
             raise ValueError("Not forming a group")
-        dev = qml.device("default.qubit", wires=num_qubits)
+        dev = qml.device("lightning.qubit", wires=num_qubits)
+        # dev = qml.device("default.qubit", wires=num_qubits)
 
     # config model params
     jax.config.update("jax_enable_x64", True)
