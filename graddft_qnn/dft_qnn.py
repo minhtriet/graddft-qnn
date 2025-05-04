@@ -76,38 +76,6 @@ class DFTQNN(nn.Module):
         )  # e.g, create qml.X(0) @ qml.Y(1) from X,Y
         return DFTQNN._twirling(sentence, invariant_rep)
 
-    """
-    from concurrent.futures import ProcessPoolExecutor
-from tqdm import tqdm
-
-def process(item):
-    # Example processing logic
-    print(f"Processing {item}")
-    # Return None for items to discard, or a value to keep
-    if item % 2 == 0:  # Example: discard even numbers
-        return None
-    return item * 2  # Keep odd numbers with transformation
-
-def parallel_process(a_set, max_workers=4):
-    j = []
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        # Submit all tasks and get futures
-        futures = [executor.submit(process, i) for i in a_set]
-        # Collect results with tqdm progress bar
-        for future in tqdm(futures, total=len(futures), desc="Processing items"):
-            result = future.result()
-            if result is not None:  # Only append non-None results
-                j.append(result)
-    return j
-
-# Example usage
-a_set = {1, 2, 3, 4, 5}
-results = parallel_process(a_set)
-print("Results:", results)
-
-
-    """
-
     @staticmethod
     def gate_design(
         num_wires: int, invariant_rep: list[np.ndarray | qml.ops.op_math.Prod]

@@ -21,6 +21,7 @@ from graddft_qnn import helper
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.io.ansatz_io import AnsatzIO
+from graddft_qnn.naive_dft_qnn import NaiveDFTQNN
 from graddft_qnn.qnn_functional import QNNFunctional
 from graddft_qnn.unitary_rep import O_h, is_group
 
@@ -80,6 +81,7 @@ def simple_energy_loss(
 
 
 if __name__ == "__main__":
+    jax.config.update("jax_enable_x64", True)
     with open("config.yaml") as file:
         data = yaml.safe_load(file)
         if "QBITS" not in data:
@@ -99,39 +101,40 @@ if __name__ == "__main__":
             isinstance(num_gates, int) or num_gates == "full"
         ), f"N_GATES must be integer or 'full', got {num_gates}"
         full_measurements = data["FULL_MEASUREMENTS"]
-        group = data["GROUP"]
-        group_str_rep = "]_[".join(group)[:230]
-        group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
-        if (check_group) and (not is_group(group_matrix_reps, group)):
-            raise ValueError("Not forming a group")
+        group: list = data["GROUP"]
+        if "naive" not in group[0].lower():
+            group_str_rep = "]_[".join(group)[:230]
+            group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
+            if (check_group) and (not is_group(group_matrix_reps, group)):
+                raise ValueError("Not forming a group")
         dev = qml.device("default.qubit", wires=num_qubits)
         # dev = qml.device("lightning.qubit", wires=num_qubits)
 
-    # config model params
-    jax.config.update("jax_enable_x64", True)
-
     # define the QNN
-    filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits.txt"
-    if pathlib.Path(filename).exists():
-        filename += ".pkl"
-        gates_gen = AnsatzIO.read_from_file(filename)
-        logging.info(f"Loaded ansatz generator from {filename}")
+    if "naive" not in group[0].lower():
+        filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits.txt"
+        if pathlib.Path(filename).exists():
+            filename += ".pkl"
+            gates_gen = AnsatzIO.read_from_file(filename)
+            logging.info(f"Loaded ansatz generator from {filename}")
+        else:
+            gates_gen = DFTQNN.gate_design(
+                len(dev.wires), [getattr(O_h, gr)(size, True) for gr in group]
+            )
+            AnsatzIO.write_to_file(filename, gates_gen)
+        gates_gen = gates_gen[: 2**num_qubits]
+        if isinstance(full_measurements, bool) and full_measurements:
+            measurement_expvals = gates_gen
+        elif full_measurements > 1:  # var name abusing here
+            assert (2**num_qubits / full_measurements).is_integer()
+            measurement_expvals = gates_gen[:full_measurements]
+        else:
+            measurement_expvals = gates_gen[:1]
+        if isinstance(num_gates, int):
+            gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
+        dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals, gates_indices)
     else:
-        gates_gen = DFTQNN.gate_design(
-            len(dev.wires), [getattr(O_h, gr)(size, True) for gr in group]
-        )
-        AnsatzIO.write_to_file(filename, gates_gen)
-    gates_gen = gates_gen[: 2**num_qubits]
-    if isinstance(full_measurements, bool) and full_measurements:
-        measurement_expvals = gates_gen
-    elif full_measurements > 1:  # var name abusing here
-        assert (2**num_qubits / full_measurements).is_integer()
-        measurement_expvals = gates_gen[:full_measurements]
-    else:
-        measurement_expvals = gates_gen[:1]
-    if isinstance(num_gates, int):
-        gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
-    dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals, gates_indices)
+        dft_qnn = NaiveDFTQNN(dev)
 
     # get a sample batch for initialization
     coeff_input = jnp.zeros((2 ** len(dev.wires),))

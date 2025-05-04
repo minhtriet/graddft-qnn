@@ -3,9 +3,11 @@ FULL_MEASUREMENTS: True
 N_GATES: 8
 CHECK_GROUP: False
 GROUP:
+#=== naive
+  - naive
 #=== demo
 #  - _180_deg_x_rot
-  - _180_deg_x_rot_sparse
+#  - _180_deg_x_rot_sparse
 #===   c3 group
 #  - _90_deg_x_rot
 #  - _180_deg_x_rot
