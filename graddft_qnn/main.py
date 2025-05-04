@@ -104,8 +104,8 @@ if __name__ == "__main__":
         group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
         if (check_group) and (not is_group(group_matrix_reps, group)):
             raise ValueError("Not forming a group")
-        dev = qml.device("lightning.qubit", wires=num_qubits)
-        # dev = qml.device("default.qubit", wires=num_qubits)
+        dev = qml.device("default.qubit", wires=num_qubits)
+        # dev = qml.device("lightning.qubit", wires=num_qubits)
 
     # config model params
     jax.config.update("jax_enable_x64", True)
@@ -122,7 +122,13 @@ if __name__ == "__main__":
         )
         AnsatzIO.write_to_file(filename, gates_gen)
     gates_gen = gates_gen[: 2**num_qubits]
-    measurement_expvals = gates_gen if full_measurements else gates_gen[:1]
+    if isinstance(full_measurements, bool) and full_measurements:
+        measurement_expvals = gates_gen
+    elif full_measurements > 1:  # var name abusing here
+        assert (2**num_qubits / full_measurements).is_integer()
+        measurement_expvals = gates_gen[:full_measurements]
+    else:
+        measurement_expvals = gates_gen[:1]
     if isinstance(num_gates, int):
         gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
     dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals, gates_indices)
