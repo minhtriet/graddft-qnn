@@ -21,6 +21,8 @@ COLOR_DICT = {
     ): to_rgb("blue"),
     frozenset(["_90_deg_x_rot", "_180_deg_x_rot", "_270_deg_x_rot"]): to_rgb("green"),
     frozenset(["_180_deg_x_rot"]): to_rgb("red"),
+    frozenset(["_180_deg_x_rot_sparse"]): to_rgb("red"),
+    frozenset(["naive"]): to_rgb("black"),
 }
 
 MARKER_DICT = {6: "D", 9: "X", 3: "1"}
@@ -39,6 +41,8 @@ NAME_DICT = {
     ): "D4",
     frozenset(["_90_deg_x_rot", "_180_deg_x_rot", "_270_deg_x_rot"]): "C3",
     frozenset(["_180_deg_x_rot"]): "180 deg rotation",
+    frozenset(["_180_deg_x_rot_sparse"]): "180 deg rotation",
+    frozenset(["naive"]): "Naive",
 }
 
 # Example data as a list of dictionaries
@@ -50,7 +54,7 @@ data_list = [
     for data in data_list
     if datetime.strptime(data["Date"], "%m/%d/%Y, %H:%M:%S").date() > date(2025, 4, 18)
 ]
-data_list = data_list[-2:-1]
+data_list = data_list[-2:]
 
 
 def plot_losses(data_entries):
