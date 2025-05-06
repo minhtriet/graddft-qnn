@@ -1,14 +1,18 @@
 ## Setup
 - Install poetry (`pipx install poetry`)
-- `poetry install --with data_exploration`
+- Run `poetry install --with data_explore`
 ## How to run an experiment
 - Edit the config in `config.yaml`
-- `python grad_dft/main.py`
-- The run results can be seen in `reports.json`
+- `python graddft_qnn/main.py`
+- The current and past run results can be seen in `reports.json`
+  - To assist merging different reports, we have `consolidate_report.py`   
+- Plot the train/test losses: `train_test_qubits_plot.py`
 ## Current investigations
-Te The training loss is the same, but the 
-Try to run on bigger number of qubits (maximum 9 qubits)
-
+- The training loss is the same
+![Figure_1](https://github.com/user-attachments/assets/293b1e7f-c87e-4195-9fe9-c2568f316ec6)
+but the test is different
+![Figure_1](https://github.com/user-attachments/assets/a23bd026-8860-4b59-b17a-9b3ac6a7a92e)
+- Try to run on bigger number of qubits (maximum 9 qubits)
 
 ## Dataset
 1. (in use) Different bond lengths of H2 in training set and test set
