@@ -16,7 +16,8 @@ but the test is different
 
 ## Datasets
 1. (in use) Different bond lengths of H2 in training set and test set
-2. Different molecules with default Pennlylane bond length
+2. H2 + Li2 + LiH
+3. Different molecules with default Pennlylane bond length
 
 # Contribution
 
