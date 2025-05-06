@@ -14,7 +14,7 @@ but the test is different
 ![Figure_1](https://github.com/user-attachments/assets/a23bd026-8860-4b59-b17a-9b3ac6a7a92e)
 - Try to run on bigger number of qubits (maximum 9 qubits)
 
-## Dataset
+## Datasets
 1. (in use) Different bond lengths of H2 in training set and test set
 2. Different molecules with default Pennlylane bond length
 
