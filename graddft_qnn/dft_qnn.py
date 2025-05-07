@@ -17,8 +17,7 @@ class DFTQNN(nn.Module):
     measurements: list[np.array]
     gate_indices: list[int]
 
-    def circuit(self, feature, theta, gate_gens, measurements):
-        @qml.qnode(self.dev)
+    def setup(self) -> None:
         def _circuit(feature, theta, gate_gens, measurements):
             """
             :return: should be full measurement or just 1 measurement,
@@ -33,7 +32,10 @@ class DFTQNN(nn.Module):
                 qml.exp(-1j * theta[idx][0] * gen)
             return [qml.expval(measurement) for measurement in measurements]
 
-        result = jnp.array(_circuit(feature, theta, gate_gens, measurements))
+        self.qnode = qml.QNode(_circuit, self.dev)
+
+    def circuit(self, feature, theta, gate_gens, measurements):
+        result = jnp.array(self.qnode(feature, theta, gate_gens, measurements))
         return result
 
     @nn.compact
