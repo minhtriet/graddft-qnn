@@ -1,13 +1,12 @@
-QBITS: 9  # 3 6 9 12
+QBITS: 6  # 3 6 9 12
 FULL_MEASUREMENTS: True
 N_GATES: 8
 CHECK_GROUP: False
 GROUP:
 #=== naive
-  - naive
+#  - naive
 #=== demo
-#  - _180_deg_x_rot
-#  - _180_deg_x_rot_sparse
+  - _180_deg_x_rot_sparse
 #===   c3 group
 #  - _90_deg_x_rot
 #  - _180_deg_x_rot
@@ -38,7 +37,7 @@ GROUP:
 #  - _270_roto_x_reflect_yz
 TRAINING:
   N_EPOCHS: 10
-  LEARNING_RATE: 0.7
+  LEARNING_RATE: 0.007
   MOMENTUM: 0.9
   EVAL_PER_X_EPOCH: 3
   BATCH_SIZE: 3
