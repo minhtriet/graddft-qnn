@@ -54,7 +54,7 @@ data_list = [
     for data in data_list
     if datetime.strptime(data["Date"], "%m/%d/%Y, %H:%M:%S").date() > date(2025, 4, 18)
 ]
-data_list = data_list[-2:]
+data_list = data_list[-1:]
 
 
 def plot_losses(data_entries):
