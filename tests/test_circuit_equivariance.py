@@ -1,8 +1,11 @@
 import pathlib
 
+import jax.numpy as jnp
 import pennylane as qml
 import pennylane.numpy as np
-from jax.random import PRNGKey
+from grad_dft import abs_clip
+from jax.lax import Precision
+from jax.random import PRNGKey, normal
 
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.io.ansatz_io import AnsatzIO
@@ -34,6 +37,18 @@ def test_a_training_step():
 
 
 def test_a_training_step_6qb_d4():
+    def _integrate(energy_density, gridweights, clip_cte=1e-30):
+        """
+        copy verbatim from grad_dft.functional.Functional._integrate, this could
+        have been a static function
+        """
+        return jnp.einsum(
+            "r,r->",
+            abs_clip(gridweights, clip_cte),
+            abs_clip(energy_density, clip_cte),
+            precision=Precision.HIGHEST,
+        )
+
     num_wires = 6
     np.random.seed(17)
     _setup_device = qml.device("default.qubit", num_wires)
@@ -74,6 +89,23 @@ def test_a_training_step_6qb_d4():
     assert np.allclose(result_rot_y, result)
     assert np.allclose(result_rot_z, result)
     assert np.allclose(result_rot_mock_coeff_inputs_x_y_eq_z, result)
+
+    densities = normal(key, shape=(2**num_wires, 1))
+
+    result = result[:, jnp.newaxis]
+    result_rot_x = result_rot_x[:, jnp.newaxis]
+
+    xc_energy_density = jnp.einsum("rf,rf->r", result, densities)
+    xc_energy_density = abs_clip(xc_energy_density, 1e-30)
+
+    xc_energy_density_rot_x = jnp.einsum("rf,rf->r", result_rot_x, densities)
+    xc_energy_density_rot_x = abs_clip(xc_energy_density_rot_x, 1e-30)
+
+    grid_weights = normal(key, shape=(2**num_wires,))
+    assert np.isclose(
+        _integrate(xc_energy_density, grid_weights),
+        _integrate(xc_energy_density_rot_x, grid_weights),
+    )
 
 
 def test_270_x_rot_sparse_matrix():
