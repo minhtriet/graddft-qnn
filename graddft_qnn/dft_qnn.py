@@ -56,20 +56,26 @@ class DFTQNN(nn.Module):
     ):
         """
         :param ansatz:
-        :param unitary_reps:
+        :param unitary_reps: list of all the group member, it should not have
+        the identity group member
         :return:
         """
-        coeffs = []
+        twirled = 0
+        # identity is the member of every group
+        unitary_reps.append(DFTQNN._identity_like(unitary_reps[0]))
         for unitary_rep in unitary_reps:
-            twirled = 0.5 * (ansatz + unitary_rep @ ansatz @ qml.adjoint(unitary_rep))
+            twirled += unitary_rep @ ansatz @ qml.adjoint(unitary_rep)
             if is_zero_matrix_combination(twirled):
-                return None
-            else:
-                coeffs.append(twirled)
-        for i in range(1, len(coeffs)):
-            if coeffs[i] != coeffs[0]:
-                return None
-        return coeffs[0]
+                return None  # Twirling with this group member returns zero matrix!
+        twirled /= len(unitary_reps)
+        return twirled
+
+    @staticmethod
+    def _identity_like(group_member: qml.operation.Operator):
+        result = qml.I(0)
+        for x in range(1, group_member.num_wires):
+            qml.prod(result, qml.I(x))
+        return result
 
     @staticmethod
     def _sentence_twirl(sentence: tuple, invariant_rep: list[qml.ops.op_math.Prod]):
@@ -82,7 +88,6 @@ class DFTQNN(nn.Module):
     def gate_design(
         num_wires: int, invariant_rep: list[np.ndarray | qml.ops.op_math.Prod]
     ) -> tuple[list[str], list[str]]:
-        # switch_threshold = int(np.ceil(2**num_wires / len(custom_gates.words)))
         ansatz_gen = []
         with tqdm(
             total=2**num_wires, desc="Creating invariant gates generator"
@@ -90,18 +95,8 @@ class DFTQNN(nn.Module):
             for _, combination in enumerate(
                 itertools.product(custom_gates.words.keys(), repeat=num_wires)
             ):
-                if _ % 50 == 0:
-                    print(".", end="")
                 invariant_gate = DFTQNN._sentence_twirl(combination, invariant_rep)
                 if invariant_gate is not None:
-                    # if (
-                    #     combination[0]
-                    #     != list(custom_gates.words)[len(ansatz_gen) // switch_threshold]    # noqa: E501
-                    # ):
-                    #     # E.g we want 10 ansatz and 3 options (x,y,z)
-                    #     # then the first 3 ansatz should start with x,
-                    #     # then next 3 with y, then next with z
-                    #     continue
                     ansatz_gen.append(invariant_gate)
                     pbar.update()
                     if len(ansatz_gen) == 2**num_wires:
