@@ -108,7 +108,6 @@ if __name__ == "__main__":
             if (check_group) and (not is_group(group_matrix_reps, group)):
                 raise ValueError("Not forming a group")
         dev = qml.device("default.qubit", wires=num_qubits)
-        # dev = qml.device("lightning.qubit", wires=num_qubits)
 
     # define the QNN
     if "naive" not in group[0].lower():
