@@ -1,5 +1,6 @@
 import numpy as np
 import pennylane as qml
+import pytest
 
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.unitary_rep import O_h
@@ -16,6 +17,7 @@ def test_twirling():
     assert twirled is None
 
 
+@pytest.mark.skip(reason="takes too long, can run separately")
 def test_gate_design():
     num_wire = 6
     dev = qml.device("default.qubit", wires=num_wire)

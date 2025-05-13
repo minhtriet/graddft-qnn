@@ -34,9 +34,10 @@ class DFTQNN(nn.Module):
             return [qml.expval(measurement) for measurement in measurements]
 
         self.qnode = qml.QNode(_circuit, self.dev, diff_method="backprop")
+        self.qnode = jax.jit(self.qnode)
 
     def circuit(self, feature, theta, gate_gens, measurements):
-        result = jax.jit(self.qnode)(feature, theta, gate_gens, measurements)
+        result = self.qnode(feature, theta, gate_gens, measurements)
         return jnp.array(result)
 
     @nn.compact
