@@ -46,10 +46,22 @@ def resolve_energy_density(xc_functional_name: str):
         )
 
 
-# def energy_densities(molecule: gd.Molecule, xc_functional: Callable):
-#     clip_cte = 1e-30
-#     rho = jnp.clip(molecule.density(), a_min=clip_cte)
-#     return jax.jit(xc_functional)(rho, clip_cte)
+@jax.jit
+def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
+    r"""Auxiliary function to generate the features of LSDA."""
+    # Molecule can compute the density matrix.
+    rho = jnp.clip(molecule.density(), a_min=clip_cte)
+    # Now we can implement the LDA energy density equation in the paper.
+    lda_e = (
+        -3
+        / 2
+        * (3 / (4 * jnp.pi)) ** (1 / 3)
+        * (rho ** (4 / 3)).sum(axis=1, keepdims=True)
+    )
+    # For simplicity we do not include the exchange polarization correction
+    # check function exchange_polarization_correction in functional.py
+    # The output of features must be an Array of dimension n_grid x n_features.
+    return lda_e
 
 
 def simple_energy_loss(
@@ -147,7 +159,7 @@ if __name__ == "__main__":
     # define the functional
     nf = QNNFunctional(
         coefficients=dft_qnn,
-        energy_densities=e_density,
+        energy_densities=energy_densities,
         coefficient_inputs=coefficient_inputs,
     )
     tx = adam(learning_rate=learning_rate, b1=momentum)
