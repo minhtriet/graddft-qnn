@@ -1,6 +1,7 @@
 import itertools
 
 import flax.linen as nn
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pennylane as qml
@@ -32,11 +33,12 @@ class DFTQNN(nn.Module):
                 qml.exp(-1j * theta[idx][0] * gen)
             return [qml.expval(measurement) for measurement in measurements]
 
-        self.qnode = qml.QNode(_circuit, self.dev)
+        self.qnode = qml.QNode(_circuit, self.dev, diff_method="backprop")
+        self.qnode = jax.jit(self.qnode)
 
     def circuit(self, feature, theta, gate_gens, measurements):
-        result = jnp.array(self.qnode(feature, theta, gate_gens, measurements))
-        return result
+        result = self.qnode(feature, theta, gate_gens, measurements)
+        return jnp.array(result)
 
     @nn.compact
     def __call__(self, feature: Array) -> Array:

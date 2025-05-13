@@ -36,6 +36,16 @@ def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     return jnp.sum(rho, 1)
 
 
+def resolve_energy_density(xc_functional_name: str):
+    xc_functional = getattr(gd.popular_functionals, xc_functional_name, None)
+    if xc_functional:
+        return xc_functional
+    else:
+        raise ModuleNotFoundError(
+            f"Function {xc_functional} does not exist in popular_functionals"
+        )
+
+
 @jax.jit
 def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     r"""Auxiliary function to generate the features of LSDA."""
@@ -107,8 +117,8 @@ if __name__ == "__main__":
             group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
             if (check_group) and (not is_group(group_matrix_reps, group)):
                 raise ValueError("Not forming a group")
+        xc_functional_name = data["XC_FUNCTIONAL"]
         dev = qml.device("default.qubit", wires=num_qubits)
-        # dev = qml.device("lightning.qubit", wires=num_qubits)
 
     # define the QNN
     if "naive" not in group[0].lower():
@@ -142,6 +152,9 @@ if __name__ == "__main__":
     logging.info("Initializing the params")
     parameters = dft_qnn.init(key, coeff_input)
     logging.info("Finished initializing the params")
+
+    # resolve energy density according to user input
+    e_density = resolve_energy_density(xc_functional_name)
 
     # define the functional
     nf = QNNFunctional(
