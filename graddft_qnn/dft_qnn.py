@@ -58,13 +58,11 @@ class DFTQNN(nn.Module):
     ):
         """
         :param ansatz:
-        :param unitary_reps: list of all the group member, it should not have
+        :param unitary_reps: list of all the group member, it should have
         the identity group member
         :return:
         """
         twirled = 0
-        # identity is the member of every group
-        unitary_reps.append(DFTQNN._identity_like(unitary_reps[0]))
         for unitary_rep in unitary_reps:
             twirled += unitary_rep @ ansatz @ qml.adjoint(unitary_rep)
             if is_zero_matrix_combination(twirled):
@@ -76,7 +74,7 @@ class DFTQNN(nn.Module):
     def _identity_like(group_member: qml.operation.Operator):
         result = qml.I(0)
         for x in range(1, group_member.num_wires):
-            qml.prod(result, qml.I(x))
+            result = qml.prod(result, qml.I(x))
         return result
 
     @staticmethod
@@ -90,7 +88,14 @@ class DFTQNN(nn.Module):
     def gate_design(
         num_wires: int, invariant_rep: list[np.ndarray | qml.ops.op_math.Prod]
     ) -> tuple[list[str], list[str]]:
+        """
+        :param num_wires:
+        :param invariant_rep: The representation of group members, doesn't have
+        identity yet
+        :return:
+        """
         ansatz_gen = []
+        invariant_rep.append(DFTQNN._identity_like(invariant_rep[0]))
         with tqdm(
             total=2**num_wires, desc="Creating invariant gates generator"
         ) as pbar:
