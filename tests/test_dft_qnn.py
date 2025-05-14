@@ -16,6 +16,15 @@ def test_twirling():
     twirled = DFTQNN._twirling(qml.I(0) @ qml.Y(1), [qml.X(0) @ qml.X(1)])
     assert twirled is None
 
+    rep = qml.I(0) @ qml.X(1) @ qml.X(2)
+    ansatz = qml.X(0) @ qml.Y(1) @ qml.Z(2)
+    twirled = DFTQNN._twirling(ansatz, [rep])
+    expected = 0.5 * (
+        rep @ ansatz @ qml.adjoint(rep)
+        + (qml.I(0) @ qml.I(1)) @ ansatz @ qml.adjoint(qml.I(0) @ qml.I(1)) @ qml.I(2)
+    )
+    assert np.allclose(qml.matrix(twirled), qml.matrix(expected))
+
 
 @pytest.mark.skip(reason="takes too long, can run separately")
 def test_gate_design():

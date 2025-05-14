@@ -76,7 +76,7 @@ class DFTQNN(nn.Module):
     def _identity_like(group_member: qml.operation.Operator):
         result = qml.I(0)
         for x in range(1, group_member.num_wires):
-            qml.prod(result, qml.I(x))
+            result = qml.prod(result, qml.I(x))
         return result
 
     @staticmethod
