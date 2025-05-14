@@ -11,6 +11,7 @@ from flax.typing import Array
 class NaiveDFTQNN(nn.Module):
     dev: qml.device
     measurements: list[qml.operation.Operator]
+    num_gates: int
 
     def _circuit(self, feature, theta):
         """
@@ -19,11 +20,11 @@ class NaiveDFTQNN(nn.Module):
         """
         start_wire = 0
         qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
-        if len(self.dev.wires) % 2 == 1:
-            qml.RX(theta[0][0], wires=0)
-            start_wire = 1
-        for i in range(start_wire, len(self.dev.wires), 2):
-            qml.SingleExcitation(theta[i // 2][0], wires=[i, i + 1])
+        for i in range(self.num_gates):
+            for wire in range(len(self.dev.wires)):
+                qml.RX(theta[i][0], wires=wire)
+            for j in range(len(self.dev.wires) - 1):
+                qml.SingleExcitation(theta[i][0], wires=[j, j + 1])
         return [qml.expval(z_op) for z_op in self.measurements]
 
     def setup(self) -> None:
@@ -37,7 +38,7 @@ class NaiveDFTQNN(nn.Module):
         theta = self.param(
             "theta",
             nn.initializers.he_normal(),
-            (math.ceil(len(self.dev.wires) / 2), 1),
+            (self.num_gates, 1),
             jnp.float32,
         )
         return self.circuit(feature, theta)
