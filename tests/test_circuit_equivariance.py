@@ -3,7 +3,6 @@ import pathlib
 import jax.numpy as jnp
 import pennylane as qml
 import pennylane.numpy as np
-import pytest
 from grad_dft import abs_clip
 from jax.lax import Precision
 from jax.random import PRNGKey, normal
@@ -20,9 +19,8 @@ def test_a_training_step():
     gates_indices = list(np.random.choice(2**num_wires, num_wires, replace=False))
     filename = pathlib.Path("tests") / "ansatz_3_qubits_180_x.pkl"
     gates_gen = AnsatzIO.read_from_file(str(filename))
-    measurement_expvals = gates_gen
     mock_coeff_inputs = np.random.rand(2**num_wires)
-    dft_qnn = DFTQNN(_setup_device, gates_gen, measurement_expvals, gates_indices)
+    dft_qnn = DFTQNN(_setup_device, gates_gen, gates_indices)
 
     rot_mock_coeff_inputs_x = (
         O_h._180_deg_x_rot(int(np.cbrt(2**num_wires))) @ mock_coeff_inputs
@@ -50,7 +48,7 @@ def _integrate(energy_density, gridweights, clip_cte=1e-30):
     )
 
 
-@pytest.mark.skip(reason="training work, but this has a strange JAX leak error")
+# @pytest.mark.skip(reason="training work, but this has a strange JAX leak error")
 def test_a_training_step_6qb_d4():
     num_wires = 6
     np.random.seed(17)
@@ -58,24 +56,18 @@ def test_a_training_step_6qb_d4():
     gates_indices = list(np.random.choice(2**num_wires, num_wires, replace=False))
     filename = pathlib.Path("tests") / "ansatz_6_d4.pkl"
     gates_gen = AnsatzIO.read_from_file(str(filename))
-    measurement_expvals = gates_gen
     mock_coeff_inputs = np.random.rand(2**num_wires)
-    dft_qnn = DFTQNN(_setup_device, gates_gen, measurement_expvals, gates_indices)
-
-    rot_mock_coeff_inputs_x = (
-        O_h._180_deg_x_rot(int(np.cbrt(2**num_wires))) @ mock_coeff_inputs
+    dft_qnn = DFTQNN(_setup_device, gates_gen, gates_indices)
+    _180_x_rot = O_h._180_deg_x_rot(int(np.cbrt(2**num_wires)))
+    _180_y_rot = O_h._180_deg_y_rot(int(np.cbrt(2**num_wires)))
+    _180_z_rot = O_h._180_deg_z_rot(int(np.cbrt(2**num_wires)))
+    _270_x_y_eq_z = O_h._270_deg_x_rot(int(np.cbrt(2**num_wires))) @ O_h.y_eq_z_rot(
+        int(np.cbrt(2**num_wires))
     )
-    rot_mock_coeff_inputs_y = (
-        O_h._180_deg_y_rot(int(np.cbrt(2**num_wires))) @ mock_coeff_inputs
-    )
-    rot_mock_coeff_inputs_z = (
-        O_h._180_deg_z_rot(int(np.cbrt(2**num_wires))) @ mock_coeff_inputs
-    )
-    rot_mock_coeff_inputs_x_y_eq_z = (
-        O_h._270_deg_x_rot(int(np.cbrt(2**num_wires)))
-        @ O_h.y_eq_z_rot(int(np.cbrt(2**num_wires)))
-        @ mock_coeff_inputs
-    )
+    rot_mock_coeff_inputs_x = _180_x_rot @ mock_coeff_inputs
+    rot_mock_coeff_inputs_y = _180_y_rot @ mock_coeff_inputs
+    rot_mock_coeff_inputs_z = _180_z_rot @ mock_coeff_inputs
+    rot_mock_coeff_inputs_x_y_eq_z = _270_x_y_eq_z @ mock_coeff_inputs
     key = PRNGKey(42)
 
     parameters = dft_qnn.init(key, mock_coeff_inputs)
@@ -88,16 +80,17 @@ def test_a_training_step_6qb_d4():
         parameters, rot_mock_coeff_inputs_x_y_eq_z
     )
 
-    assert np.allclose(result_rot_x, result)
-    assert np.allclose(result_rot_y, result)
-    assert np.allclose(result_rot_z, result)
-    assert np.allclose(result_rot_mock_coeff_inputs_x_y_eq_z, result)
+    assert np.allclose(result_rot_x, _180_x_rot @ result)
+    assert np.allclose(result_rot_y, _180_y_rot @ result)
+    assert np.allclose(result_rot_z, _180_z_rot @ result)
+    assert np.allclose(result_rot_mock_coeff_inputs_x_y_eq_z, _270_x_y_eq_z @ result)
 
     densities = normal(key, shape=(2**num_wires, 1))
 
     result = result[:, jnp.newaxis]
     result_rot_x = result_rot_x[:, jnp.newaxis]
 
+    # @jack this fail, do we need to rotate result?
     xc_energy_density = jnp.einsum("rf,rf->r", result, densities)
     xc_energy_density = abs_clip(xc_energy_density, 1e-30)
 
