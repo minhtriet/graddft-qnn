@@ -1,0 +1,34 @@
+{
+  "citation": "",
+  "description": "",
+  "features": {
+    "name": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "groundtruth": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "symbols": {
+      "feature": {
+        "dtype": "string",
+        "_type": "Value"
+      },
+      "_type": "Sequence"
+    },
+    "coordinates": {
+      "feature": {
+        "feature": {
+          "dtype": "float64",
+          "_type": "Value"
+        },
+        "length": 3,
+        "_type": "Sequence"
+      },
+      "_type": "Sequence"
+    }
+  },
+  "homepage": "",
+  "license": ""
+}

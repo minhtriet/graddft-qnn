@@ -156,8 +156,8 @@ for epoch in range(n_epochs):
             )
             mol = gto.M(atom=atom_coords, basis="def2-tzvp")
             mean_field = dft.UKS(mol)
-            mean_field.xc = 'wB97M-V'
-            mean_field.nlc = 'VV10'
+            #mean_field.xc = 'wB97M-V'
+            #mean_field.nlc = 'VV10'
             mean_field.kernel()
             molecule = gd.molecule_from_pyscf(mean_field)
 
@@ -185,8 +185,8 @@ for epoch in range(n_epochs):
             atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
             mol = gto.M(atom=atom_coords, basis="def2-tzvp")
             mean_field = dft.UKS(mol)
-            mean_field.xc = 'wB97M-V'
-            mean_field.nlc = 'VV10'
+            #mean_field.xc = 'wB97M-V'
+            #mean_field.nlc = 'VV10'
             mean_field.kernel()  # pass max_cycles / increase iteration
             molecule = gd.molecule_from_pyscf(mean_field, scf_iteration=200)
 
@@ -220,8 +220,8 @@ for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):
     # Create molecule with the specified distance
     mol = gto.M(atom=[["H", (0, 0, 0)], ["H", (0, 0, distance)]], basis="def2-tzvp", unit="Angstrom")
     mean_field = dft.UKS(mol)
-    mean_field.xc = 'wB97M-V'
-    mean_field.nlc = 'VV10'
+    #mean_field.xc = 'wB97M-V'
+    #mean_field.nlc = 'VV10'
 
     ground_truth_energy = mean_field.kernel()
     molecule = gd.molecule_from_pyscf(mean_field)
