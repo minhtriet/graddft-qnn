@@ -15,7 +15,7 @@ from pyscf import gto, dft
 import os
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 import grad_dft as gd
-from grad_dft.popular_functionals import pw92_c_e
+from grad_dft.popular_functionals import pw92_densities
 from datetime import datetime
 import json
 import pandas as pd
@@ -42,11 +42,11 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     rho = jnp.clip(molecule.density(), a_min=clip_cte)
     # Now we can implement the LDA energy density equation in the paper.
     lda_e = -3/2 * (3/(4*jnp.pi)) ** (1/3) * (rho**(4/3)).sum(axis = 1, keepdims = True)
-    #pw92_corr_e = pw92_c_e(rho, clip_cte)
+    pw92_corr_e = pw92_densities(molecule, clip_cte)
     # For simplicity we do not include the exchange polarization correction
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
-    return lda_e
+    return pw92_corr_e
 
 out_features = 1
 def coefficients(instance, rhoinputs):
