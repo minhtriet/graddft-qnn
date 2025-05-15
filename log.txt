@@ -999,4 +999,10 @@ converged SCF energy = -99.8206324520548  <S^2> = 8.8817842e-16  2S+1 = 1
 Training epoch: 100%|█████████▉| 997/1000 [1:10:06<00:12,  4.19s/it]Iteration 997 Predicted energy: -92.390854343808 Cost value: 55.201602737783304 Grad:  (Array(61.51394, dtype=float32), Array(-2.951987, dtype=float32))
 Training epoch: 100%|█████████▉| 998/1000 [1:10:10<00:08,  4.17s/it]Iteration 998 Predicted energy: -92.4038004182022 Cost value: 55.0093974183821 Grad:  (Array(2.8835545, dtype=float32), Array(-57.499786, dtype=float32))
 Training epoch: 100%|█████████▉| 999/1000 [1:10:14<00:04,  4.16s/it]Iteration 999 Predicted energy: -92.41109961401102 Cost value: 54.901176878049014 Grad:  (Array(49.88981, dtype=float32), Array(-2.4644942, dtype=float32))
+
+
+
+
+
+
 Training epoch: 100%|██████████| 1000/1000 [1:10:18<00:00,  4.18s/it]Training epoch: 100%|██████████| 1000/1000 [1:10:18<00:00,  4.22s/it]
