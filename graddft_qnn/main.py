@@ -24,6 +24,7 @@ from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.naive_dft_qnn import NaiveDFTQNN
 from graddft_qnn.qnn_functional import QNNFunctional
 from graddft_qnn.unitary_rep import O_h, is_group
+from grad_dft.popular_functionals import pw92_densities
 
 logging.getLogger().setLevel(logging.INFO)
 np.random.seed(42)
@@ -61,7 +62,8 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # For simplicity we do not include the exchange polarization correction
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
-    return lda_e
+    pw92_corr_e = pw92_densities(molecule, clip_cte)
+    return lda_e+pw92_corr_e
 
 
 def simple_energy_loss(
