@@ -33,7 +33,7 @@ HH_molecule = gd.molecule_from_pyscf(mf)
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
     kinetic = molecule.kinetic_density()
-    return jnp.concatenate((rho, kinetic), axis = 1)
+    return jnp.concatenate((rho, kinetic), axis=1)
 
 def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     r"""Auxiliary function to generate the features of LSDA."""
@@ -45,7 +45,7 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # For simplicity we do not include the exchange polarization correction
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
-    return lda_e + pw92_corr_e
+    return lda_e
 
 out_features = 1
 def coefficients(instance, rhoinputs):
@@ -55,20 +55,6 @@ def coefficients(instance, rhoinputs):
     localfeatures represents the potentials e_\theta(r).
 
     The output of this function is the energy density of the system.
-    """
-
-    """
-    d: input dimension size
-    o: output_features
-    Dense layer:
-        Wx + b
-        d*o+o =o(d+1) 
-    LayerNorm:
-        o parameters for gamma
-        o parameters for beta 
-        2o    
-    Total number of parameters:
-        o(d+3) 
     """
     x = nn.Dense(features=out_features)(rhoinputs)
     x = nn.LayerNorm()(x)
@@ -158,8 +144,8 @@ for epoch in range(n_epochs):
             )
             mol = gto.M(atom=atom_coords, basis="def2-tzvp")
             mean_field = dft.UKS(mol)
-            #mean_field.xc = 'wB97M-V'
-            #mean_field.nlc = 'VV10'
+            mean_field.xc = 'wB97M-V'
+            mean_field.nlc = 'VV10'
             mean_field.kernel()
             molecule = gd.molecule_from_pyscf(mean_field)
 
@@ -187,8 +173,8 @@ for epoch in range(n_epochs):
             atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
             mol = gto.M(atom=atom_coords, basis="def2-tzvp")
             mean_field = dft.UKS(mol)
-            #mean_field.xc = 'wB97M-V'
-            #mean_field.nlc = 'VV10'
+            mean_field.xc = 'wB97M-V'
+            mean_field.nlc = 'VV10'
             mean_field.kernel()  # pass max_cycles / increase iteration
             molecule = gd.molecule_from_pyscf(mean_field, scf_iteration=200)
 
@@ -222,8 +208,8 @@ for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):
     # Create molecule with the specified distance
     mol = gto.M(atom=[["H", (0, 0, 0)], ["H", (0, 0, distance)]], basis="def2-tzvp", unit="Angstrom")
     mean_field = dft.UKS(mol)
-    #mean_field.xc = 'wB97M-V'
-    #mean_field.nlc = 'VV10'
+    mean_field.xc = 'wB97M-V'
+    mean_field.nlc = 'VV10'
 
     ground_truth_energy = mean_field.kernel()
     molecule = gd.molecule_from_pyscf(mean_field)
