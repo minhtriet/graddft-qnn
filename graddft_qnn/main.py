@@ -62,6 +62,7 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
 
+    # resolve energy density according to user input
     pw92_c_e = gd.popular_functionals.pw92_densities(molecule, clip_cte)
 
     return jnp.concatenate((lda_x_e, pw92_c_e), axis=1)
@@ -120,7 +121,6 @@ if __name__ == "__main__":
             group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
             if (check_group) and (not is_group(group_matrix_reps, group)):
                 raise ValueError("Not forming a group")
-        xc_functional_name = data["XC_FUNCTIONAL"]
         dev = qml.device("default.qubit", wires=num_qubits)
 
     # define the QNN
@@ -155,9 +155,6 @@ if __name__ == "__main__":
     logging.info("Initializing the params")
     parameters = dft_qnn.init(key, coeff_input)
     logging.info("Finished initializing the params")
-
-    # resolve energy density according to user input
-    e_density = resolve_energy_density(xc_functional_name)
 
     # define the functional
     nf = QNNFunctional(
