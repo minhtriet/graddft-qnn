@@ -250,7 +250,7 @@ plt.tight_layout()
 # Define the filename
 output_dir = "plots"
 os.makedirs(output_dir, exist_ok=True)
-base_filename = os.path.join(output_dir, "binding_energy.png")
+base_filename = os.path.join(output_dir, "classical_binding_energy.png")
 final_filename = get_unique_filename(base_filename)
 
 # Save the plot as PNG with high resolution
@@ -291,7 +291,7 @@ report = {
 }
 
 # Check if the report.json file exists
-report_path = "report.json"
+report_path = "report_classical.json"
 if pathlib.Path(report_path).exists():
     with open(report_path) as f:
         try:
@@ -309,4 +309,4 @@ with open(report_path, "w") as f:
 
 # Save to Excel
 df = pd.DataFrame(history_report)
-df.to_excel("report.xlsx", index=False)
+df.to_excel("report_classical.xlsx", index=False)
