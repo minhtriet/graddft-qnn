@@ -46,7 +46,7 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # For simplicity we do not include the exchange polarization correction
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
-    return pw92_corr_e
+    return lda_e + pw92_corr_e
 
 out_features = 1
 def coefficients(instance, rhoinputs):
