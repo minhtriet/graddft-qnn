@@ -69,6 +69,7 @@ class QNNFunctional(Functional):
         coefficients += mean
 
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
+        coefficients = jnp.concatenate((coefficients, coefficients), axis=1) # shape (xxx, 2)
 
         # should we bring back normal scale
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
