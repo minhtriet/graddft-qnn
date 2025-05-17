@@ -52,7 +52,7 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # Molecule can compute the density matrix.
     rho = jnp.clip(molecule.density(), a_min=clip_cte)
     # Now we can implement the LDA energy density equation in the paper.
-    lda_e = (
+    lda_x_e = (
         -3
         / 2
         * (3 / (4 * jnp.pi)) ** (1 / 3)
@@ -61,7 +61,11 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # For simplicity we do not include the exchange polarization correction
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
-    return lda_e
+
+    # resolve energy density according to user input
+    pw92_c_e = gd.popular_functionals.pw92_densities(molecule, clip_cte)
+
+    return jnp.concatenate((lda_x_e, pw92_c_e), axis=1)
 
 
 def simple_energy_loss(
@@ -110,14 +114,13 @@ if __name__ == "__main__":
         assert (
             isinstance(num_gates, int) or num_gates == "full"
         ), f"N_GATES must be integer or 'full', got {num_gates}"
-        full_measurements = data["FULL_MEASUREMENTS"]
+        full_measurements = "prob"
         group: list = data["GROUP"]
         if "naive" not in group[0].lower():
             group_str_rep = "]_[".join(group)[:230]
             group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
             if (check_group) and (not is_group(group_matrix_reps, group)):
                 raise ValueError("Not forming a group")
-        xc_functional_name = data["XC_FUNCTIONAL"]
         dev = qml.device("default.qubit", wires=num_qubits)
 
     # define the QNN
@@ -133,16 +136,9 @@ if __name__ == "__main__":
             )
             AnsatzIO.write_to_file(filename, gates_gen)
         gates_gen = gates_gen[: 2**num_qubits]
-        if isinstance(full_measurements, bool) and full_measurements:
-            measurement_expvals = gates_gen
-        elif full_measurements > 1:  # var name abusing here
-            assert (2**num_qubits / full_measurements).is_integer()
-            measurement_expvals = gates_gen[:full_measurements]
-        else:
-            measurement_expvals = gates_gen[:1]
         if isinstance(num_gates, int):
             gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
-        dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals, gates_indices)
+        dft_qnn = DFTQNN(dev, gates_gen, gates_indices)
     else:
         z_measurements = NaiveDFTQNN.generate_Z_measurements(len(dev.wires))
         dft_qnn = NaiveDFTQNN(dev, z_measurements, num_gates)
@@ -152,9 +148,6 @@ if __name__ == "__main__":
     logging.info("Initializing the params")
     parameters = dft_qnn.init(key, coeff_input)
     logging.info("Finished initializing the params")
-
-    # resolve energy density according to user input
-    e_density = resolve_energy_density(xc_functional_name)
 
     # define the functional
     nf = QNNFunctional(
