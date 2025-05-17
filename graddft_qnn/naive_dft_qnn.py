@@ -1,12 +1,10 @@
 import logging
-import math
 from itertools import combinations
 
 import flax.linen as nn
 import jax.numpy as jnp
 import pennylane as qml
 from flax.typing import Array
-from tensorflow.python.ops.numpy_ops.np_dtypes import float_
 
 
 class NaiveDFTQNN(nn.Module):
@@ -27,12 +25,17 @@ class NaiveDFTQNN(nn.Module):
                 angles.append(theta[i][0])
             else:
                 angles.append(theta[self.num_gates][0])
-            if (i+1)%3 == 0:
-                qml.Rot(angles[0], angles[1], angles[2], wires=((i+1)//3-1)%len(self.dev.wires))
+            if (i + 1) % 3 == 0:
+                qml.Rot(
+                    angles[0],
+                    angles[1],
+                    angles[2],
+                    wires=((i + 1) // 3 - 1) % len(self.dev.wires),
+                )
                 angles = []
-            if (i+1)%(len(self.dev.wires)*3) == 0:
-                for j in range(len(self.dev.wires)-1):
-                    qml.CNOT(wires=[j,j+1])
+            if (i + 1) % (len(self.dev.wires) * 3) == 0:
+                for j in range(len(self.dev.wires) - 1):
+                    qml.CNOT(wires=[j, j + 1])
         return [qml.expval(z_op) for z_op in self.measurements]
 
     def setup(self) -> None:
