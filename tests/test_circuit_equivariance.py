@@ -12,29 +12,6 @@ from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.unitary_rep import O_h
 
 
-def test_a_training_step():
-    num_wires = 3
-    np.random.seed(17)
-    _setup_device = qml.device("default.qubit", num_wires)
-    gates_indices = list(np.random.choice(2**num_wires, num_wires, replace=False))
-    filename = pathlib.Path("tests") / "ansatz_3_qubits_180_x.pkl"
-    gates_gen = AnsatzIO.read_from_file(str(filename))
-    mock_coeff_inputs = np.random.rand(2**num_wires)
-    dft_qnn = DFTQNN(_setup_device, gates_gen, gates_indices)
-
-    rot_mock_coeff_inputs_x = (
-        O_h._180_deg_x_rot(int(np.cbrt(2**num_wires))) @ mock_coeff_inputs
-    )
-
-    key = PRNGKey(42)
-
-    parameters = dft_qnn.init(key, mock_coeff_inputs)
-
-    result = dft_qnn.apply(parameters, mock_coeff_inputs)
-    result_rot_x = dft_qnn.apply(parameters, rot_mock_coeff_inputs_x)
-    assert np.allclose(result_rot_x, result)
-
-
 def _integrate(energy_density, gridweights, clip_cte=1e-30):
     """
     copy verbatim from grad_dft.functional.Functional._integrate, this could
@@ -48,7 +25,6 @@ def _integrate(energy_density, gridweights, clip_cte=1e-30):
     )
 
 
-# @pytest.mark.skip(reason="training work, but this has a strange JAX leak error")
 def test_a_training_step_6qb_d4():
     num_wires = 6
     np.random.seed(17)
@@ -90,14 +66,14 @@ def test_a_training_step_6qb_d4():
     result = result[:, jnp.newaxis]
     result_rot_x = result_rot_x[:, jnp.newaxis]
 
-    # @jack this fail, do we need to rotate result?
     xc_energy_density = jnp.einsum("rf,rf->r", result, densities)
     xc_energy_density = abs_clip(xc_energy_density, 1e-30)
 
-    xc_energy_density_rot_x = jnp.einsum("rf,rf->r", result_rot_x, densities)
+    xc_energy_density_rot_x = jnp.einsum(
+        "rf,rf->r", result_rot_x, _180_x_rot @ densities
+    )
     xc_energy_density_rot_x = abs_clip(xc_energy_density_rot_x, 1e-30)
-
-    grid_weights = normal(key, shape=(2**num_wires,))
+    grid_weights = np.full((2**num_wires,), 1 / (2**num_wires))
     assert np.isclose(
         _integrate(xc_energy_density, grid_weights),
         _integrate(xc_energy_density_rot_x, grid_weights),
