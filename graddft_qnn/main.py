@@ -110,7 +110,7 @@ if __name__ == "__main__":
         assert (
             isinstance(num_gates, int) or num_gates == "full"
         ), f"N_GATES must be integer or 'full', got {num_gates}"
-        full_measurements = data["FULL_MEASUREMENTS"]
+        full_measurements = "prob"
         group: list = data["GROUP"]
         if "naive" not in group[0].lower():
             group_str_rep = "]_[".join(group)[:230]
@@ -133,16 +133,9 @@ if __name__ == "__main__":
             )
             AnsatzIO.write_to_file(filename, gates_gen)
         gates_gen = gates_gen[: 2**num_qubits]
-        if isinstance(full_measurements, bool) and full_measurements:
-            measurement_expvals = gates_gen
-        elif full_measurements > 1:  # var name abusing here
-            assert (2**num_qubits / full_measurements).is_integer()
-            measurement_expvals = gates_gen[:full_measurements]
-        else:
-            measurement_expvals = gates_gen[:1]
         if isinstance(num_gates, int):
             gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
-        dft_qnn = DFTQNN(dev, gates_gen, measurement_expvals, gates_indices)
+        dft_qnn = DFTQNN(dev, gates_gen, gates_indices)
     else:
         z_measurements = NaiveDFTQNN.generate_Z_measurements(len(dev.wires))
         dft_qnn = NaiveDFTQNN(dev, z_measurements, num_gates)

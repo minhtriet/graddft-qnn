@@ -15,11 +15,10 @@ from graddft_qnn.unitary_rep import is_zero_matrix_combination
 class DFTQNN(nn.Module):
     dev: qml.device
     ansatz_gen: list[np.array]
-    measurements: list[np.array]
     gate_indices: list[int]
 
     def setup(self) -> None:
-        def _circuit(feature, theta, gate_gens, measurements):
+        def _circuit(feature, theta, gate_gens):
             """
             :return: should be full measurement or just 1 measurement,
             so that graddft_qnn.qnn_functional.QNNFunctional.xc_energy works
@@ -31,13 +30,13 @@ class DFTQNN(nn.Module):
             for idx, gen in enumerate(gate_gens):
                 # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
                 qml.exp(-1j * theta[idx][0] * gen)
-            return [qml.expval(measurement) for measurement in measurements]
+            return qml.probs(wires=self.dev.wires)
 
         self.qnode = qml.QNode(_circuit, self.dev, diff_method="backprop")
         self.qnode = jax.jit(self.qnode)
 
-    def circuit(self, feature, theta, gate_gens, measurements):
-        result = self.qnode(feature, theta, gate_gens, measurements)
+    def circuit(self, feature, theta, gate_gens):
+        result = self.qnode(feature, theta, gate_gens)
         return jnp.array(result)
 
     @nn.compact
@@ -49,7 +48,11 @@ class DFTQNN(nn.Module):
             jnp.float32,
         )
         selected_gates_gen = list(map(lambda i: self.ansatz_gen[i], self.gate_indices))
-        return self.circuit(feature, theta, selected_gates_gen, list(self.measurements))
+        return self.circuit(
+            feature,
+            theta,
+            selected_gates_gen,
+        )
 
     @staticmethod
     def _twirling(
