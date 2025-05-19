@@ -89,7 +89,9 @@ class DFTQNN(nn.Module):
 
     @staticmethod
     def gate_design(
-        num_wires: int, invariant_rep: list[np.ndarray | qml.ops.op_math.Prod]
+        num_wires: int,
+        invariant_rep: list[np.ndarray | qml.ops.op_math.Prod],
+        num_generator: int = 0,
     ) -> tuple[list[str], list[str]]:
         """
         :param num_wires:
@@ -98,9 +100,12 @@ class DFTQNN(nn.Module):
         :return:
         """
         ansatz_gen = []
+        num_gen_to_generate = (
+            min(num_generator, 2**num_wires) if num_generator else 2**num_wires
+        )
         invariant_rep.append(DFTQNN._identity_like(invariant_rep[0]))
         with tqdm(
-            total=2**num_wires, desc="Creating invariant gates generator"
+            total=num_gen_to_generate, desc="Creating invariant gates generator"
         ) as pbar:
             for _, combination in enumerate(
                 itertools.product(custom_gates.words.keys(), repeat=num_wires)
@@ -109,6 +114,6 @@ class DFTQNN(nn.Module):
                 if invariant_gate is not None:
                     ansatz_gen.append(invariant_gate)
                     pbar.update()
-                    if len(ansatz_gen) == 2**num_wires:
+                    if num_generator and len(ansatz_gen) == num_gen_to_generate:
                         break
         return ansatz_gen

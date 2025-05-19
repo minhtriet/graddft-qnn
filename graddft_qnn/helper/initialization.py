@@ -1,6 +1,8 @@
 import grad_dft as gd
 import jax
 import jax.numpy as jnp
+import numpy as np
+import yaml
 
 
 def resolve_energy_density(xc_functional_name: str):
@@ -35,3 +37,39 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
     return lda_e
+
+
+def load_config(conf_file_name: str) -> tuple:
+    with open("config.yaml") as file:
+        data = yaml.safe_load(file)
+        if "QBITS" not in data:
+            raise KeyError("YAML file must contain 'QBITS' key")
+        num_qubits = data["QBITS"]
+        size = np.cbrt(2**num_qubits)
+        assert size.is_integer()
+        size = int(size)
+        n_epochs = data["TRAINING"]["N_EPOCHS"]
+        learning_rate = data["TRAINING"]["LEARNING_RATE"]
+        momentum = data["TRAINING"]["MOMENTUM"]
+        num_gates = data["N_GATES"]
+        eval_per_x_epoch = data["TRAINING"]["EVAL_PER_X_EPOCH"]
+        batch_size = data["TRAINING"]["BATCH_SIZE"]
+        check_group = data["CHECK_GROUP"]
+        assert (
+            isinstance(num_gates, int) or num_gates == "full"
+        ), f"N_GATES must be integer or 'full', got {num_gates}"
+        group: list = data["GROUP"]
+        xc_functional_name = data["XC_FUNCTIONAL"]
+    return (
+        num_qubits,
+        size,
+        n_epochs,
+        learning_rate,
+        momentum,
+        eval_per_x_epoch,
+        batch_size,
+        group,
+        xc_functional_name,
+        check_group,
+        num_gates,
+    )

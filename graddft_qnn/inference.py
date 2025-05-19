@@ -13,7 +13,6 @@ import jax
 import numpy as np
 import pennylane as qml
 import tqdm
-import yaml
 from optax import adam
 from pyscf import dft, gto
 
@@ -24,35 +23,30 @@ from graddft_qnn.naive_dft_qnn import NaiveDFTQNN
 from graddft_qnn.qnn_functional import QNNFunctional
 from graddft_qnn.unitary_rep import O_h, is_group
 
+logging.getLogger().setLevel(logging.INFO)
+np.random.seed(42)
+
 if __name__ == "__main__":
     jax.config.update("jax_enable_x64", True)
-    with open("config.yaml") as file:
-        data = yaml.safe_load(file)
-        if "QBITS" not in data:
-            raise KeyError("YAML file must contain 'QBITS' key")
-        num_qubits = data["QBITS"]
-        size = np.cbrt(2**num_qubits)
-        assert size.is_integer()
-        size = int(size)
-        n_epochs = data["TRAINING"]["N_EPOCHS"]
-        learning_rate = data["TRAINING"]["LEARNING_RATE"]
-        momentum = data["TRAINING"]["MOMENTUM"]
-        num_gates = data["N_GATES"]
-        eval_per_x_epoch = data["TRAINING"]["EVAL_PER_X_EPOCH"]
-        batch_size = data["TRAINING"]["BATCH_SIZE"]
-        check_group = data["CHECK_GROUP"]
-        assert (
-            isinstance(num_gates, int) or num_gates == "full"
-        ), f"N_GATES must be integer or 'full', got {num_gates}"
-        full_measurements = "prob"
-        group: list = data["GROUP"]
-        if "naive" not in group[0].lower():
-            group_str_rep = "]_[".join(group)[:230]
-            group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
-            if (check_group) and (not is_group(group_matrix_reps, group)):
-                raise ValueError("Not forming a group")
-        xc_functional_name = data["XC_FUNCTIONAL"]
-        dev = qml.device("default.qubit", wires=num_qubits)
+    (
+        num_qubits,
+        size,
+        n_epochs,
+        learning_rate,
+        momentum,
+        eval_per_x_epoch,
+        batch_size,
+        group,
+        xc_functional_name,
+        check_group,
+        num_gates,
+    ) = helper.initialization.load_config("config.yaml")
+    if "naive" not in group[0].lower():
+        group_str_rep = "]_[".join(group)[:230]
+        group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
+        if (check_group) and (not is_group(group_matrix_reps, group)):
+            raise ValueError("Not forming a group")
+    dev = qml.device("default.qubit", wires=num_qubits)
 
     # define the QNN
     filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"

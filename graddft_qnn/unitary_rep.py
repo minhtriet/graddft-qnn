@@ -215,6 +215,33 @@ class O_h:
             return perm_matrix
 
     @staticmethod
+    def _90_deg_x_rot_sparse(size=2, pauli_word=False):
+        total_elements = size * size * size
+        row_indices = []
+        col_indices = []
+        for x in range(size):
+            for y in range(size):
+                for z in range(size):
+                    orig_idx = x * size * size + y * size + z
+                    new_x = x
+                    new_y = z
+                    new_z = size - 1 - y
+                    new_idx = new_x * size * size + new_y * size + new_z
+                    row_indices.append(orig_idx)
+                    col_indices.append(new_idx)
+        perm_matrix = csr_matrix(
+            ([1] * len(row_indices), (row_indices, col_indices)),
+            shape=(total_elements, total_elements),
+            dtype=int,
+        )
+        if pauli_word:
+            return qml.SparseHamiltonian(
+                perm_matrix, wires=range(int(np.log2(total_elements)))
+            )
+        else:
+            return perm_matrix
+
+    @staticmethod
     def _180_deg_rot_ref(size=2):
         return [
             O_h._180_deg_x_rot(size),
