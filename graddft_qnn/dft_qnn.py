@@ -32,7 +32,9 @@ class DFTQNN(nn.Module):
                 qml.exp(-1j * theta[idx][0] * gen)
             return qml.probs(wires=self.dev.wires)
 
-        self.qnode = qml.QNode(_circuit, self.dev, diff_method="backprop")
+        self.qnode = qml.QNode(
+            _circuit, self.dev, diff_method="backprop", interface="jax-jit"
+        )
         self.qnode = jax.jit(self.qnode)
 
     def circuit(self, feature, theta, gate_gens):
