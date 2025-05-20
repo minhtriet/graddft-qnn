@@ -40,4 +40,4 @@ TRAINING:
   LEARNING_RATE: 0.7 # for naive: 0.7 ,for 6 qubits: 0.007
   MOMENTUM: 0.9
   EVAL_PER_X_EPOCH: 3
-  BATCH_SIZE: 1
+  BATCH_SIZE: 3
