@@ -1,5 +1,7 @@
 from flax import linen as nn
 from jax.nn import sigmoid
+from jax.nn import gelu
+import jax
 from optax import apply_updates
 from optax import adam
 from jax.random import PRNGKey
@@ -14,13 +16,24 @@ import tqdm
 from pyscf import gto, dft
 import os
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
+from graddft_qnn.qnn_functional import QNNFunctional
+#sys.path.append("/Users/sungwonyun/Documents/LG-Toronto/DFT-Code/GradDFT")
 import grad_dft as gd
 from grad_dft.popular_functionals import pw92_densities
 from datetime import datetime
 import json
 import pandas as pd
-
 import jax.numpy as jnp
+import yaml
+
+with open("config.yaml") as file:
+    data = yaml.safe_load(file)
+num_qubits = data["QBITS"]
+n_epochs = data["TRAINING"]["N_EPOCHS"]
+learning_rate = data["TRAINING"]["LEARNING_RATE"]
+momentum = data["TRAINING"]["MOMENTUM"]
+eval_per_x_epoch = data["TRAINING"]["EVAL_PER_X_EPOCH"]
+batch_size = data["TRAINING"]["BATCH_SIZE"]
 
 # Define the geometry of the molecule
 mol = gto.M(atom=[["H", (0, 0, 0)], ["H", (0, 0, 1)]], basis="def2-tzvp", charge=0, spin=0)
@@ -32,8 +45,7 @@ HH_molecule = gd.molecule_from_pyscf(mf)
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
-    kinetic = molecule.kinetic_density()
-    return jnp.concatenate((rho, kinetic), axis=1)
+    return jnp.sum(rho, 1)
 
 def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     r"""Auxiliary function to generate the features of LSDA."""
@@ -45,27 +57,53 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # For simplicity we do not include the exchange polarization correction
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
+    #print(f"LDA Energy Density - Shape: {lda_e.shape}, Size: {lda_e.size}")
     return lda_e
 
+squash_offset = 1e-4
+layer_widths = [16] * 2
 out_features = 1
-def coefficients(instance, rhoinputs):
-    """
-    Instance is an instance of the class Functional or NeuralFunctional.
-    rhoinputs is the input to the neural network, in the form of an array.
-    localfeatures represents the potentials e_\theta(r).
+sigmoid_scale_factor = 2.0
+activation = gelu
 
-    The output of this function is the energy density of the system.
-    """
-    x = nn.Dense(features=out_features)(rhoinputs)
-    x = nn.LayerNorm()(x)
-    return sigmoid(x)
+class NeuralCoeff(nn.Module):
+    layer_widths: list[int]
+    out_features: int
 
-nf = gd.NeuralFunctional(coefficients, energy_densities, coefficient_inputs)
+    @nn.compact
+    def __call__(self, x):
+        if x.ndim == 1:
+            x = x[:, jnp.newaxis]  # Convert shape (batch,) → (batch, 1)
+        squash_offset = 1e-4
+
+        x = jnp.log(jnp.abs(x) + squash_offset)
+        x = nn.Dense(self.layer_widths[0])(x)
+        x = jnp.tanh(x)
+
+        for width in self.layer_widths:
+            res = x
+            x = nn.Dense(width)(x)
+            x = x + res
+            x = nn.LayerNorm()(x)
+            x = jax.nn.gelu(x)
+
+        x = nn.Dense(self.out_features)(x)
+        x = nn.LayerNorm()(x)
+        return jax.nn.sigmoid(x).squeeze(-1)
+
+coefficients = NeuralCoeff(layer_widths, out_features)
+
+
+nf = QNNFunctional(
+    coefficients=coefficients,
+    energy_densities=energy_densities,
+    coefficient_inputs=coefficient_inputs,
+)
 
 key = PRNGKey(42)
-cinputs = coefficient_inputs(HH_molecule)
 
-params = nf.init(key, cinputs)
+input_shape = (2**num_qubits, 1)
+params = nf.coefficients.init(key, jnp.ones(input_shape))
 
 import jax.numpy as jnp
 def params_size(params):
@@ -89,11 +127,6 @@ num_params = params_size(params)
 #print("Neural functional energy with random parameters is", E)
 
 
-learning_rate = 0.7
-momentum = 0.9
-n_epochs = 10
-batch_size = 3
-eval_per_x_epoch =3
 
 tx = adam(learning_rate=learning_rate, b1=momentum)
 opt_state = tx.init(params)
@@ -144,8 +177,8 @@ for epoch in range(n_epochs):
             )
             mol = gto.M(atom=atom_coords, basis="def2-tzvp")
             mean_field = dft.UKS(mol)
-            mean_field.xc = 'wB97M-V'
-            mean_field.nlc = 'VV10'
+            #mean_field.xc = 'wB97M-V'
+            #mean_field.nlc = 'VV10'
             mean_field.kernel()
             molecule = gd.molecule_from_pyscf(mean_field)
 
@@ -173,8 +206,8 @@ for epoch in range(n_epochs):
             atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
             mol = gto.M(atom=atom_coords, basis="def2-tzvp")
             mean_field = dft.UKS(mol)
-            mean_field.xc = 'wB97M-V'
-            mean_field.nlc = 'VV10'
+            #mean_field.xc = 'wB97M-V'
+            #mean_field.nlc = 'VV10'
             mean_field.kernel()  # pass max_cycles / increase iteration
             molecule = gd.molecule_from_pyscf(mean_field, scf_iteration=200)
 
@@ -208,8 +241,8 @@ for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):
     # Create molecule with the specified distance
     mol = gto.M(atom=[["H", (0, 0, 0)], ["H", (0, 0, distance)]], basis="def2-tzvp", unit="Angstrom")
     mean_field = dft.UKS(mol)
-    mean_field.xc = 'wB97M-V'
-    mean_field.nlc = 'VV10'
+    #mean_field.xc = 'wB97M-V'
+    #mean_field.nlc = 'VV10'
 
     ground_truth_energy = mean_field.kernel()
     molecule = gd.molecule_from_pyscf(mean_field)
@@ -263,13 +296,14 @@ date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
 
 # Create report dictionary
 report = {
-    "Date": date_time,
-    "test_loss": test_loss,
-    "Epochs": n_epochs,
-    "train_losses": train_losses,
-    "test_losses": test_losses,
-    "Learning Rate": learning_rate,
-    "Batch Size": batch_size,
+    "DATE": date_time,
+    "N_QUBITS": num_qubits,
+    "TEST_LOSS": test_loss,
+    "EPOCHS": n_epochs,
+    "TRAIN_LOSSES": train_losses,
+    "TEST_LOSSES": test_losses,
+    "LEARNING_RATE": learning_rate,
+    "BATCH_SIZE": batch_size,
     "Number of Parameters": num_params,
     "Momentum":momentum,
     "eval_per_x_epoch": eval_per_x_epoch,
