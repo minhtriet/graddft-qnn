@@ -45,7 +45,7 @@ HH_molecule = gd.molecule_from_pyscf(mf)
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
-    return jnp.sum(rho, 1)
+    return rho
 
 def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     r"""Auxiliary function to generate the features of LSDA."""
@@ -71,44 +71,36 @@ out_features = 1
 sigmoid_scale_factor = 2.0
 activation = gelu
 
-class NeuralCoeff(nn.Module):
-    layer_widths: list[int]
-    out_features: int
 
-    @nn.compact
-    def __call__(self, x):
-        if x.ndim == 1:
-            x = x[:, jnp.newaxis]  # Convert shape (batch,) → (batch, 1)
-        squash_offset = 1e-4
+def coefficients(instance, rhoinputs):
+    """
+    Instance is an instance of the class Functional or NeuralFunctional.
+    rhoinputs is the input to the neural network, in the form of an array.
+    localfeatures represents the potentials e_\theta(r).
 
-        x = jnp.log(jnp.abs(x) + squash_offset)
-        x = nn.Dense(self.layer_widths[0])(x)
-        x = jnp.tanh(x)
+    The output of this function is the energy density of the system.
+    """
+    x = rhoinputs
+    x = jnp.log(jnp.abs(x) + squash_offset)
+    x = nn.Dense(layer_widths[0])(x)
+    x = jnp.tanh(x)
 
-        for width in self.layer_widths:
-            res = x
-            x = nn.Dense(width)(x)
-            x = x + res
-            x = nn.LayerNorm()(x)
-            x = jax.nn.gelu(x)
-
-        x = nn.Dense(self.out_features)(x)
+    for width in layer_widths:
+        res = x
+        x = nn.Dense(width)(x)
+        x = x + res
         x = nn.LayerNorm()(x)
-        return jax.nn.sigmoid(x).squeeze(-1)
+        x = jax.nn.gelu(x)
 
-coefficients = NeuralCoeff(layer_widths, out_features)
+    x = nn.Dense(out_features)(x)
+    x = nn.LayerNorm()(x)
+    return x
 
-
-nf = QNNFunctional(
-    coefficients=coefficients,
-    energy_densities=energy_densities,
-    coefficient_inputs=coefficient_inputs,
-)
+nf = gd.NeuralFunctional(coefficients, energy_densities, coefficient_inputs)
 
 key = PRNGKey(42)
-
-input_shape = (2**num_qubits, 1)
-params = nf.coefficients.init(key, jnp.ones(input_shape))
+cinputs = coefficient_inputs(HH_molecule)
+params = nf.init(key, cinputs)
 
 import jax.numpy as jnp
 def params_size(params):
@@ -178,6 +170,8 @@ for epoch in range(n_epochs):
         "from helper.training.train_step()"
         cost_values = []
         for example_id in range(len(batch["symbols"])):
+            len_batch_symbols=len(batch["symbols"])
+            len_batch=len(batch)
             atom_coords = list(
                 zip(batch["symbols"][example_id], batch["coordinates"][example_id])
             )
@@ -200,6 +194,7 @@ for epoch in range(n_epochs):
 
         aggregated_train_loss += avg_cost
         train_losses_batch.append(np.sqrt(avg_cost / len(batch["symbols"])))
+
     train_loss = np.sqrt(aggregated_train_loss / len(train_ds))
     logging.info(f"RMS train loss: {train_loss}")
     train_losses.append(train_loss)
@@ -275,7 +270,7 @@ plt.tight_layout()
 # Define the filename
 output_dir = "plots"
 os.makedirs(output_dir, exist_ok=True)
-base_filename = os.path.join(output_dir, "binding_energy_Classical.png")
+base_filename = os.path.join(output_dir, "binding_energy_Classical_No_Down.png")
 final_filename = get_unique_filename(base_filename)
 
 # Save the plot as PNG with high resolution
@@ -304,7 +299,6 @@ date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
 # Create report dictionary
 report = {
     "DATE": date_time,
-    "N_QUBITS": num_qubits,
     "TEST_LOSS": test_loss,
     "EPOCHS": n_epochs,
     "TRAIN_LOSSES": train_losses,
@@ -318,7 +312,7 @@ report = {
 }
 
 # Check if the report.json file exists
-report_path = "classical_report.json"
+report_path = "classical_No_Down_report.json"
 if pathlib.Path(report_path).exists():
     with open(report_path) as f:
         try:
@@ -336,4 +330,4 @@ with open(report_path, "w") as f:
 
 # Save to Excel
 df = pd.DataFrame(history_report)
-df.to_excel("classical_report.xlsx", index=False)
+df.to_excel("classical_No_Down_report.xlsx", index=False)
