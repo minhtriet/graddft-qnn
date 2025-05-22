@@ -1,14 +1,14 @@
 import jax
 import yaml
-from grad_dft import Functional, abs_clip
+from grad_dft import NeuralFunctional, abs_clip
 from grad_dft.molecule import Grid
 
-# from helper.visualize import bar_plot_jvp
+# from helper.visualization import bar_plot_jvp
 from jax import numpy as jnp
 from jaxtyping import Array, Float, PyTree, Scalar
 
 
-class QNNFunctional(Functional):
+class QNNFunctional(NeuralFunctional):
     def xc_energy(
         self,
         params: PyTree,
