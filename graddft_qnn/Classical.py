@@ -17,7 +17,6 @@ from pyscf import gto, dft
 import os
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.qnn_functional import QNNFunctional
-sys.path.append("/Users/sungwonyun/Documents/LG-Toronto/DFT-Code/GradDFT")
 import grad_dft as gd
 from grad_dft.popular_functionals import pw92_densities
 from datetime import datetime
@@ -58,7 +57,7 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
     #print(f"LDA Energy Density - Shape: {lda_e.shape}, Size: {lda_e.size}")
-    return jnp.concatenate((lda_e,pw92_corr_e), axis=1)
+    return lda_e
 
 
 
@@ -108,7 +107,8 @@ nf = QNNFunctional(
 key = PRNGKey(42)
 
 input_shape = (2**num_qubits, 1)
-params = nf.coefficients.init(key, jnp.ones(input_shape))
+random_input = jax.random.normal(key, shape=input_shape)
+params = nf.coefficients.init(key, random_input)
 
 import jax.numpy as jnp
 def params_size(params):
@@ -241,7 +241,7 @@ def get_unique_filename(base_filename):
     return filename
 
 # Plot binding energy
-distances = np.arange(0.3, 5.0, 0.1)  # Distance range from 1 to 5 with step 0.3
+distances = np.arange(0.2, 5.0, 0.1)  # Distance range from 1 to 5 with step 0.3
 E_predicts = []
 
 for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):

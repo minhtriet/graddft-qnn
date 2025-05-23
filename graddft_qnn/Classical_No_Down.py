@@ -17,7 +17,6 @@ from pyscf import gto, dft
 import os
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.qnn_functional import QNNFunctional
-sys.path.append("/Users/sungwonyun/Documents/LG-Toronto/DFT-Code/GradDFT")
 import grad_dft as gd
 from grad_dft.popular_functionals import pw92_densities
 from datetime import datetime
