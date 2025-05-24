@@ -16,6 +16,7 @@ class QNNFunctional(NeuralFunctional):
         unscaled_coefficient_inputs: Float[Array, "(n,n)"],  # noqa: F821
         unscaled_densities: Float[Array, "(n,n)"],  # noqa: F821
         clip_cte: float = 1e-30,
+        **kwargs,
     ) -> Scalar:
         """
         :param params:
@@ -48,7 +49,6 @@ class QNNFunctional(NeuralFunctional):
 
         grid_numerator = jnp.sum(grid.weights)
         grid_weights = QNNFunctional.compute_slice_sums(grid.weights, indices)
-        # grid_weights = grid.weights[indices]
         grid_weights = grid_weights / jnp.sum(grid_weights) * grid_numerator
 
         # densities: (xxx, 2)

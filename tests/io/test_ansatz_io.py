@@ -6,6 +6,6 @@ def test_list_file_handler(tmp_path):
     handler = AnsatzIO()
     test_file = tmp_path / "test_output.txt"
     handler.write_to_file(test_file, test_data)
-    received_data = handler.read_from_file(f"{test_file}.pkl")
+    received_data = handler.read_from_file(f"{test_file}")
 
     assert received_data == test_data

@@ -3,7 +3,6 @@ from optax import apply_updates
 from pyscf import dft, gto
 
 
-# @partial(jax.jit, static_argnums=(1,))
 def train_step(parameters, predictor, batch, opt_state, tx):
     grads = []
     cost_values = []
