@@ -37,9 +37,8 @@ def _prepare_dataset():
 
 def test_a_training_step_6qb_d4():
     """
-    We can rotate a feature however we want, but the loss function
-    calculated based on E_ks should be the same
-    :return:
+    After rotate a QNN input feature, the loss function
+    calculated based on E_ks should be the same as rotate the output of QNN
     """
     num_wires = 6
     num_gates = 8
@@ -55,6 +54,7 @@ def test_a_training_step_6qb_d4():
         int(np.cbrt(2**num_wires))
     )
 
+    # This is a QNN that always rotate the result of the QNN by _270_x_y_eq_z
     dft_qnn = DFTQNN(
         _setup_device, gates_gen, gates_indices, _270_x_y_eq_z, rotate_feature=False
     )
@@ -64,6 +64,7 @@ def test_a_training_step_6qb_d4():
         coefficient_inputs=initialization.coefficient_inputs,
     )
 
+    # This is a QNN that always rotate input feature of the QNN by _270_x_y_eq_z
     dft_qnn_rot = DFTQNN(
         _setup_device, gates_gen, gates_indices, _270_x_y_eq_z, rotate_feature=True
     )
@@ -85,6 +86,9 @@ def test_a_training_step_6qb_d4():
     _, _, avg_cost_2 = training.train_step(
         parameters, predictor_2, dataset[:1], opt_state, tx
     )
+
+    # Assert that loss(rotate input -> QNN) == loss(QNN -> rotate output)
+    # which is the definition of equivariance
     assert np.isclose(avg_cost_2, avg_cost)
 
 
@@ -147,3 +151,30 @@ def test_a_training_step_6qb_d4_2():
         _integrate(xc_energy_density, grid_weights),
         _integrate(xc_energy_density_rot_x, grid_weights),
     )
+
+
+def test_270_x_rot_sparse_matrix():
+    num_wire = 6
+    dev = qml.device("default.qubit", wires=num_wire)
+
+    @qml.qnode(dev)
+    def six_qubit_circuit_dense(params):
+        qml.AmplitudeEmbedding(params, wires=range(6), normalize=True)
+        qml.X(0)
+        qml.Y(1)
+        qml.RZ(1.23, 2)
+        return qml.expval(O_h._270_deg_x_rot(4, pauli_word=True))
+
+    @qml.qnode(dev)
+    def six_qubit_circuit_sparse(params):
+        qml.AmplitudeEmbedding(params, wires=range(6), normalize=True)
+        qml.X(0)
+        qml.Y(1)
+        qml.RZ(1.23, 2)
+        return qml.expval(O_h._270_deg_x_rot_sparse(4, pauli_word=True))
+
+    np.random.seed(14)
+    mock_coeff_inputs = np.random.rand(2**num_wire)
+    dense_result = six_qubit_circuit_dense(mock_coeff_inputs)
+    sparse_result = six_qubit_circuit_sparse(mock_coeff_inputs)
+    assert np.allclose(dense_result, sparse_result)
