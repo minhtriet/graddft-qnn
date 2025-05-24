@@ -1,14 +1,19 @@
 import pathlib
 
+import grad_dft as gd
 import jax.numpy as jnp
 import pennylane as qml
 import pennylane.numpy as np
 from grad_dft import abs_clip
 from jax.lax import Precision
 from jax.random import PRNGKey, normal
+from optax import adam
 
+from datasets import DatasetDict
 from graddft_qnn.dft_qnn import DFTQNN
+from graddft_qnn.helper import initialization, training
 from graddft_qnn.io.ansatz_io import AnsatzIO
+from graddft_qnn.qnn_functional import QNNFunctional
 from graddft_qnn.unitary_rep import O_h
 
 
@@ -25,12 +30,74 @@ def _integrate(energy_density, gridweights, clip_cte=1e-30):
     )
 
 
+def _prepare_dataset():
+    dataset = DatasetDict.load_from_disk(pathlib.Path("datasets/h2_dataset"))
+    return dataset["train"]
+
+
 def test_a_training_step_6qb_d4():
+    """
+    We can rotate a feature however we want, but the loss function
+    calculated based on E_ks should be the same
+    :return:
+    """
+    num_wires = 6
+    num_gates = 8
+    np.random.seed(17)
+    _setup_device = qml.device("default.qubit", num_wires)
+    filename = pathlib.Path("tests") / "ansatz_6_d4"
+    gates_gen = AnsatzIO.read_from_file(str(filename))
+    gates_indices = list(np.random.choice(len(gates_gen), num_gates, replace=False))
+    mock_params = jnp.empty((2**num_wires,))
+    dataset = _prepare_dataset()
+    key = PRNGKey(42)
+
+    dft_qnn = DFTQNN(_setup_device, gates_gen, gates_indices)
+    qnnf = QNNFunctional(
+        coefficients=dft_qnn,
+        energy_densities=initialization.energy_densities,
+        coefficient_inputs=initialization.coefficient_inputs,
+    )
+
+    _270_x_y_eq_z = O_h._270_deg_x_rot(int(np.cbrt(2**num_wires))) @ O_h.y_eq_z_rot(
+        int(np.cbrt(2**num_wires))
+    )
+    _180_deg_x_rot = O_h._180_deg_x_rot(int(np.cbrt(2**num_wires)))
+
+    dft_qnn_rot = DFTQNN(_setup_device, gates_gen, gates_indices, _180_deg_x_rot)
+    qnnf_rot = QNNFunctional(
+        coefficients=dft_qnn_rot,
+        energy_densities=initialization.energy_densities,
+        coefficient_inputs=initialization.coefficient_inputs,
+    )
+
+    parameters = dft_qnn.init(key, mock_params)
+    predictor = gd.non_scf_predictor(qnnf)
+    tx = adam(learning_rate=0.1, b1=0.9)
+    opt_state = tx.init(parameters)
+    _, _, avg_cost = training.train_step(
+        parameters, predictor, dataset[:1], opt_state, tx
+    )
+
+    predictor_2 = gd.non_scf_predictor(qnnf_rot)
+    _, _, avg_cost_2 = training.train_step(
+        parameters, predictor_2, dataset[:1], opt_state, tx
+    )
+    assert np.isclose(avg_cost_2, avg_cost)
+
+
+def test_180_x_rot_matrix():
+    a = O_h._180_deg_x_rot_sparse(4, False).todense()
+    b = O_h._180_deg_x_rot(4, False)
+    assert np.allclose(a, b)
+
+
+def test_a_training_step_6qb_d4_2():
     num_wires = 6
     np.random.seed(17)
     _setup_device = qml.device("default.qubit", num_wires)
     gates_indices = list(np.random.choice(2**num_wires, num_wires, replace=False))
-    filename = pathlib.Path("tests") / "ansatz_6_d4.pkl"
+    filename = pathlib.Path("tests") / "ansatz_6_d4"
     gates_gen = AnsatzIO.read_from_file(str(filename))
     mock_coeff_inputs = np.random.rand(2**num_wires)
     dft_qnn = DFTQNN(_setup_device, gates_gen, gates_indices)
@@ -78,36 +145,3 @@ def test_a_training_step_6qb_d4():
         _integrate(xc_energy_density, grid_weights),
         _integrate(xc_energy_density_rot_x, grid_weights),
     )
-
-
-def test_270_x_rot_sparse_matrix():
-    num_wire = 6
-    dev = qml.device("lightning.qubit", wires=num_wire)
-
-    @qml.qnode(dev)
-    def six_qubit_circuit_dense(params):
-        qml.AmplitudeEmbedding(params, wires=range(6), normalize=True)
-        qml.X(0)
-        qml.Y(1)
-        qml.RZ(1.23, 2)
-        return qml.expval(O_h._270_deg_x_rot(4, pauli_word=True))
-
-    @qml.qnode(dev)
-    def six_qubit_circuit_sparse(params):
-        qml.AmplitudeEmbedding(params, wires=range(6), normalize=True)
-        qml.X(0)
-        qml.Y(1)
-        qml.RZ(1.23, 2)
-        return qml.expval(O_h._270_deg_x_rot_sparse(4, pauli_word=True))
-
-    np.random.seed(14)
-    mock_coeff_inputs = np.random.rand(2**num_wire)
-    dense_result = six_qubit_circuit_dense(mock_coeff_inputs)
-    sparse_result = six_qubit_circuit_sparse(mock_coeff_inputs)
-    assert np.allclose(dense_result, sparse_result)
-
-
-def test_180_x_rot_matrix():
-    a = O_h._180_deg_x_rot_sparse(4, False).todense()
-    b = O_h._180_deg_x_rot(4, False)
-    assert np.allclose(a, b)

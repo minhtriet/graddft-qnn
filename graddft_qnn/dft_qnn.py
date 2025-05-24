@@ -16,6 +16,7 @@ class DFTQNN(nn.Module):
     dev: qml.device
     ansatz_gen: list[np.array]
     gate_indices: list[int]
+    rotate_feature_matrix: np.array = None  # add this to test equivar
 
     def setup(self) -> None:
         def _circuit(feature, theta, gate_gens):
@@ -36,7 +37,11 @@ class DFTQNN(nn.Module):
         self.qnode = jax.jit(self.qnode)
 
     def circuit(self, feature, theta, gate_gens):
+        if self.rotate_feature_matrix is not None:
+            feature = self.rotate_feature_matrix @ feature
         result = self.qnode(feature, theta, gate_gens)
+        if self.rotate_feature_matrix is not None:
+            result = self.rotate_feature_matrix @ result
         return jnp.array(result)
 
     @nn.compact
