@@ -51,20 +51,22 @@ def test_a_training_step_6qb_d4():
     mock_params = jnp.empty((2**num_wires,))
     dataset = _prepare_dataset()
     key = PRNGKey(42)
+    _270_x_y_eq_z = O_h._270_deg_x_rot(int(np.cbrt(2**num_wires))) @ O_h.y_eq_z_rot(
+        int(np.cbrt(2**num_wires))
+    )
 
-    dft_qnn = DFTQNN(_setup_device, gates_gen, gates_indices)
+    dft_qnn = DFTQNN(
+        _setup_device, gates_gen, gates_indices, _270_x_y_eq_z, rotate_feature=False
+    )
     qnnf = QNNFunctional(
         coefficients=dft_qnn,
         energy_densities=initialization.energy_densities,
         coefficient_inputs=initialization.coefficient_inputs,
     )
 
-    _270_x_y_eq_z = O_h._270_deg_x_rot(int(np.cbrt(2**num_wires))) @ O_h.y_eq_z_rot(
-        int(np.cbrt(2**num_wires))
+    dft_qnn_rot = DFTQNN(
+        _setup_device, gates_gen, gates_indices, _270_x_y_eq_z, rotate_feature=True
     )
-    _180_deg_x_rot = O_h._180_deg_x_rot(int(np.cbrt(2**num_wires)))
-
-    dft_qnn_rot = DFTQNN(_setup_device, gates_gen, gates_indices, _180_deg_x_rot)
     qnnf_rot = QNNFunctional(
         coefficients=dft_qnn_rot,
         energy_densities=initialization.energy_densities,
