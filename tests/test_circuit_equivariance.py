@@ -55,41 +55,60 @@ def test_a_training_step_6qb_d4():
     )
 
     # This is a QNN that always rotate the result of the QNN by _270_x_y_eq_z
-    dft_qnn = DFTQNN(
+    dft_qnn_nothing = DFTQNN(
         _setup_device, gates_gen, gates_indices, _270_x_y_eq_z, rotate_feature=False
     )
-    qnnf = QNNFunctional(
-        coefficients=dft_qnn,
+    qnnf_nothing = QNNFunctional(
+        coefficients=dft_qnn_nothing,
+        energy_densities=initialization.energy_densities,
+        coefficient_inputs=initialization.coefficient_inputs,
+    )
+
+    # This is a QNN that always rotate the result of the QNN by _270_x_y_eq_z
+    dft_qnn_rot_result = DFTQNN(
+        _setup_device, gates_gen, gates_indices, _270_x_y_eq_z, rotate_feature=False
+    )
+    qnnf_rot_result = QNNFunctional(
+        coefficients=dft_qnn_rot_result,
         energy_densities=initialization.energy_densities,
         coefficient_inputs=initialization.coefficient_inputs,
     )
 
     # This is a QNN that always rotate input feature of the QNN by _270_x_y_eq_z
-    dft_qnn_rot = DFTQNN(
+    dft_qnn_rot_input = DFTQNN(
         _setup_device, gates_gen, gates_indices, _270_x_y_eq_z, rotate_feature=True
     )
-    qnnf_rot = QNNFunctional(
-        coefficients=dft_qnn_rot,
+    qnnf_rot_input = QNNFunctional(
+        coefficients=dft_qnn_rot_input,
         energy_densities=initialization.energy_densities,
         coefficient_inputs=initialization.coefficient_inputs,
     )
 
-    parameters = dft_qnn.init(key, mock_params)
-    predictor = gd.non_scf_predictor(qnnf)
+    parameters = dft_qnn_rot_result.init(key, mock_params)
     tx = adam(learning_rate=0.1, b1=0.9)
     opt_state = tx.init(parameters)
+
+    predictor = gd.non_scf_predictor(qnnf_nothing)
     _, _, avg_cost = training.train_step(
         parameters, predictor, dataset[:1], opt_state, tx
     )
 
-    predictor_2 = gd.non_scf_predictor(qnnf_rot)
+    predictor_rot_input = gd.non_scf_predictor(qnnf_rot_input)
     _, _, avg_cost_2 = training.train_step(
-        parameters, predictor_2, dataset[:1], opt_state, tx
+        parameters, predictor_rot_input, dataset[:1], opt_state, tx
+    )
+
+    predictor_rot_result = gd.non_scf_predictor(qnnf_rot_result)
+    _, _, avg_cost_3 = training.train_step(
+        parameters, predictor_rot_result, dataset[:1], opt_state, tx
     )
 
     # Assert that loss(rotate input -> QNN) == loss(QNN -> rotate output)
     # which is the definition of equivariance
-    assert np.isclose(avg_cost_2, avg_cost)
+    assert np.isclose(avg_cost_2, avg_cost_3)
+
+    # this should be close because lost is invariant
+    assert np.isclose(avg_cost, avg_cost_3)
 
 
 def test_180_x_rot_matrix():
