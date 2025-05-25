@@ -13,7 +13,6 @@ import yaml
 from evaluate.metric_name import MetricName
 from jax import numpy as jnp
 from jax.random import PRNGKey
-from jaxtyping import PyTree
 from optax import adam
 
 from datasets import DatasetDict
@@ -28,32 +27,6 @@ from graddft_qnn.unitary_rep import O_h, is_group
 logging.getLogger().setLevel(logging.INFO)
 np.random.seed(42)
 key = PRNGKey(42)
-
-
-def simple_energy_loss(
-    params: PyTree,
-    compute_energy,  #:  Callable,
-    atoms,  #: #Union[Molecule, Solid],
-    truth_energy,  #: #Float,
-):
-    """
-    Computes the loss for a single molecule
-
-    Parameters
-    ----------
-    params: PyTree
-        functional parameters (weights)
-    compute_energy: Callable.
-        any non SCF or SCF method in evaluate.py
-    atoms: Union[Molecule, Solid]
-        The collcection of atoms.
-    truth_energy: Float
-        The energy value we are training against
-    """
-    atoms_out = compute_energy(params, atoms)
-    E_predict = atoms_out.energy
-    diff = E_predict - truth_energy
-    return diff**2, E_predict
 
 
 if __name__ == "__main__":
@@ -106,7 +79,7 @@ if __name__ == "__main__":
         dft_qnn = NaiveDFTQNN(dev, z_measurements, num_gates)
 
     # get a sample batch for initialization
-    coeff_input = jnp.zeros((2 ** len(dev.wires),))
+    coeff_input = jnp.empty((2 ** len(dev.wires),))
     logging.info("Initializing the params")
     parameters = dft_qnn.init(key, coeff_input)
     logging.info("Finished initializing the params")
@@ -207,21 +180,3 @@ if __name__ == "__main__":
     with open("report.json", "w") as f:
         json.dump(history_report, f)
     pd.DataFrame(history_report).to_excel("report.xlsx")
-
-"""
-1. do 2 3 molecules, compare to classical
-2. increase finess of grids
-3. log the xc_energy + total_energy
-4. regularization (params 0 - 2pi)
-# todo calculate the number of symmetric equivalent pixel rather than all pixels
-----
-25th
-Make sure Jax has same num of params, downsized grid
-Metric of success
-- Testing on unseen data
-- Add / remove symetry for the ansatz
-    - gradients steeper / smaller number of interations when adding more group
-Average ONLY THE test loss for every epoch, of 9 qubits, for different groups
-
-Smaller qubits count, bigger batches
-"""
