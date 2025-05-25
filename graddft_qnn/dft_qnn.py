@@ -38,6 +38,35 @@ class DFTQNN(nn.Module):
             ]
             return [qml.expval(measurement) for measurement in measurements]
 
+
+        def _circuit_mps(feature, theta, gate_gens):
+            qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
+            operations = [qml.exp(gates_gen) for gates_gen in gate_gens]
+            bond_dim = 10
+            qml.MPS(wires=self.dev.wires, operations=operations, chi=bond_dim)
+            # Optimization with jaxopt.ScipyMinimize
+            optimizer = jaxopt.ScipyMinimize(method="L-BFGS-B", fun=cost_fn, jit=True)
+
+            # Optimize weights (inputs fixed for this example)
+            params = weights  # Initial parameters
+            state = optimizer.init_state(params, inputs=data, target=target_probs)
+
+            # Optimization loop
+            n_iterations = 100
+            for i in range(n_iterations):
+                params, state = optimizer.update(params, state, inputs=data, target=target_probs)
+                if i % 10 == 0:
+                    cost = state.value
+                    print(f"Iteration {i}, Cost: {cost:.6f}")
+
+            # Final results
+            final_cost = cost_fn(params, data, target_probs)
+            final_probs = mps_qnn_circuit(data, params)
+            print("\nFinal Cost:", final_cost)
+            print("Final Probabilities:", final_probs)
+            print("Target Probabilities:", target_probs)
+            return qml.probs()
+
         result = jnp.array(_circuit(feature, theta, gate_gens, measurements))
         return result
 
