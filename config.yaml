@@ -1,5 +1,6 @@
 QBITS: 6  # 3 6 9 12
 FULL_MEASUREMENTS: prob
+MPS: True
 N_GATES: 8
 CHECK_GROUP: False
 XC_FUNCTIONAL: pw92_densities  # possible options: vwn_density, lyp_density, pw92_densities

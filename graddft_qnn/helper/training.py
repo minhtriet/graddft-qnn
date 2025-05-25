@@ -1,4 +1,5 @@
 import grad_dft as gd
+import jax
 from optax import apply_updates
 from pyscf import dft, gto
 
@@ -33,21 +34,24 @@ def train_step(parameters, predictor, batch, opt_state, tx):
     return parameters, opt_state, avg_cost
 
 
-def train_step_mps():
-    pass
-    # Optimization loop
-    # n_iterations = 100
-    # for i in range(n_iterations):
-    # params, state = optimizer.update(
-    #     params, state, inputs=data, target=target_probs
-    # )
-    # if i % 10 == 0:
-    #     cost = state.value
-    #     print(f"Iteration {i}, Cost: {cost:.6f}")
+def train_step_mps(parameters, predictor, batch):
+    for example_id in range(len(batch["symbols"])):
+        atom_coords = list(
+            zip(batch["symbols"][example_id], batch["coordinates"][example_id])
+        )
+        mol = gto.M(atom=atom_coords, basis="def2-tzvp")
+        mean_field = dft.UKS(mol)
+        mean_field.kernel()
+        molecule = gd.molecule_from_pyscf(mean_field)
 
-    # Final results
-    # final_cost = cost_fn(params, data, target_probs)
-    # final_probs = mps_qnn_circuit(data, params)
+        optimize_result = jax.scipy.optimize.minimize(
+            fun=gd.simple_energy_loss,
+            x0=parameters["params"]["theta"],
+            method="BFGS",
+            args=(predictor, molecule, batch["groundtruth"][example_id]),
+        )
+
+    return optimize_result
 
 
 def eval_step(parameters, predictor, batch):

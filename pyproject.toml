@@ -28,12 +28,11 @@ datasets = "^3.4.1"
 openpyxl = "^3.1.5"
 pre-commit = "^4.2.0"
 
-
 [tool.poetry.group.macos]
 optional = true
 
 [tool.poetry.group.macos.dependencies]
-tensorflow-metal = "1.1.0"
+tensorflow-macos = "2.14.0"
 
 [tool.poetry.group.data_explore]
 optional = true

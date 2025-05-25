@@ -46,6 +46,7 @@ if __name__ == "__main__":
         eval_per_x_epoch = data["TRAINING"]["EVAL_PER_X_EPOCH"]
         batch_size = data["TRAINING"]["BATCH_SIZE"]
         check_group = data["CHECK_GROUP"]
+        mps = data["MPS"]
         assert (
             isinstance(num_gates, int) or num_gates == "full"
         ), f"N_GATES must be integer or 'full', got {num_gates}"
@@ -87,10 +88,6 @@ if __name__ == "__main__":
     # resolve energy density according to user input
     e_density = helper.initialization.resolve_energy_density(xc_functional_name)
 
-    # Optimize weights (inputs fixed for this example)
-    # params = weights  # Initial parameters
-    # state = optimizer.init_state(params, inputs=data, target=target_probs)
-
     # define the functional
     qnnf = QNNFunctional(
         coefficients=dft_qnn,
@@ -120,10 +117,13 @@ if __name__ == "__main__":
             range(0, len(train_ds), batch_size), desc=f"Epoch {epoch + 1}"
         ):
             batch = train_ds[i : i + batch_size]
-            parameters, opt_state, cost_value = helper.training.train_step(
-                parameters, predictor, batch, opt_state, tx
-            )
-            aggregated_train_loss += cost_value
+            if mps:
+                helper.training.train_step_mps(parameters, predictor, batch)
+            else:
+                parameters, opt_state, cost_value = helper.training.train_step(
+                    parameters, predictor, batch, opt_state, tx
+                )
+                aggregated_train_loss += cost_value
 
         train_loss = np.sqrt(aggregated_train_loss / len(train_ds))
         logging.info(f"RMS train loss: {train_loss}")
