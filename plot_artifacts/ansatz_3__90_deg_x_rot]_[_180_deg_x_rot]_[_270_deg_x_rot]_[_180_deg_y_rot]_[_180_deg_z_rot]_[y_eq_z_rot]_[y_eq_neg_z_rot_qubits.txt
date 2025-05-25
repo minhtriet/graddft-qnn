@@ -1,0 +1,4 @@
+X,X,X
+X,I,I
+I,X,X
+I,I,I

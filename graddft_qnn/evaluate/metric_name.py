@@ -8,4 +8,8 @@ class MetricName(str, Enum):
     N_GATES = "Num gates"
     N_MEASUREMENTS = "Full measurements"
     EPOCHS = "Epochs"
+    TEST_LOSSES = "Test losses"
     TEST_LOSS = "Test loss"
+    TRAIN_LOSSES = "Train losses"
+    LEARNING_RATE = "LR"
+    BATCH_SIZE = "Batch size"

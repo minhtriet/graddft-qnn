@@ -1,6 +1,7 @@
 import itertools
 
 import flax.linen as nn
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pennylane as qml
@@ -8,67 +9,42 @@ from flax.typing import Array
 from tqdm import tqdm
 
 from graddft_qnn import custom_gates
+from graddft_qnn.unitary_rep import is_zero_matrix_combination
 
 
 class DFTQNN(nn.Module):
     dev: qml.device
     ansatz_gen: list[np.array]
-    measurements: list[np.array]
     gate_indices: list[int]
 
-    def circuit(self, feature, theta, gate_gens, measurements):
-        @qml.qnode(self.dev)
-        def _circuit(feature, theta, gate_gens, measurements):
+    def setup(self) -> None:
+        def _circuit(feature, theta, gate_gens):
             """
-            :param instance: an instance of the class Functional.
-            :param rhoinputs: input to the neural network, in the form of an array.
-            :return: should be 1 measurement, so that graddft_qnn.qnn_functional.QNNFunctional.xc_energy works
-
-            custom_gates.U2_6_wires(theta, 0)
-            return custom_gates.U2_6_wires_measurement(0)
+            :return: should be full measurement or just 1 measurement,
+            so that graddft_qnn.qnn_functional.QNNFunctional.xc_energy works
             """
+            # debugging
             # if type(theta) == jax._src.interpreters.ad.JVPTracer:
-            #     print(jnp.max(theta).aval, jnp.min(theta).aval, jnp.var(theta).aval, np.mean(theta).aval)
+            #     print(jnp.max(theta).aval, jnp.min(theta).aval, jnp.var(theta).aval, np.mean(theta).aval)   # noqa: E501
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
-            [
-                custom_gates.generate_R_pauli(
-                    theta[idx][0], gen
-                )  # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
-                for idx, gen in enumerate(gate_gens)
-            ]
-            return [qml.expval(measurement) for measurement in measurements]
-
+            for idx, gen in enumerate(gate_gens):
+                # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
+                qml.exp(-1j * theta[idx][0] * gen)
+            return qml.probs(wires=self.dev.wires)
 
         def _circuit_mps(feature, theta, gate_gens):
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             operations = [qml.exp(gates_gen) for gates_gen in gate_gens]
             bond_dim = 10
             qml.MPS(wires=self.dev.wires, operations=operations, chi=bond_dim)
-            # Optimization with jaxopt.ScipyMinimize
-            optimizer = jaxopt.ScipyMinimize(method="L-BFGS-B", fun=cost_fn, jit=True)
-
-            # Optimize weights (inputs fixed for this example)
-            params = weights  # Initial parameters
-            state = optimizer.init_state(params, inputs=data, target=target_probs)
-
-            # Optimization loop
-            n_iterations = 100
-            for i in range(n_iterations):
-                params, state = optimizer.update(params, state, inputs=data, target=target_probs)
-                if i % 10 == 0:
-                    cost = state.value
-                    print(f"Iteration {i}, Cost: {cost:.6f}")
-
-            # Final results
-            final_cost = cost_fn(params, data, target_probs)
-            final_probs = mps_qnn_circuit(data, params)
-            print("\nFinal Cost:", final_cost)
-            print("Final Probabilities:", final_probs)
-            print("Target Probabilities:", target_probs)
             return qml.probs()
 
-        result = jnp.array(_circuit(feature, theta, gate_gens, measurements))
-        return result
+        self.qnode = qml.QNode(_circuit, self.dev, diff_method="backprop")
+        self.qnode = jax.jit(self.qnode)
+
+    def circuit(self, feature, theta, gate_gens):
+        result = self.qnode(feature, theta, gate_gens)
+        return jnp.array(result)
 
     @nn.compact
     def __call__(self, feature: Array) -> Array:
@@ -79,68 +55,67 @@ class DFTQNN(nn.Module):
             jnp.float32,
         )
         selected_gates_gen = list(map(lambda i: self.ansatz_gen[i], self.gate_indices))
-        return self.circuit(feature, theta, selected_gates_gen, list(self.measurements))
+        return self.circuit(
+            feature,
+            theta,
+            selected_gates_gen,
+        )
 
     @staticmethod
-    def twirling_(ansatz: np.array, unitary_reps: list[np.array]):
-        ansatz = ansatz.astype(np.complex64)
-        coeffs = []
+    def _twirling(
+        ansatz: tuple,
+        unitary_reps: list[np.ndarray | qml.operation.Operator],
+    ):
+        """
+        :param ansatz:
+        :param unitary_reps: list of all the group member, it should have
+        the identity group member
+        :return:
+        """
+        twirled = 0
         for unitary_rep in unitary_reps:
-            twirled = 0.5 * (ansatz + unitary_rep @ ansatz @ unitary_rep.conjugate())
-            if np.allclose(twirled, np.zeros_like(twirled)):
-                return None
-            else:
-                coeffs.append(qml.pauli_decompose(twirled).coeffs)
-        if np.allclose(coeffs, [[1.0]] * len(unitary_reps)):
-            return ansatz
-        return None
+            twirled += unitary_rep @ ansatz @ qml.adjoint(unitary_rep)
+            if is_zero_matrix_combination(twirled):
+                return None  # Twirling with this group member returns zero matrix!
+        twirled /= len(unitary_reps)
+        return twirled
 
     @staticmethod
-    def twirling_2_(ansatz: np.array, unitary_reps: list[np.array]):
-        coeffs = []
-        for unitary_rep in unitary_reps:
-            twirled = 0.5 * (ansatz + unitary_rep @ ansatz @ qml.adjoint(unitary_rep))
-            if np.allclose(qml.matrix(twirled), np.zeros_like(qml.matrix(twirled))):
-                return None
-            else:
-                coeffs.append(twirled)
-        for i in range(1, len(coeffs)):
-            if not np.allclose(qml.matrix(coeffs[i]), qml.matrix(coeffs[0])):
-                return None
-        return ansatz
+    def _identity_like(group_member: qml.operation.Operator):
+        result = qml.I(0)
+        for x in range(1, group_member.num_wires):
+            result = qml.prod(result, qml.I(x))
+        return result
 
     @staticmethod
-    def _sentence_twirl(sentence: list[str], invariant_rep: list[np.array]):
+    def _sentence_twirl(sentence: tuple, invariant_rep: list[qml.ops.op_math.Prod]):
         sentence = qml.prod(
             *[getattr(qml, word)(idx) for idx, word in enumerate(sentence)]
-        )
-        # return DFTQNN.twirling_(matrix, invariant_rep)
-        return DFTQNN.twirling_2_(sentence, invariant_rep)
+        )  # e.g, create qml.X(0) @ qml.Y(1) from X,Y
+        return DFTQNN._twirling(sentence, invariant_rep)
 
     @staticmethod
     def gate_design(
-        num_wires: int, invariant_rep: list[np.array]
+        num_wires: int, invariant_rep: list[np.ndarray | qml.ops.op_math.Prod]
     ) -> tuple[list[str], list[str]]:
-        switch_threshold = int(np.ceil(2**num_wires / len(custom_gates.words)))
+        """
+        :param num_wires:
+        :param invariant_rep: The representation of group members, doesn't have
+        identity yet
+        :return:
+        """
         ansatz_gen = []
+        invariant_rep.append(DFTQNN._identity_like(invariant_rep[0]))
         with tqdm(
             total=2**num_wires, desc="Creating invariant gates generator"
         ) as pbar:
-            for combination in itertools.product(
-                custom_gates.words.keys(), repeat=num_wires
+            for _, combination in enumerate(
+                itertools.product(custom_gates.words.keys(), repeat=num_wires)
             ):
-                if DFTQNN._sentence_twirl(combination, invariant_rep) is not None:
-                    # if (
-                    #     combination[0]
-                    #     != list(custom_gates.words)[len(ansatz_gen) // switch_threshold]
-                    # ):
-                    #     # E.g we want 10 ansatz and 3 options (x,y,z)
-                    #     # then the first 3 ansatz should start with x,
-                    #     # then next 3 with y, then next with z
-                    #     continue
-                    ansatz_gen.append(combination)
+                invariant_gate = DFTQNN._sentence_twirl(combination, invariant_rep)
+                if invariant_gate is not None:
+                    ansatz_gen.append(invariant_gate)
                     pbar.update()
                     if len(ansatz_gen) == 2**num_wires:
                         break
-        assert len(ansatz_gen) == 2**num_wires
         return ansatz_gen

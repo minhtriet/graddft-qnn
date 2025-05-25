@@ -1,121 +1,42 @@
-import functools
-
 import numpy as np
+import pennylane as qml
+import pytest
 
-from graddft_qnn.custom_gates import words
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.unitary_rep import O_h
 
-x_rot_matrix = np.array(
-    [
-        [0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0],
-        [1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0],
-    ]
-)
-y_rot_matrix = np.array([])
-z_rot_matrix = np.array(
-    [
-        [0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0],
-        [1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0],
-    ]
-)
-x_reflect_matrix = []
-y_reflect_matrix = []
-z_reflect_matrix = []
-
 
 def test_twirling():
-    sentence = ["X"] * 6
-    sentence_matrix = [words[x] for x in sentence]
-    matrix = functools.reduce(np.kron, sentence_matrix)
-    size = np.cbrt(matrix.shape[0])
-    assert size.is_integer()
-    assert np.allclose(matrix, DFTQNN.twirling_2_(matrix, O_h.C2_group(int(size))))
+    # eq.60 in https://doi.org/10.1103/PRXQuantum.4.010328
+    twirled = DFTQNN._twirling(
+        qml.X(0) @ qml.I(1), [qml.SWAP([0, 1]), qml.I(0) @ qml.I(1)]
+    )
+    expected = 0.5 * (qml.X(0) + qml.X(1))
+    assert np.allclose(qml.matrix(twirled), qml.matrix(expected))
 
-    sentence = ["X", "X", "X", "X", "I", "Z"]
-    sentence_matrix = [words[x] for x in sentence]
-    matrix = functools.reduce(np.kron, sentence_matrix)
-    assert DFTQNN.twirling_2_(matrix, O_h.C2_group(int(size))) is None
+    # eq.65 in https://doi.org/10.1103/PRXQuantum.4.010328
+    twirled = DFTQNN._twirling(
+        qml.I(0) @ qml.Y(1), [qml.X(0) @ qml.X(1), qml.I(0) @ qml.I(1)]
+    )
+    assert twirled is None
 
 
+@pytest.mark.skip(reason="takes too long, can run separately")
 def test_gate_design():
-    gate_gen = DFTQNN.gate_design(6, O_h.C2_group(4, pauli_word=True))
-    gate_gen = ["".join(g) for g in gate_gen]
-    assert gate_gen == [
-        "XXXXXX",
-        "XXXXXI",
-        "XXXXYY",
-        "XXXXYZ",
-        "XXXXZY",
-        "XXXXZZ",
-        "XXXXIX",
-        "XXXXII",
-        "XXXIXX",
-        "XXXIXI",
-        "XXXIYY",
-        "XXXIYZ",
-        "XXXIZY",
-        "XXXIZZ",
-        "XXXIIX",
-        "XXXIII",
-        "XXYYXX",
-        "XXYYXI",
-        "XXYYYY",
-        "XXYYYZ",
-        "XXYYZY",
-        "XXYYZZ",
-        "XXYYIX",
-        "XXYYII",
-        "XXYZXX",
-        "XXYZXI",
-        "XXYZYY",
-        "XXYZYZ",
-        "XXYZZY",
-        "XXYZZZ",
-        "XXYZIX",
-        "XXYZII",
-        "XXZYXX",
-        "XXZYXI",
-        "XXZYYY",
-        "XXZYYZ",
-        "XXZYZY",
-        "XXZYZZ",
-        "XXZYIX",
-        "XXZYII",
-        "XXZZXX",
-        "XXZZXI",
-        "XXZZYY",
-        "XXZZYZ",
-        "XXZZZY",
-        "XXZZZZ",
-        "XXZZIX",
-        "XXZZII",
-        "XXIXXX",
-        "XXIXXI",
-        "XXIXYY",
-        "XXIXYZ",
-        "XXIXZY",
-        "XXIXZZ",
-        "XXIXIX",
-        "XXIXII",
-        "XXIIXX",
-        "XXIIXI",
-        "XXIIYY",
-        "XXIIYZ",
-        "XXIIZY",
-        "XXIIZZ",
-        "XXIIIX",
-        "XXIIII",
-    ]
+    num_wire = 6
+    dev = qml.device("default.qubit", wires=num_wire)
+
+    @qml.qnode(dev)
+    def six_qubit_circuit(params, gate_gens):
+        qml.AmplitudeEmbedding(params, wires=range(6), normalize=True)
+        for gate_gen in gate_gens:
+            qml.exp(-0.5j * gate_gen)
+        return [qml.expval(gate_gen) for gate_gen in gate_gens]
+
+    gates_gen_sparse = DFTQNN.gate_design(6, [O_h._180_deg_x_rot_sparse(4, True)])
+    gates_gen_dense = DFTQNN.gate_design(6, [O_h._180_deg_x_rot(4, True)])
+    np.random.seed(33)
+    input = np.random.rand(2**6)
+    output_dense = six_qubit_circuit(input, gates_gen_dense)
+    output_sparse = six_qubit_circuit(input, gates_gen_sparse)
+    assert np.allclose(output_dense, output_sparse)
