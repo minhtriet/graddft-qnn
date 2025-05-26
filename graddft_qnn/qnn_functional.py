@@ -45,14 +45,16 @@ class QNNFunctional(NeuralFunctional):
         )
         denominator = jnp.sum(unnormalized_coefficient_inputs)
         coefficient_inputs = unnormalized_coefficient_inputs / denominator * numerator
-
         grid_numerator = jnp.sum(grid.weights)
         grid_weights = QNNFunctional.compute_slice_sums(grid.weights, indices)
         # grid_weights = grid.weights[indices]
         grid_weights = grid_weights / jnp.sum(grid_weights) * grid_numerator
 
         # densities: (xxx, 2)
-        densities = unscaled_densities[indices]
+        total_density = jnp.sum(unscaled_densities)
+        densities = QNNFunctional.compute_slice_sums(unscaled_densities, indices)  # shape (64,)
+        densities = densities / jnp.sum(densities) * total_density
+        densities = densities[:, jnp.newaxis]  # shape (64, 1)
 
         # subtract mean
         mean = jax.numpy.mean(coefficient_inputs)
@@ -70,10 +72,12 @@ class QNNFunctional(NeuralFunctional):
 
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
 
-        # should we bring back normal scale
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
-        return self._integrate(xc_energy_density, grid_weights)  # was grid.weights
+        xc_energy_down= self._integrate(xc_energy_density, grid_weights)
+        new_indicies_size = len(grid.weights)//(2**n_qubits)
+        xc_energy_down_normal = xc_energy_down/new_indicies_size**2
+        return xc_energy_down_normal
 
     @staticmethod
     def compute_slice_sums(X, indices):
@@ -86,3 +90,4 @@ class QNNFunctional(NeuralFunctional):
         ends = jnp.concatenate([indices[1:], jnp.array([len(X)])])
         sums = cumsum[ends] - cumsum[starts]
         return sums
+
