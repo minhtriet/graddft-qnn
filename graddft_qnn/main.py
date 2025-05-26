@@ -30,44 +30,6 @@ np.random.seed(42)
 key = PRNGKey(42)
 
 
-@jax.jit
-def coefficient_inputs(molecule: gd.Molecule, *_, **__):
-    rho = molecule.density()
-    return jnp.sum(rho, 1)
-
-
-def resolve_energy_density(xc_functional_name: str):
-    xc_functional = getattr(gd.popular_functionals, xc_functional_name, None)
-    if xc_functional:
-        return xc_functional
-    else:
-        raise ModuleNotFoundError(
-            f"Function {xc_functional} does not exist in popular_functionals"
-        )
-
-
-@jax.jit
-def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
-    r"""Auxiliary function to generate the features of LSDA."""
-    # Molecule can compute the density matrix.
-    rho = jnp.clip(molecule.density(), a_min=clip_cte)
-    # Now we can implement the LDA energy density equation in the paper.
-    lda_x_e = (
-        -3
-        / 2
-        * (3 / (4 * jnp.pi)) ** (1 / 3)
-        * (rho ** (4 / 3)).sum(axis=1, keepdims=True)
-    )
-    # For simplicity we do not include the exchange polarization correction
-    # check function exchange_polarization_correction in functional.py
-    # The output of features must be an Array of dimension n_grid x n_features.
-
-    # resolve energy density according to user input
-    pw92_c_e = gd.popular_functionals.pw92_densities(molecule, clip_cte)
-
-    return jnp.concatenate((lda_x_e, pw92_c_e), axis=1)
-
-
 def simple_energy_loss(
     params: PyTree,
     compute_energy,  #:  Callable,
@@ -124,10 +86,9 @@ if __name__ == "__main__":
         dev = qml.device("default.qubit", wires=num_qubits)
 
     # define the QNN
+    filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"
     if "naive" not in group[0].lower():
-        filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits.txt"
-        if pathlib.Path(filename).exists():
-            filename += ".pkl"
+        if pathlib.Path(f"{filename}.pkl").exists():
             gates_gen = AnsatzIO.read_from_file(filename)
             logging.info(f"Loaded ansatz generator from {filename}")
         else:
@@ -149,16 +110,19 @@ if __name__ == "__main__":
     parameters = dft_qnn.init(key, coeff_input)
     logging.info("Finished initializing the params")
 
+    # resolve energy density according to user input
+    e_density = helper.initialization.resolve_energy_density(xc_functional_name)
+
     # define the functional
-    nf = QNNFunctional(
+    qnnf = QNNFunctional(
         coefficients=dft_qnn,
-        energy_densities=energy_densities,
-        coefficient_inputs=coefficient_inputs,
+        energy_densities=helper.initialization.energy_densities,
+        coefficient_inputs=helper.initialization.coefficient_inputs,
     )
     tx = adam(learning_rate=learning_rate, b1=momentum)
     opt_state = tx.init(parameters)
 
-    predictor = gd.non_scf_predictor(nf)
+    predictor = gd.non_scf_predictor(qnnf)
     # start training
     if pathlib.Path("datasets/h2_dataset").exists():
         dataset = DatasetDict.load_from_disk(pathlib.Path("datasets/h2_dataset"))
@@ -206,6 +170,10 @@ if __name__ == "__main__":
         aggregated_cost += cost_value
     test_loss = np.sqrt(aggregated_cost / len(dataset["test"]))
     logging.info(f"Test loss {test_loss}")
+
+    checkpoint_path = pathlib.Path().resolve() / pathlib.Path(filename).stem
+    qnnf.save_checkpoints(parameters, tx, step=n_epochs, ckpt_dir=str(checkpoint_path))
+
     # report
     now = datetime.now()
     date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
