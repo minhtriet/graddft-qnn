@@ -46,6 +46,17 @@ class QNNFunctional(NeuralFunctional):
         densities = QNNFunctional.compute_slice_sums(unscaled_densities, indices)  # shape (64,)
         densities = densities[:, jnp.newaxis]  # shape (64, 1)
 
+        #Pysical Constraints
+        Energy0 = QNNFunctional.integrate_density_with_weights(grid.weights, unscaled_densities)
+        Energy_down =QNNFunctional.integrate_density_with_weights(grid_weights, densities)
+        N0 = QNNFunctional.integrate_density_with_weights(grid.weights, unscaled_coefficient_inputs)
+        N_down = QNNFunctional.integrate_density_with_weights(grid_weights, coefficient_inputs)
+
+        #Scaling it
+        coefficient_inputs = coefficient_inputs * jnp.sqrt(N0/N_down)
+        grid_weights = grid_weights * jnp.sqrt(N0/N_down)
+        densities = densities * jnp.sqrt(N_down / N0) * Energy0/Energy_down
+
         # subtract mean
         mean = jax.numpy.mean(coefficient_inputs)
         coefficient_centered = coefficient_inputs - mean
@@ -53,13 +64,6 @@ class QNNFunctional(NeuralFunctional):
         # divide by standard deviation
         std = jax.numpy.std(coefficient_inputs)
         coefficient_standardized = coefficient_centered / std
-
-        #Pysical Constraints
-        Energy = QNNFunctional.integrate_density_with_weights(grid.weights, unscaled_densities)
-        Energy_down =QNNFunctional.integrate_density_with_weights(grid_weights, densities)
-        N0 = QNNFunctional.integrate_density_with_weights(grid.weights, unscaled_coefficient_inputs)
-        N_down = QNNFunctional.integrate_density_with_weights(grid_weights, coefficient_inputs)
-
         # bar_plot_jvp(coefficient_standardized, "column_chart_standard.png")
 
         coefficients = self.coefficients.apply(params, coefficient_standardized)
@@ -70,11 +74,7 @@ class QNNFunctional(NeuralFunctional):
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
         xc_energy_down= self._integrate(xc_energy_density, grid_weights)
-
-        xc_energy_down_normal = xc_energy_down / N_down * N0
-        #xc_energy_down_normal= xc_energy_down/Energy_down * Energy
-        #xc_energy_down_normal = QNNFunctional.normalize(xc_energy_down, len(grid.weights),n_qubits)
-        return xc_energy_down_normal
+        return xc_energy_down
 
     @staticmethod
     def compute_slice_sums(X, indices):
@@ -87,11 +87,6 @@ class QNNFunctional(NeuralFunctional):
         ends = jnp.concatenate([indices[1:], jnp.array([len(X)])])
         downsampled = cumsum[ends] - cumsum[starts]
         return downsampled / jnp.sum(downsampled) * jnp.sum(X) #return it after rescailing
-
-    @staticmethod
-    def normalize_downsampled_energy(raw_energy: Scalar, original_size: int, num_qubits: int) -> Scalar:
-        group_size = original_size // (2 ** num_qubits) #|G_k|
-        return raw_energy / (group_size ** 2)
 
     @staticmethod
     def integrate_density_with_weights(
