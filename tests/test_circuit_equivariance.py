@@ -116,10 +116,10 @@ def test_a_training_step_6qb_d4(molecule):
 
     # Assert that loss(rotate input -> QNN) == loss(QNN -> rotate output)
     # which is the definition of equivariance
-    assert np.isclose(avg_cost_2, avg_cost_3)
+    assert np.isclose(avg_cost_2, avg_cost_3, atol=1e-10)
 
     # this should be close because lost is invariant
-    assert np.isclose(avg_cost, avg_cost_3)
+    assert np.isclose(avg_cost, avg_cost_3, atol=1e-10)
 
 
 def test_180_x_rot_matrix():
