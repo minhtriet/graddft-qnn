@@ -57,6 +57,8 @@ class QNNFunctional(NeuralFunctional):
         #Pysical Constraints
         Energy = QNNFunctional.integrate_density_with_weights(grid.weights, unscaled_densities)
         Energy_down =QNNFunctional.integrate_density_with_weights(grid_weights, densities)
+        N0 = QNNFunctional.integrate_density_with_weights(grid.weights, unscaled_coefficient_inputs)
+        N_down = QNNFunctional.integrate_density_with_weights(grid_weights, coefficient_inputs)
 
         # bar_plot_jvp(coefficient_standardized, "column_chart_standard.png")
 
@@ -69,7 +71,8 @@ class QNNFunctional(NeuralFunctional):
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
         xc_energy_down= self._integrate(xc_energy_density, grid_weights)
 
-        xc_energy_down_normal= xc_energy_down/Energy_down * Energy
+        xc_energy_down_normal = xc_energy_down / N_down * N0
+        #xc_energy_down_normal= xc_energy_down/Energy_down * Energy
         #xc_energy_down_normal = QNNFunctional.normalize(xc_energy_down, len(grid.weights),n_qubits)
         return xc_energy_down_normal
 
@@ -103,6 +106,9 @@ class QNNFunctional(NeuralFunctional):
         :param density: Densities (shape: [n, f])
         :return: Scalar result of ∑_i (grid[i] * ∑_j density[i, j])
         """
+        if density.ndim == 1:
+            density = density[:, jnp.newaxis]  # Reshape (n,) → (n, 1)
+
         density_sum = jnp.sum(density, axis=1, keepdims=True)  # shape (n, 1)
         weighted = density_sum * grid_weights[:, jnp.newaxis]  # shape (n, 1)
         return jnp.sum(weighted)
