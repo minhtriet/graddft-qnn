@@ -4,12 +4,12 @@ import grad_dft as gd
 import jax.numpy as jnp
 import pennylane as qml
 import pennylane.numpy as np
+import pytest
 from grad_dft import abs_clip
 from jax.lax import Precision
 from jax.random import PRNGKey, normal
 from optax import adam
 
-from datasets import DatasetDict
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.helper import initialization, training
 from graddft_qnn.io.ansatz_io import AnsatzIO
@@ -30,15 +30,29 @@ def _integrate(energy_density, gridweights, clip_cte=1e-30):
     )
 
 
-def _prepare_dataset():
-    dataset = DatasetDict.load_from_disk(pathlib.Path("datasets/h2_dataset"))
-    return dataset["train"]
-
-
-def test_a_training_step_6qb_d4():
+@pytest.mark.parametrize(
+    "molecule",
+    [
+        {
+            "coordinates": [[[-1.1527353, 0.0, 0.0], [1.1527353, 0.0, 0.0]]],
+            "name": ["H2"],
+            "symbols": [["H", "H"]],
+            "groundtruth": [-1.0523215656204707],
+        },  # this is the first element from H2 dataset train set
+        {
+            "coordinates": [[[0.74167178, 0.0, 0.0], [-2.22501535, 0.0, 0.0]]],
+            "name": ["LiH"],
+            "symbols": [["Li", "H"]],
+            "groundtruth": [-7.882680014448228],
+        },  # this is from https://pennylane.ai/datasets/lih-molecule
+    ],
+)
+def test_a_training_step_6qb_d4(molecule):
     """
     After rotate a QNN input feature, the loss function
-    calculated based on E_ks should be the same as rotate the output of QNN
+    calculated based on E_ks should be the same as rotate the output of QNN.
+
+    We parametrize
     """
     num_wires = 6
     num_gates = 8
@@ -48,7 +62,6 @@ def test_a_training_step_6qb_d4():
     gates_gen = AnsatzIO.read_from_file(str(filename))
     gates_indices = list(np.random.choice(len(gates_gen), num_gates, replace=False))
     mock_params = jnp.empty((2**num_wires,))
-    dataset = _prepare_dataset()
     key = PRNGKey(42)
     _270_x_y_eq_z = O_h._270_deg_x_rot(int(np.cbrt(2**num_wires))) @ O_h.y_eq_z_rot(
         int(np.cbrt(2**num_wires))
@@ -89,18 +102,16 @@ def test_a_training_step_6qb_d4():
     opt_state = tx.init(parameters)
 
     predictor = gd.non_scf_predictor(qnnf_nothing)
-    _, _, avg_cost = training.train_step(
-        parameters, predictor, dataset[:1], opt_state, tx
-    )
+    _, _, avg_cost = training.train_step(parameters, predictor, molecule, opt_state, tx)
 
     predictor_rot_input = gd.non_scf_predictor(qnnf_rot_input)
     _, _, avg_cost_2 = training.train_step(
-        parameters, predictor_rot_input, dataset[:1], opt_state, tx
+        parameters, predictor_rot_input, molecule, opt_state, tx
     )
 
     predictor_rot_result = gd.non_scf_predictor(qnnf_rot_result)
     _, _, avg_cost_3 = training.train_step(
-        parameters, predictor_rot_result, dataset[:1], opt_state, tx
+        parameters, predictor_rot_result, molecule, opt_state, tx
     )
 
     # Assert that loss(rotate input -> QNN) == loss(QNN -> rotate output)
