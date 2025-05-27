@@ -148,7 +148,9 @@ if __name__ == "__main__":
             )
             aggregated_train_loss += cost_value
 
-        train_loss = np.sqrt(aggregated_train_loss / len(train_ds))
+        train_loss = np.sqrt(
+            aggregated_train_loss / len(range(0, len(train_ds), batch_size))
+        )
         logging.info(f"RMS train loss: {train_loss}")
         train_losses.append(train_loss)
 
