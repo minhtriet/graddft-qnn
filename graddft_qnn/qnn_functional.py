@@ -54,6 +54,10 @@ class QNNFunctional(NeuralFunctional):
         std = jax.numpy.std(coefficient_inputs)
         coefficient_standardized = coefficient_centered / std
 
+        #Pysical Constraints
+        Energy = QNNFunctional.integrate_density_with_weights(grid.weights, unscaled_densities)
+        Energy_down =QNNFunctional.integrate_density_with_weights(grid_weights, densities)
+
         # bar_plot_jvp(coefficient_standardized, "column_chart_standard.png")
 
         coefficients = self.coefficients.apply(params, coefficient_standardized)
@@ -64,7 +68,9 @@ class QNNFunctional(NeuralFunctional):
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
         xc_energy_down= self._integrate(xc_energy_density, grid_weights)
-        xc_energy_down_normal = QNNFunctional.normalize(xc_energy_down, len(grid.weights),n_qubits)
+
+        xc_energy_down_normal= xc_energy_down/Energy_down * Energy
+        #xc_energy_down_normal = QNNFunctional.normalize(xc_energy_down, len(grid.weights),n_qubits)
         return xc_energy_down_normal
 
     @staticmethod
@@ -83,3 +89,20 @@ class QNNFunctional(NeuralFunctional):
     def normalize_downsampled_energy(raw_energy: Scalar, original_size: int, num_qubits: int) -> Scalar:
         group_size = original_size // (2 ** num_qubits) #|G_k|
         return raw_energy / (group_size ** 2)
+
+    @staticmethod
+    def integrate_density_with_weights(
+        grid_weights: Float[Array, "n"],
+        density: Float[Array, "n f"],
+    ) -> Scalar:
+        """
+        Computes elementwise multiplication of summed density and grid weights,
+        then returns the total sum.
+
+        :param grid_weights: Grid weights (shape: [n])
+        :param density: Densities (shape: [n, f])
+        :return: Scalar result of ∑_i (grid[i] * ∑_j density[i, j])
+        """
+        density_sum = jnp.sum(density, axis=1, keepdims=True)  # shape (n, 1)
+        weighted = density_sum * grid_weights[:, jnp.newaxis]  # shape (n, 1)
+        return jnp.sum(weighted)
