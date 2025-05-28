@@ -25,55 +25,34 @@ class QNNFunctional(NeuralFunctional):
         :param clip_cte:
         :return:
         """
-        # down-sampling coeff_inputs, densities
-        # rescale densities and grid_weights
         with open("config.yaml") as file:
             data = yaml.safe_load(file)
             if "QBITS" not in data:
                 raise KeyError("YAML file must contain 'QBITS' key")
             n_qubits = data["QBITS"]
-        # unscaled_coeff_inputs: (xxx, 2)
-        # bar_plot_jvp(unscaled_coefficient_inputs, "column_chart_og.png")
-        numerator = jnp.sum(unscaled_coefficient_inputs, axis=0)
+
+        # taking 2**n_qubits indices
         indices = jnp.round(
-            jnp.linspace(0, unscaled_coefficient_inputs.shape[0], 2**n_qubits)
-        ).astype(jnp.int32)  # taking 2**n_qubits indices
-        # because the size of the grid is bigger than the actual input feedable
-        # to the QNN, we do downsample here by summing the negihbors together
+            jnp.linspace(0, unscaled_coefficient_inputs.shape[0], 2 ** n_qubits)
+        ).astype(jnp.int32)
+
+        # down sampling and normalization
         unnormalized_coefficient_inputs = QNNFunctional.compute_slice_sums(
-            unscaled_coefficient_inputs, indices
-        )
-        denominator = jnp.sum(unnormalized_coefficient_inputs)
-        coefficient_inputs = unnormalized_coefficient_inputs / denominator * numerator
+            unscaled_coefficient_inputs, indices)
+        grid_weights = QNNFunctional.compute_slice_sums(
+            grid.weights, indices)
+        num_electron = jnp.einsum("r,r->",
+            grid.weights, unscaled_coefficient_inputs)
+        unnormalized_num_electron = jnp.einsum("r,r->",
+            grid_weights, unnormalized_coefficient_inputs)
+        coefficient_inputs = unnormalized_coefficient_inputs * num_electron / unnormalized_num_electron
 
-        grid_numerator = jnp.sum(grid.weights)
-        grid_weights = QNNFunctional.compute_slice_sums(grid.weights, indices)
-        # grid_weights = grid.weights[indices]
-        grid_weights = grid_weights / jnp.sum(grid_weights) * grid_numerator
-
-        # densities: (xxx, 2)
-        densities = unscaled_densities[indices]
-
-        # subtract mean
-        mean = jax.numpy.mean(coefficient_inputs)
-        coefficient_centered = coefficient_inputs - mean
-
-        # divide by standard deviation
-        std = jax.numpy.std(coefficient_inputs)
-        coefficient_standardized = coefficient_centered / std
-
-        # bar_plot_jvp(coefficient_standardized, "column_chart_standard.png")
-
-        coefficients = self.coefficients.apply(params, coefficient_standardized)
-        coefficients *= std
-        coefficients += mean
-
-        coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
-
-        # should we bring back normal scale
+        # obtain xc energy
+        coefficients = self.coefficients.apply(params, coefficient_inputs)[:, jax.numpy.newaxis]  # shape (xxx, 1)
+        densities = QNNFunctional.energy_densities_LDA(coefficient_inputs)
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
-        return self._integrate(xc_energy_density, grid_weights)  # was grid.weights
+        return self._integrate(xc_energy_density, grid_weights)
 
     @staticmethod
     def compute_slice_sums(X, indices):
@@ -86,3 +65,7 @@ class QNNFunctional(NeuralFunctional):
         ends = jnp.concatenate([indices[1:], jnp.array([len(X)])])
         sums = cumsum[ends] - cumsum[starts]
         return sums
+
+    @staticmethod
+    def energy_densities_LDA(rho):
+        return -3 / 2 * (3 / (4 * jnp.pi)) ** (1 / 3) * (rho ** (4 / 3))[:, jnp.newaxis]
