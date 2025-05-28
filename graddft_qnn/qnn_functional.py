@@ -43,19 +43,18 @@ class QNNFunctional(NeuralFunctional):
         coefficient_inputs = QNNFunctional.compute_slice_sums(
             unscaled_coefficient_inputs, indices)
         grid_weights = QNNFunctional.compute_slice_sums(grid.weights, indices)
-        densities = QNNFunctional.compute_slice_sums(unscaled_densities, indices)  # shape (64,)
-        densities = densities[:, jnp.newaxis]  # shape (64, 1)
 
         #Pysical Constraints
-        Energy0 = QNNFunctional.integrate_density_with_weights(grid.weights, unscaled_densities)
-        Energy_down =QNNFunctional.integrate_density_with_weights(grid_weights, densities)
         N0 = QNNFunctional.integrate_density_with_weights(grid.weights, unscaled_coefficient_inputs)
         N_down = QNNFunctional.integrate_density_with_weights(grid_weights, coefficient_inputs)
 
-        #Scaling it
+        #Scaling
         coefficient_inputs = coefficient_inputs * jnp.sqrt(N0/N_down)
         grid_weights = grid_weights * jnp.sqrt(N0/N_down)
-        densities = densities * jnp.sqrt(N_down / N0) * Energy0/Energy_down
+
+        #Re-define energy density from down scaled charge density
+        densities = QNNFunctional.energy_densities_LDA(coefficient_inputs)
+
 
         # subtract mean
         mean = jax.numpy.mean(coefficient_inputs)
@@ -107,3 +106,7 @@ class QNNFunctional(NeuralFunctional):
         density_sum = jnp.sum(density, axis=1, keepdims=True)  # shape (n, 1)
         weighted = density_sum * grid_weights[:, jnp.newaxis]  # shape (n, 1)
         return jnp.sum(weighted)
+
+    @staticmethod
+    def energy_densities_LDA(rho):
+        return -3 / 2 * (3 / (4 * jnp.pi)) ** (1 / 3) * (rho ** (4 / 3))[:, jnp.newaxis]
