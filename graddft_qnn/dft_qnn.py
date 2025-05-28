@@ -37,14 +37,25 @@ class DFTQNN(nn.Module):
             return qml.probs(wires=self.dev.wires)
 
         def _circuit_mps(feature, theta, gate_gens):
-            qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
-            operations = [qml.exp(gates_gen) for gates_gen in gate_gens]
-            bond_dim = 10
-            qml.MPS(wires=self.dev.wires, operations=operations, chi=bond_dim)
-            return qml.probs()
+            #qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
+            #operations = [qml.exp(gates_gen) for gates_gen in gate_gens]
+            #bond_dim = 10
+            #qml.MPS(wires=self.dev.wires, operations=operations, chi=bond_dim)
 
-        self.qnode = qml.QNode(_circuit, self.dev, diff_method="backprop")
-        self.qnode = jax.jit(self.qnode)
+            for idx, gen in enumerate(gate_gens):
+                qml.exp(-1j * theta[idx][0] * gen)
+                if isinstance(gen, qml.operation.Operator) and gen.has_decomposition:
+                    qml.exp(-1j * theta[idx][0] * gen)
+                else:
+                    print(f"Skipping or replacing operator at index {idx}")
+
+            return qml.probs(wires=self.dev.wires)
+
+        is_mps = getattr(self.dev, "method", "") == "mps"
+        circuit_func = _circuit_mps if is_mps else _circuit
+        diff_method = "parameter-shift" if is_mps else "backprop"
+        self.qnode = qml.QNode(circuit_func, self.dev, diff_method=diff_method)
+        #self.qnode = jax.jit(self.qnode)
 
     def circuit(self, feature, theta, gate_gens):
         if self.rotate_matrix is not None and self.rotate_feature:

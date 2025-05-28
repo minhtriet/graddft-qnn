@@ -28,6 +28,14 @@ logging.getLogger().setLevel(logging.INFO)
 np.random.seed(42)
 key = PRNGKey(42)
 
+# Define the keyword arguments for the MPS method
+kwargs_mps = {
+    # Maximum bond dimension of the MPS
+    "max_bond_dim": 50,
+    # Cutoff parameter for the singular value decomposition
+    "cutoff": np.finfo(np.complex128).eps,
+    # Contraction strategy to apply gates
+    "contract": "auto-mps",}
 
 if __name__ == "__main__":
     jax.config.update("jax_enable_x64", True)
@@ -58,7 +66,10 @@ if __name__ == "__main__":
             if (check_group) and (not is_group(group_matrix_reps, group)):
                 raise ValueError("Not forming a group")
         xc_functional_name = data["XC_FUNCTIONAL"]
-        dev = qml.device("default.qubit", wires=num_qubits)
+        if mps:
+            dev = qml.device("default.tensor", wires=num_qubits, method="mps", **kwargs_mps)
+        else:
+            dev = qml.device("default.qubit", wires=num_qubits)
 
     # define the QNN
     filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"
