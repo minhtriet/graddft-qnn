@@ -32,6 +32,9 @@ class QNNFunctional(NeuralFunctional):
             if "QBITS" not in data:
                 raise KeyError("YAML file must contain 'QBITS' key")
             n_qubits = data["QBITS"]
+            if "COR_ENERGY_DENSITY" not in data:
+                raise KeyError("YAML file must contain 'COR_ENERGY_DENSITY' key")
+            cor_energy_density = data["COR_ENERGY_DENSITY"]
         # unscaled_coeff_inputs: (xxx, 2)
         # bar_plot_jvp(unscaled_coefficient_inputs, "column_chart_og.png")
         numerator = jnp.sum(unscaled_coefficient_inputs, axis=0)
@@ -69,9 +72,10 @@ class QNNFunctional(NeuralFunctional):
         coefficients += mean
 
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
-        coefficients = jnp.concatenate(
-            (coefficients, coefficients), axis=1
-        )  # shape (xxx, 2)
+        if cor_energy_density:
+            coefficients = jnp.concatenate(
+                (coefficients, coefficients), axis=1
+            )  # shape (xxx, 2)
 
         # should we bring back normal scale
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)

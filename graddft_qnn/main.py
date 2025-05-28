@@ -86,8 +86,8 @@ if __name__ == "__main__":
         dev = qml.device("default.qubit", wires=num_qubits)
 
     # define the QNN
-    filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"
     if "naive" not in group[0].lower():
+        filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"
         if pathlib.Path(f"{filename}.pkl").exists():
             gates_gen = AnsatzIO.read_from_file(filename)
             logging.info(f"Loaded ansatz generator from {filename}")
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     logging.info("Finished initializing the params")
 
     # resolve energy density according to user input
-    e_density = helper.initialization.resolve_energy_density(xc_functional_name)
+    # e_density = helper.initialization.resolve_energy_density(xc_functional_name)
 
     # define the functional
     qnnf = QNNFunctional(
