@@ -87,8 +87,8 @@ if __name__ == "__main__":
         dev = qml.device("default.qubit", wires=num_qubits)
 
     # define the QNN
-    filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"
     if "naive" not in group[0].lower():
+        filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"
         if pathlib.Path(f"{filename}.pkl").exists():
             gates_gen = AnsatzIO.read_from_file(filename)
             logging.info(f"Loaded ansatz generator from {filename}")
@@ -172,8 +172,9 @@ if __name__ == "__main__":
     test_loss = np.sqrt(aggregated_cost / len(dataset["test"]))
     logging.info(f"Test loss {test_loss}")
 
-    checkpoint_path = pathlib.Path().resolve() / pathlib.Path(filename).stem
-    qnnf.save_checkpoints(parameters, tx, step=n_epochs, ckpt_dir=str(checkpoint_path))
+    if "naive" not in group[0].lower():
+        checkpoint_path = pathlib.Path().resolve() / pathlib.Path(filename).stem
+        qnnf.save_checkpoints(parameters, tx, step=n_epochs, ckpt_dir=str(checkpoint_path))
 
     # report
     now = datetime.now()

@@ -42,38 +42,28 @@ class QNNFunctional(NeuralFunctional):
 
         coefficient_inputs = QNNFunctional.compute_slice_sums(
             unscaled_coefficient_inputs, indices)
-        grid_weights = QNNFunctional.compute_slice_sums(grid.weights, indices)
+        grid_weights = QNNFunctional.compute_slice_sums(
+            grid.weights, indices)
 
         #Pysical Constraints
         N0 = QNNFunctional.integrate_density_with_weights(grid.weights, unscaled_coefficient_inputs)
         N_down = QNNFunctional.integrate_density_with_weights(grid_weights, coefficient_inputs)
 
         #Scaling
-        coefficient_inputs = coefficient_inputs * jnp.sqrt(N0/N_down)
-        grid_weights = grid_weights * jnp.sqrt(N0/N_down)
+        coefficient_inputs = coefficient_inputs * N0 / N_down
 
         #Re-define energy density from down scaled charge density
         densities = QNNFunctional.energy_densities_LDA(coefficient_inputs)
 
+        # obtain coefficients with parameters
+        coefficients = self.coefficients.apply(
+            params, coefficient_inputs
+        )[:, jax.numpy.newaxis] # shape (xxx, 1)
 
-        # subtract mean
-        mean = jax.numpy.mean(coefficient_inputs)
-        coefficient_centered = coefficient_inputs - mean
-
-        # divide by standard deviation
-        std = jax.numpy.std(coefficient_inputs)
-        coefficient_standardized = coefficient_centered / std
-        # bar_plot_jvp(coefficient_standardized, "column_chart_standard.png")
-
-        coefficients = self.coefficients.apply(params, coefficient_standardized)
-        coefficients *= std
-        coefficients += mean
-        coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
-
+        # obtain xc energy
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
-        xc_energy_down= self._integrate(xc_energy_density, grid_weights)
-        return xc_energy_down
+        return self._integrate(xc_energy_density, grid_weights)
 
     @staticmethod
     def compute_slice_sums(X, indices):
