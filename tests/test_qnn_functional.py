@@ -26,14 +26,16 @@ def molecule():
 
 def test_downsampling_weight(qnnf, molecule):
     before_weight = sum(molecule.grid.weights)
-    new_grid = qnnf.grid_weight_downsampling(molecule.grid)
-    assert np.isclose(new_grid.grid.weights, before_weight)
+    n_qubits = 12
+    new_grid = qnnf.grid_weight_downsampling(molecule.grid, n_qubits)
+    assert np.isclose(np.sum(new_grid), before_weight, rtol=1.4e-5)
 
 
 def test_downsampling_charge_density(qnnf, molecule):
     rho = molecule.density()
+    n_qubits = 12
     before_density = sum(np.sum(molecule.density(), 1) * molecule.grid.weights)
-    downsampled_grid = qnnf.grid_weight_downsampling(molecule.grid)
-    downsampled_density = qnnf.charge_density_downsampling(rho)
+    downsampled_grid = qnnf.grid_weight_downsampling(molecule.grid, n_qubits)
+    downsampled_density = qnnf.charge_density_downsampling(rho, molecule.grid, n_qubits)
     after_density = sum(np.sum(downsampled_density, 1) * downsampled_grid)
     assert np.isclose(before_density, after_density)

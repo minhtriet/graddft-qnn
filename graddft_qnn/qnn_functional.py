@@ -1,21 +1,74 @@
 import jax
+import numpy as np
+import scipy
 import yaml
 from grad_dft import NeuralFunctional, abs_clip
 from grad_dft.molecule import Grid
-
-# from helper.visualization import bar_plot_jvp
 from jax import numpy as jnp
 from jaxtyping import Array, Float, PyTree, Scalar
 
 
 class QNNFunctional(NeuralFunctional):
-    def grid_weight_downsampling(self, grid: Grid):
-        raise NotImplementedError
+    def _regularize_grid(self, grid: Grid, num_qubits, grid_data):
+        # 1. grid.coordinates are not sorted
+        # 2. grid.coordinates are not regular grid
+        # Due to this irregularity, we cannot immediately use RegularGridInterpolator
+        x = grid.coords[:, 0]
+        y = grid.coords[:, 1]
+        z = grid.coords[:, 2]
+        per_axis_dimension = int(np.cbrt(2**num_qubits))
 
-    def charge_density_downsampling(self, charge_density):
-        raise NotImplementedError
+        new_x, new_y, new_z = np.mgrid[
+            np.min(x) : np.max(x) : per_axis_dimension * 1j,
+            np.min(y) : np.max(y) : per_axis_dimension * 1j,
+            np.min(z) : np.max(z) : per_axis_dimension * 1j,
+        ]
 
-    def xc_energy(  # noqa: F821 F841
+        interpolated = scipy.interpolate.griddata(
+            grid.coords,
+            grid_data,
+            (new_x, new_y, new_z),
+            method="nearest",
+        ).astype(jnp.float32)
+        return interpolated
+
+    def grid_weight_downsampling(self, grid: Grid, num_qubits: int):
+        # First handle the grid data.
+        interpolated = self._regularize_grid(grid, num_qubits, grid.weights)
+        reconstructed_values = interpolated.flatten()
+
+        # renormalize
+        reconstructed_values = (
+            reconstructed_values / jnp.sum(reconstructed_values) * jnp.sum(grid.weights)
+        )
+
+        return reconstructed_values
+
+    def charge_density_downsampling(
+        self,
+        charge_density: Float[Array, "(n,2)"],  # noqa: F821
+        grid: Grid,
+        num_qubits: int,
+        downsampled_grid: list,
+    ):
+        assert np.allclose(
+            charge_density[:, 0], charge_density[:, 1]
+        ), "We are supporting only closed shell molecule right now"
+
+        # First handle the grid data.
+        interpolated = self._regularize_grid(grid, num_qubits, charge_density[:, 0])
+        interpolated = interpolated.flatten()
+        # renormalize
+        interpolated = interpolated / sum(interpolated) * sum(charge_density[:, 0])
+
+        # make sure the summed charge density is correct
+        correction = (
+            downsampled_grid * interpolated - charge_density[:, 0] * grid.weights
+        )
+        interpolated[0] = interpolated[0] - correction / downsampled_grid[0]
+        return np.stack((interpolated, interpolated), axis=1)
+
+    def xc_energy(
         self,
         params: PyTree,
         grid: Grid,
@@ -25,10 +78,17 @@ class QNNFunctional(NeuralFunctional):
         **kwargs,
     ) -> Scalar:
         """
+        It is ok to pass a "standardized" coefficient_inputs to the neural net.
+        It is not ok to and the mean and divide by the standard deviation for the output
+        of the neural net.
+        Potentially we can also remove the standardization of the coefficient_inputs
+        before passing to the neural net. This is sometimes a technique used in
+        classical NN but it is not clear if we need it here.
+
         :param params:
         :param grid:
-        :param coefficient_inputs:  grid coeff inputs
-        :param densities: grid densities
+        :param unscaled_coefficient_inputs: energy density
+        :param unscaled_densities: grid densities
         :param clip_cte:
         :return:
         """
@@ -39,31 +99,15 @@ class QNNFunctional(NeuralFunctional):
             if "QBITS" not in data:
                 raise KeyError("YAML file must contain 'QBITS' key")
             n_qubits = data["QBITS"]
-        # unscaled_coeff_inputs: (xxx, 2)
-        # bar_plot_jvp(unscaled_coefficient_inputs, "column_chart_og.png")
-        numerator = jnp.sum(unscaled_coefficient_inputs, axis=0)  # noqa F841
-        indices = jnp.round(
-            jnp.linspace(0, unscaled_coefficient_inputs.shape[0], 2**n_qubits)
-        ).astype(jnp.int32)  # taking 2**n_qubits indices
-        # because the size of the grid is bigger than the actual input feedable
-        # to the QNN, we do downsample here by summing the negihbors together
-        unnormalized_coefficient_inputs = QNNFunctional.compute_slice_sums(  # noqa F841
-            unscaled_coefficient_inputs, indices
-        )
-        # denominator = jnp.sum(unnormalized_coefficient_inputs)
-        # coefficient_inputs = unnormalized_coefficient_inputs / denominator * numerator
-        coefficients_input = self.charge_density_downsampling(  # noqa F841
-            unscaled_coefficient_inputs
-        )  # < todo implement here
 
-        # grid_numerator = jnp.sum(grid.weights)
-        # grid_weights = QNNFunctional.compute_slice_sums(grid.weights, indices)
-        # grid_weights = grid_weights / jnp.sum(grid_weights) * grid_numerator
-        grid_weights = self.grid_weight_downsampling(
-            self, grid
-        )  # < todo implement here
+        coefficients_input = self.charge_density_downsampling(  # noqa F841
+            unscaled_coefficient_inputs, grid, n_qubits
+        )
+
+        self.charge_density_downsampling(unscaled_densities, grid, n_qubits)
+
+        grid_weights = self.grid_weight_downsampling(grid, n_qubits)
         # densities: (xxx, 2)
-        densities = unscaled_densities[indices]
 
         # subtract mean
         mean = jax.numpy.mean(coefficient_inputs)  # noqa F821
@@ -76,13 +120,10 @@ class QNNFunctional(NeuralFunctional):
         # bar_plot_jvp(coefficient_standardized, "column_chart_standard.png")
 
         coefficients = self.coefficients.apply(params, coefficient_standardized)
-        coefficients *= std
-        coefficients += mean
 
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
-
         # should we bring back normal scale
-        xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
+        xc_energy_density = jnp.einsum("rf,rf->r", coefficients, unscaled_densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
         return self._integrate(xc_energy_density, grid_weights)  # was grid.weights
 
