@@ -91,7 +91,9 @@ if __name__ == "__main__":
         dft_qnn = NaiveDFTQNN(dev, z_measurements, num_gates)
 
     # get a sample batch for initialization
-    coeff_input = jnp.empty((2 ** len(dev.wires),))
+    # mps device cannot get zero vector as a feature, and it needs normalized one.
+    coeff_input = jax.random.normal(jax.random.PRNGKey(0), shape=(2 ** num_qubits,))
+    coeff_input = coeff_input / jnp.linalg.norm(coeff_input)
     logging.info("Initializing the params")
     parameters = dft_qnn.init(key, coeff_input)
     logging.info("Finished initializing the params")

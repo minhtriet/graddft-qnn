@@ -2,6 +2,7 @@ import grad_dft as gd
 import jax
 from optax import apply_updates
 from pyscf import dft, gto
+from flax.core import freeze
 
 
 def train_step(parameters, predictor, batch, opt_state, tx):
@@ -44,13 +45,19 @@ def train_step_mps(parameters, predictor, batch):
         mean_field.kernel()
         molecule = gd.molecule_from_pyscf(mean_field)
 
+        def wrapped_loss_fn(theta_flat):
+            full_params = freeze({"params": {"theta": theta_flat}})
+            return gd.simple_energy_loss(
+                full_params,
+                predictor,
+                molecule,
+                batch["groundtruth"][example_id]
+            )
         optimize_result = jax.scipy.optimize.minimize(
-            fun=gd.simple_energy_loss,
+            fun=wrapped_loss_fn,
             x0=parameters["params"]["theta"],
             method="BFGS",
-            args=(predictor, molecule, batch["groundtruth"][example_id]),
         )
-
     return optimize_result
 
 

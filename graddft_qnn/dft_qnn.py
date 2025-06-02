@@ -1,7 +1,8 @@
 import itertools
-
+import logging
 import flax.linen as nn
 import jax
+from jax import debug
 import jax.numpy as jnp
 import numpy as np
 import pennylane as qml
@@ -10,7 +11,7 @@ from tqdm import tqdm
 
 from graddft_qnn import custom_gates
 from graddft_qnn.unitary_rep import is_zero_matrix_combination
-
+from graddft_qnn.naive_dft_qnn import NaiveDFTQNN
 
 class DFTQNN(nn.Module):
     dev: qml.device
@@ -37,25 +38,37 @@ class DFTQNN(nn.Module):
             return qml.probs(wires=self.dev.wires)
 
         def _circuit_mps(feature, theta, gate_gens):
-            #qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
+            qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             #operations = [qml.exp(gates_gen) for gates_gen in gate_gens]
             #bond_dim = 10
             #qml.MPS(wires=self.dev.wires, operations=operations, chi=bond_dim)
-
             for idx, gen in enumerate(gate_gens):
-                qml.exp(-1j * theta[idx][0] * gen)
-                if isinstance(gen, qml.operation.Operator) and gen.has_decomposition:
-                    qml.exp(-1j * theta[idx][0] * gen)
-                else:
-                    print(f"Skipping or replacing operator at index {idx}")
-
-            return qml.probs(wires=self.dev.wires)
+                gen = qml.simplify(gen)
+                t = theta[idx][0]
+                qml.ApproxTimeEvolution(gen, t, 1)
+            #return [qml.expval(qml.PauliZ(i)) for i in self.dev.wires]
+            z_measurements = DFTQNN.generate_projector_measurements(len(self.dev.wires))
+            return [qml.expval(z_op) for z_op in z_measurements]
 
         is_mps = getattr(self.dev, "method", "") == "mps"
         circuit_func = _circuit_mps if is_mps else _circuit
-        diff_method = "parameter-shift" if is_mps else "backprop"
-        self.qnode = qml.QNode(circuit_func, self.dev, diff_method=diff_method)
-        #self.qnode = jax.jit(self.qnode)
+        diff_method = "finite-diff" if is_mps else "parameter-shift"
+        raw_qnode = qml.QNode(circuit_func, self.dev, diff_method=diff_method)
+
+        '''
+        if is_mps:
+            def qnode_with_probs(feature, theta, gate_gens):
+                samples = raw_qnode(feature, theta, gate_gens)  # shape (shots, n_wires)
+                bitstrings = jnp.dot(samples, 1 << jnp.arange(samples.shape[-1])[::-1])  # binary to int
+                counts = jnp.bincount(bitstrings, minlength=2 ** samples.shape[1])
+                probs = counts / samples.shape[0]
+                return probs
+
+            self.qnode = staticmethod(qnode_with_probs)
+        else:
+            self.qnode = raw_qnode
+        '''
+        self.qnode = raw_qnode
 
     def circuit(self, feature, theta, gate_gens):
         if self.rotate_matrix is not None and self.rotate_feature:
@@ -71,14 +84,11 @@ class DFTQNN(nn.Module):
             "theta",
             nn.initializers.he_normal(),
             (len(self.gate_indices), 1),
-            jnp.float32,
+            jnp.float64
+            #jnp.float32,
         )
         selected_gates_gen = list(map(lambda i: self.ansatz_gen[i], self.gate_indices))
-        return self.circuit(
-            feature,
-            theta,
-            selected_gates_gen,
-        )
+        return self.circuit(feature,theta,selected_gates_gen,)
 
     @staticmethod
     def _twirling(
@@ -138,3 +148,25 @@ class DFTQNN(nn.Module):
                     if len(ansatz_gen) == 2**num_wires:
                         break
         return ansatz_gen
+
+    @staticmethod
+    def generate_projector_measurements(n):
+        """
+        Generate 2^n tensor product measurements of projectors |0><0| and |1><1|.
+        Each result is a tensor product like: |0><0|⊗|1><1|⊗...⊗|0><0|
+        """
+        logging.info("Generating |0><0| and |1><1| product measurements")
+
+        # Generate all bitstrings of length n (e.g., for n=2: (0,0), (0,1), (1,0), (1,1))
+        combos = list(itertools.product([0, 1], repeat=n))
+
+        result = []
+        for combo in combos:
+            # First projector in the product
+            projector = qml.Projector([combo[0]], wires=[0])
+            # Multiply by the rest of the projectors
+            for i in range(1, n):
+                projector = projector @ qml.Projector([combo[i]], wires=[i])
+            result.append(projector)
+
+        return result
