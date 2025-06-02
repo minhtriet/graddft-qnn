@@ -163,7 +163,9 @@ for epoch in range(n_epochs):
 
     for i in tqdm.tqdm(range(0, len(train_ds), batch_size), desc=f"Epoch {epoch + 1}"):
         batch = train_ds[i : i + batch_size]
-
+        if len(batch["symbols"]) < batch_size:
+            # drop last batch if len(train_ds) % batch_size > 0
+            continue
         "from helper.training.train_step()"
         cost_values = []
         for example_id in range(len(batch["symbols"])):
@@ -189,7 +191,8 @@ for epoch in range(n_epochs):
 
         aggregated_train_loss += avg_cost
         train_losses_batch.append(np.sqrt(avg_cost / len(batch["symbols"])))
-    train_loss = np.sqrt(aggregated_train_loss / len(train_ds))
+    num_train_batch = int(np.floor(len(train_ds) / batch_size))
+    train_loss = np.sqrt(aggregated_train_loss /num_train_batch)
     logging.info(f"RMS train loss: {train_loss}")
     train_losses.append(train_loss)
 
