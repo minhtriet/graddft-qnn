@@ -5,6 +5,7 @@ import yaml
 from grad_dft import NeuralFunctional, abs_clip
 from grad_dft.molecule import Grid
 from jax import numpy as jnp
+from jax._src.interpreters.ad import JVPTracer
 from jaxtyping import Array, Float, PyTree, Scalar
 
 
@@ -65,14 +66,26 @@ class QNNFunctional(NeuralFunctional):
             n_qubits = data["QBITS"]
 
         # downsampling
-        interpolated_charge_density = self._regularize_grid(
-            grid, n_qubits, unscaled_coefficient_inputs.aval.val
-        ).flatten()
+        if isinstance(unscaled_coefficient_inputs, JVPTracer):
+            interpolated_charge_density = self._regularize_grid(
+                grid, n_qubits, unscaled_coefficient_inputs.aval.val
+            ).flatten()
+        else:
+            interpolated_charge_density = self._regularize_grid(
+                grid, n_qubits, unscaled_coefficient_inputs
+            ).flatten()
+
+        if isinstance(unscaled_densities, JVPTracer):
+            interpolated_energy_densities = self._regularize_grid(
+                grid, n_qubits, unscaled_densities.aval.val
+            ).flatten()
+        else:
+            interpolated_energy_densities = self._regularize_grid(
+                grid, n_qubits, unscaled_densities
+            ).flatten()
+
         interpolated_grid_weights = self._regularize_grid(
             grid, n_qubits, grid.weights
-        ).flatten()
-        interpolated_energy_densities = self._regularize_grid(
-            grid, n_qubits, unscaled_densities.aval.val
         ).flatten()
         interpolated_energy_densities = interpolated_energy_densities[
             :, jax.numpy.newaxis

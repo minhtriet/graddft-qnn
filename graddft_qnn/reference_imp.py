@@ -30,12 +30,13 @@ np.random.seed(42)
 key = PRNGKey(42)
 
 
+@jax.jit
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
-    kinetic = molecule.kinetic_density()
-    return jnp.concatenate((rho, kinetic), axis=1)
+    return jnp.sum(rho, 1)
 
 
+@jax.jit
 def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     rho = jnp.clip(molecule.density(), a_min=clip_cte)
     lda_e = (
