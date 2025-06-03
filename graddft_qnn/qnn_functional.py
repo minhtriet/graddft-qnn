@@ -1,4 +1,5 @@
 import jax
+import numpy as np
 import yaml
 from grad_dft import NeuralFunctional, abs_clip
 from grad_dft.molecule import Grid
@@ -16,6 +17,7 @@ class QNNFunctional(NeuralFunctional):
         unscaled_coefficient_inputs: Float[Array, "(n,n)"],  # noqa: F821
         unscaled_densities: Float[Array, "(n,n)"],  # noqa: F821
         clip_cte: float = 1e-30,
+        **kwargs,
     ) -> Scalar:
         """
         :param params:
@@ -41,24 +43,29 @@ class QNNFunctional(NeuralFunctional):
         # to the QNN, we do downsample here by summing the negihbors together
 
         coefficient_inputs = QNNFunctional.compute_slice_sums(
-            unscaled_coefficient_inputs, indices)
-        grid_weights = QNNFunctional.compute_slice_sums(
-            grid.weights, indices)
+            unscaled_coefficient_inputs, indices
+        )
+        grid_weights = QNNFunctional.compute_slice_sums(grid.weights, indices)
+        assert np.isclose(sum(grid_weights), sum(grid.weights), rtol=2e-5)
 
-        #Pysical Constraints
-        N0 = QNNFunctional.integrate_density_with_weights(grid.weights, unscaled_coefficient_inputs)
-        N_down = QNNFunctional.integrate_density_with_weights(grid_weights, coefficient_inputs)
+        # Physical Constraints
+        N0 = QNNFunctional.integrate_density_with_weights(
+            grid.weights, unscaled_coefficient_inputs
+        )
+        N_down = QNNFunctional.integrate_density_with_weights(
+            grid_weights, coefficient_inputs
+        )
 
-        #Scaling
+        # Scaling
         coefficient_inputs = coefficient_inputs * N0 / N_down
 
-        #Re-define energy density from down scaled charge density
+        # Re-define energy density from down scaled charge density
         densities = QNNFunctional.energy_densities_LDA(coefficient_inputs)
 
         # obtain coefficients with parameters
-        coefficients = self.coefficients.apply(
-            params, coefficient_inputs
-        )[:, jax.numpy.newaxis] # shape (xxx, 1)
+        coefficients = self.coefficients.apply(params, coefficient_inputs)[
+            :, jax.numpy.newaxis
+        ]  # shape (xxx, 1)
 
         # obtain xc energy
         xc_energy_density = jnp.einsum("rf,rf->r", coefficients, densities)
@@ -75,12 +82,14 @@ class QNNFunctional(NeuralFunctional):
         starts = jnp.array(indices)
         ends = jnp.concatenate([indices[1:], jnp.array([len(X)])])
         downsampled = cumsum[ends] - cumsum[starts]
-        return downsampled / jnp.sum(downsampled) * jnp.sum(X) #return it after rescailing
+        return (
+            downsampled / jnp.sum(downsampled) * jnp.sum(X)
+        )  # return it after rescailing
 
     @staticmethod
     def integrate_density_with_weights(
-        grid_weights: Float[Array, "n"],
-        density: Float[Array, "n f"],
+        grid_weights: Float[Array, "n"],  # noqa: F821
+        density: Float[Array, "n f"],  # noqa: F722
     ) -> Scalar:
         """
         Computes elementwise multiplication of summed density and grid weights,
