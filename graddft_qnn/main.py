@@ -13,7 +13,7 @@ import yaml
 from evaluate.metric_name import MetricName
 from jax import numpy as jnp
 from jax.random import PRNGKey
-from optax import adam
+from optax import sgd
 
 from datasets import DatasetDict
 from graddft_qnn import helper
@@ -60,8 +60,8 @@ if __name__ == "__main__":
         dev = qml.device("default.qubit", wires=num_qubits)
 
     # define the QNN
-    filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"
     if "naive" not in group[0].lower():
+        filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"
         if pathlib.Path(f"{filename}.pkl").exists():
             gates_gen = AnsatzIO.read_from_file(filename)
             logging.info(f"Loaded ansatz generator from {filename}")
@@ -93,7 +93,8 @@ if __name__ == "__main__":
         energy_densities=helper.initialization.energy_densities,
         coefficient_inputs=helper.initialization.coefficient_inputs,
     )
-    tx = adam(learning_rate=learning_rate, b1=momentum)
+    # tx = adam(learning_rate=learning_rate, b1=momentum)
+    tx = sgd(learning_rate=learning_rate, momentum=momentum)
     opt_state = tx.init(parameters)
 
     predictor = gd.non_scf_predictor(qnnf)
@@ -145,8 +146,11 @@ if __name__ == "__main__":
     test_loss = np.sqrt(aggregated_cost / len(dataset["test"]))
     logging.info(f"Test loss {test_loss}")
 
-    checkpoint_path = pathlib.Path().resolve() / pathlib.Path(filename).stem
-    qnnf.save_checkpoints(parameters, tx, step=n_epochs, ckpt_dir=str(checkpoint_path))
+    if "naive" not in group[0].lower():
+        checkpoint_path = pathlib.Path().resolve() / pathlib.Path(filename).stem
+        qnnf.save_checkpoints(
+            parameters, tx, step=n_epochs, ckpt_dir=str(checkpoint_path)
+        )
 
     # report
     now = datetime.now()
