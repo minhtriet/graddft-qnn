@@ -100,6 +100,33 @@ class QNNFunctional(NeuralFunctional):
                 raise KeyError("YAML file must contain 'QBITS' key")
             n_qubits = data["QBITS"]
 
+        # downsampling
+        interpolated_charge_density = self._regularize_grid(
+            grid, n_qubits, unscaled_coefficient_inputs.aval.val
+        ).flatten()
+        interpolated_grid_weights = self._regularize_grid(
+            grid, n_qubits, grid.weights
+        ).flatten()
+        interpolated_energy_densities = self._regularize_grid(
+            grid, n_qubits, unscaled_densities.aval.val
+        ).flatten()
+        interpolated_energy_densities = interpolated_energy_densities[:, jax.numpy.newaxis]
+
+        # normalization
+        num_electron = self.integrate_density_with_weights(
+            grid.weights, unscaled_coefficient_inputs)
+        factor_electron = self.integrate_density_with_weights(
+            interpolated_grid_weights, interpolated_charge_density)
+
+        tot_volume = jnp.sum(grid.weights)
+        factor_volume = jnp.sum(interpolated_grid_weights)
+
+        normalized_grid_weights = (interpolated_grid_weights
+                                   * tot_volume / factor_volume)
+        normalized_charge_density = (interpolated_charge_density
+                                     * num_electron / factor_electron / tot_volume * factor_volume)
+
+        """
         coefficients_input = self.charge_density_downsampling(  # noqa F841
             unscaled_coefficient_inputs, grid, n_qubits
         )
@@ -108,24 +135,24 @@ class QNNFunctional(NeuralFunctional):
 
         grid_weights = self.grid_weight_downsampling(grid, n_qubits)
         # densities: (xxx, 2)
+        """
 
         # subtract mean
-        mean = jax.numpy.mean(coefficient_inputs)  # noqa F821
-        coefficient_centered = coefficient_inputs - mean  # noqa F821
+        mean = jax.numpy.mean(normalized_charge_density)  # noqa F821
+        charge_density_centered = normalized_charge_density - mean  # noqa F821
 
         # divide by standard deviation
-        std = jax.numpy.std(coefficient_inputs)  # noqa F821
-        coefficient_standardized = coefficient_centered / std
+        std = jax.numpy.std(normalized_charge_density)  # noqa F821
+        charge_density_standardized = charge_density_centered / std
 
-        # bar_plot_jvp(coefficient_standardized, "column_chart_standard.png")
-
-        coefficients = self.coefficients.apply(params, coefficient_standardized)
-
+        # get coefficients
+        coefficients = self.coefficients.apply(params, charge_density_standardized)
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
+
         # should we bring back normal scale
-        xc_energy_density = jnp.einsum("rf,rf->r", coefficients, unscaled_densities)
+        xc_energy_density = jnp.einsum("rf,rf->r", coefficients, interpolated_energy_densities)
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
-        return self._integrate(xc_energy_density, grid_weights)  # was grid.weights
+        return self._integrate(xc_energy_density, normalized_grid_weights)  # was grid.weights
 
     @staticmethod
     def compute_slice_sums(X, indices):
@@ -138,3 +165,20 @@ class QNNFunctional(NeuralFunctional):
         ends = jnp.concatenate([indices[1:], jnp.array([len(X)])])
         sums = cumsum[ends] - cumsum[starts]
         return sums
+
+    @staticmethod
+    def integrate_density_with_weights(grid_weights, density):
+        """
+        Computes elementwise multiplication of summed density and grid weights,
+        then returns the total sum.
+
+        :param grid_weights: Grid weights (shape: [n])
+        :param density: Densities (shape: [n, f])
+        :return: Scalar result of ∑_i (grid[i] * ∑_j density[i, j])
+        """
+        if density.ndim == 1:
+            density = density[:, jnp.newaxis]  # Reshape (n,) → (n, 1)
+
+        density_sum = jnp.sum(density, axis=1, keepdims=True)  # shape (n, 1)
+        weighted = density_sum * grid_weights[:, jnp.newaxis]  # shape (n, 1)
+        return jnp.sum(weighted)
