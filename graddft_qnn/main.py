@@ -132,7 +132,8 @@ if __name__ == "__main__":
         ):
             batch = train_ds[i : i + batch_size]
             if mps:
-                helper.training.train_step_mps(parameters, predictor, batch)
+                parameters, cost_value = helper.training.train_step_mps(parameters, predictor, batch)
+                aggregated_train_loss += cost_value
             else:
                 parameters, opt_state, cost_value = helper.training.train_step(
                     parameters, predictor, batch, opt_state, tx

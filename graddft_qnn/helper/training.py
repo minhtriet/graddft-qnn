@@ -3,7 +3,9 @@ import jax
 from optax import apply_updates
 from pyscf import dft, gto
 from flax.core import freeze
-
+import jax.numpy as np
+from scipy.optimize import minimize
+from graddft_qnn.dft_qnn import DFTQNN
 
 def train_step(parameters, predictor, batch, opt_state, tx):
     grads = []
@@ -36,29 +38,43 @@ def train_step(parameters, predictor, batch, opt_state, tx):
 
 
 def train_step_mps(parameters, predictor, batch):
+    theta_shape = parameters["params"]["theta"].shape
+    init_theta = parameters["params"]["theta"].reshape(-1)
+    total_cost = 0.0
+    updated_params = parameters.copy()
+
     for example_id in range(len(batch["symbols"])):
-        atom_coords = list(
-            zip(batch["symbols"][example_id], batch["coordinates"][example_id])
-        )
+        atom_coords = list(zip(batch["symbols"][example_id], batch["coordinates"][example_id]))
         mol = gto.M(atom=atom_coords, basis="def2-tzvp")
         mean_field = dft.UKS(mol)
         mean_field.kernel()
         molecule = gd.molecule_from_pyscf(mean_field)
 
-        def wrapped_loss_fn(theta_flat):
-            full_params = freeze({"params": {"theta": theta_flat}})
-            return gd.simple_energy_loss(
-                full_params,
+        def loss_fn(theta_flat):
+            theta = theta_flat.reshape(theta_shape)
+            updated_params["params"] = updated_params["params"].copy()
+            updated_params["params"]["theta"] = theta
+            (cost, _), _ = gd.simple_energy_loss(
+                updated_params,
                 predictor,
                 molecule,
-                batch["groundtruth"][example_id]
+                batch["groundtruth"][example_id],
             )
-        optimize_result = jax.scipy.optimize.minimize(
-            fun=wrapped_loss_fn,
-            x0=parameters["params"]["theta"],
-            method="BFGS",
+            return cost
+
+        result = minimize(
+            loss_fn,
+            x0=init_theta,
+            method="Nelder-Mead",  # or COBYLA
+            options={"maxiter": 1}
         )
-    return optimize_result
+
+        init_theta = result.x
+        total_cost += result.fun
+        updated_params["params"]["theta"] = result.x.reshape(theta_shape)
+
+    avg_cost = total_cost / len(batch["symbols"])
+    return updated_params, avg_cost
 
 
 def eval_step(parameters, predictor, batch):

@@ -47,12 +47,12 @@ class DFTQNN(nn.Module):
                 gen = qml.simplify(gen)
                 t = theta[idx][0]
                 qml.evolve(gen, t)
-                #qml.ApproxTimeEvolution(gen, t, 1)  # Trotter steps = 1
+                #qml.ApproxTimeEvolution(gen, t, 2)  # Trotter steps = 1
             return [qml.expval(measure) for measure in self.measurements]
 
         is_mps = getattr(self.dev, "method", "") == "mps"
         circuit_func = _circuit_mps if is_mps else _circuit
-        diff_method = None if is_mps else "parameter-shift"
+        diff_method = "parameter-shift" if is_mps else "parameter-shift"
         raw_qnode = qml.QNode(circuit_func, self.dev, diff_method=diff_method)
 
         '''
