@@ -113,6 +113,15 @@ if __name__ == "__main__":
         train_ds = train_ds.shuffle(seed=42)
         aggregated_train_loss = 0
 
+        # check if randomize == lda
+        # from pyscf import gto, dft
+        # mol = gto.M(atom=zip(train_ds[0]["symbols"], train_ds[0]["coordinates"]), basis="def2-tzvp")
+        # mean_field = dft.UKS(mol)
+        # mean_field.kernel()
+        # molecule = gd.molecule_from_pyscf(mean_field)
+        # E = qnnf.energy_densities(molecule)
+        # cool = qnnf._regularize_grid(molecule.grid, 6, E)
+
         for i in tqdm.tqdm(
             range(0, len(train_ds), batch_size), desc=f"Epoch {epoch + 1}"
         ):
