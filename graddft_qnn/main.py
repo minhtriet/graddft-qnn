@@ -31,7 +31,7 @@ key = PRNGKey(42)
 # Define the keyword arguments for the MPS method
 kwargs_mps = {
     # Maximum bond dimension of the MPS
-    "max_bond_dim": 50,
+    "max_bond_dim": 1,
     # Cutoff parameter for the singular value decomposition
     "cutoff": np.finfo(np.complex128).eps,
     # Contraction strategy to apply gates
@@ -85,7 +85,8 @@ if __name__ == "__main__":
         gates_gen = gates_gen[: 2**num_qubits]
         if isinstance(num_gates, int):
             gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
-        dft_qnn = DFTQNN(dev, gates_gen, gates_indices)
+        projective_measurements = DFTQNN.generate_projector_measurements(len(dev.wires))
+        dft_qnn = DFTQNN(dev, projective_measurements, gates_gen, gates_indices)
     else:
         z_measurements = NaiveDFTQNN.generate_Z_measurements(len(dev.wires))
         dft_qnn = NaiveDFTQNN(dev, z_measurements, num_gates)

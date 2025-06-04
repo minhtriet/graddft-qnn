@@ -15,6 +15,7 @@ from graddft_qnn.naive_dft_qnn import NaiveDFTQNN
 
 class DFTQNN(nn.Module):
     dev: qml.device
+    measurements: list
     ansatz_gen: list[np.array]
     gate_indices: list[int]
     rotate_matrix: np.array = None  # add this to test equivar
@@ -45,14 +46,13 @@ class DFTQNN(nn.Module):
             for idx, gen in enumerate(gate_gens):
                 gen = qml.simplify(gen)
                 t = theta[idx][0]
-                qml.ApproxTimeEvolution(gen, t, 1)
-            #return [qml.expval(qml.PauliZ(i)) for i in self.dev.wires]
-            z_measurements = DFTQNN.generate_projector_measurements(len(self.dev.wires))
-            return [qml.expval(z_op) for z_op in z_measurements]
+                qml.evolve(gen, t)
+                #qml.ApproxTimeEvolution(gen, t, 1)  # Trotter steps = 1
+            return [qml.expval(measure) for measure in self.measurements]
 
         is_mps = getattr(self.dev, "method", "") == "mps"
         circuit_func = _circuit_mps if is_mps else _circuit
-        diff_method = "finite-diff" if is_mps else "parameter-shift"
+        diff_method = None if is_mps else "parameter-shift"
         raw_qnode = qml.QNode(circuit_func, self.dev, diff_method=diff_method)
 
         '''
@@ -88,7 +88,7 @@ class DFTQNN(nn.Module):
             #jnp.float32,
         )
         selected_gates_gen = list(map(lambda i: self.ansatz_gen[i], self.gate_indices))
-        return self.circuit(feature,theta,selected_gates_gen,)
+        return self.circuit(feature, theta, selected_gates_gen)
 
     @staticmethod
     def _twirling(
