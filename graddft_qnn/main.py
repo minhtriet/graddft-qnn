@@ -5,6 +5,7 @@ from datetime import datetime
 
 import grad_dft as gd
 import jax
+import jax.random as jrandom
 import numpy as np
 import pandas as pd
 import pennylane as qml
@@ -26,8 +27,8 @@ from graddft_qnn.unitary_rep import O_h, is_group
 
 logging.getLogger().setLevel(logging.INFO)
 np.random.seed(42)
-key = PRNGKey(42)
-
+#key = PRNGKey(42)
+key = jrandom.PRNGKey(0)
 # Define the keyword arguments for the MPS method
 kwargs_mps = {
     # Maximum bond dimension of the MPS
@@ -36,6 +37,15 @@ kwargs_mps = {
     "cutoff": np.finfo(np.complex128).eps,
     # Contraction strategy to apply gates
     "contract": "auto-mps",}
+
+kwargs_tn = {
+    # Contraction strategy to apply gates
+    "contract": False,
+    # Simplification sequence to apply to the tensor network
+    "local_simplify": "DCRS",
+    # Contraction optimizer to use
+    "contraction_optimizer": None,
+}
 
 if __name__ == "__main__":
     jax.config.update("jax_enable_x64", True)
@@ -55,6 +65,7 @@ if __name__ == "__main__":
         batch_size = data["TRAINING"]["BATCH_SIZE"]
         check_group = data["CHECK_GROUP"]
         mps = data["MPS"]
+        tn = data["TN"]
         assert (
             isinstance(num_gates, int) or num_gates == "full"
         ), f"N_GATES must be integer or 'full', got {num_gates}"
@@ -68,6 +79,8 @@ if __name__ == "__main__":
         xc_functional_name = data["XC_FUNCTIONAL"]
         if mps:
             dev = qml.device("default.tensor", wires=num_qubits, method="mps", **kwargs_mps)
+        elif tn:
+            dev = qml.device("default.tensor",wires=num_qubits, method="tn", **kwargs_tn)
         else:
             dev = qml.device("default.qubit", wires=num_qubits)
 
@@ -84,8 +97,8 @@ if __name__ == "__main__":
             AnsatzIO.write_to_file(filename, gates_gen)
         gates_gen = gates_gen[: 2**num_qubits]
         if isinstance(num_gates, int):
-            gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
-        projective_measurements = DFTQNN.generate_projector_measurements(len(dev.wires))
+            gates_indices = sorted(jrandom.choice(key, len(gates_gen), shape=(num_gates,), replace=False))
+        projective_measurements = DFTQNN.generate_projector_measurements(num_qubits)
         dft_qnn = DFTQNN(dev, projective_measurements, gates_gen, gates_indices)
     else:
         z_measurements = NaiveDFTQNN.generate_Z_measurements(len(dev.wires))
@@ -132,6 +145,9 @@ if __name__ == "__main__":
         ):
             batch = train_ds[i : i + batch_size]
             if mps:
+                parameters, cost_value = helper.training.train_step_mps(parameters, predictor, batch)
+                aggregated_train_loss += cost_value
+            elif tn:
                 parameters, cost_value = helper.training.train_step_mps(parameters, predictor, batch)
                 aggregated_train_loss += cost_value
             else:

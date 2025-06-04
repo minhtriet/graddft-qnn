@@ -4,7 +4,7 @@ import flax.linen as nn
 import jax
 from jax import debug
 import jax.numpy as jnp
-import numpy as np
+#import numpy as np
 import pennylane as qml
 from flax.typing import Array
 from tqdm import tqdm
@@ -16,9 +16,9 @@ from graddft_qnn.naive_dft_qnn import NaiveDFTQNN
 class DFTQNN(nn.Module):
     dev: qml.device
     measurements: list
-    ansatz_gen: list[np.array]
+    ansatz_gen: list[jnp.array]
     gate_indices: list[int]
-    rotate_matrix: np.array = None  # add this to test equivar
+    rotate_matrix: jnp.array = None  # add this to test equivar
     rotate_feature: bool = False
     # rotate_feature: if True and rotate_matrix, then apply rotation to input feature,
     # otherwise apply rotation to output
@@ -50,9 +50,36 @@ class DFTQNN(nn.Module):
                 #qml.ApproxTimeEvolution(gen, t, 2)  # Trotter steps = 1
             return [qml.expval(measure) for measure in self.measurements]
 
+        def _circuit_tn(feature, theta, gate_gens):
+            qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
+            #operations = [qml.exp(gates_gen) for gates_gen in gate_gens]
+            #bond_dim = 10
+            #qml.MPS(wires=self.dev.wires, operations=operations, chi=bond_dim)
+            for idx, gen in enumerate(gate_gens):
+                gen = qml.simplify(gen)
+                print("GEN TYPE:", type(gen), "IS OPERATOR:", isinstance(gen, qml.operation.Operator))
+                t = theta[idx][0]
+                #qml.evolve(gen, abs(t))
+
+                evolved_op = qml.evolve(gen, t)
+                print("EVOLVED OP:", evolved_op)
+                evolved_op.queue()
+                #qml.ApproxTimeEvolution(gen, t, 2)  # Trotter steps = 1
+            return [qml.expval(measure) for measure in self.measurements]
+
         is_mps = getattr(self.dev, "method", "") == "mps"
-        circuit_func = _circuit_mps if is_mps else _circuit
-        diff_method = "parameter-shift" if is_mps else "parameter-shift"
+        is_tn = getattr(self.dev, "method", "") == "tn"
+
+        if is_mps:
+            circuit_func = _circuit_mps
+            diff_method = None  # makes it gradient-free
+        elif is_tn:
+            circuit_func = _circuit_tn
+            diff_method = None #'parameter-shift'
+        else:
+            circuit_func = _circuit
+            diff_method = "parameter-shift"
+
         raw_qnode = qml.QNode(circuit_func, self.dev, diff_method=diff_method)
 
         '''
@@ -93,7 +120,7 @@ class DFTQNN(nn.Module):
     @staticmethod
     def _twirling(
         ansatz: tuple,
-        unitary_reps: list[np.ndarray | qml.operation.Operator],
+        unitary_reps: list[jnp.ndarray | qml.operation.Operator],
     ):
         """
         :param ansatz:
@@ -103,7 +130,9 @@ class DFTQNN(nn.Module):
         """
         twirled = 0
         for unitary_rep in unitary_reps:
-            twirled += unitary_rep @ ansatz @ qml.adjoint(unitary_rep)
+            #twirled += unitary_rep @ ansatz @ qml.adjoint(unitary_rep)
+            twirled += qml.prod(unitary_rep, ansatz, qml.adjoint(unitary_rep))
+
             if is_zero_matrix_combination(twirled):
                 return None  # Twirling with this group member returns zero matrix!
         twirled /= len(unitary_reps)
@@ -125,7 +154,7 @@ class DFTQNN(nn.Module):
 
     @staticmethod
     def gate_design(
-        num_wires: int, invariant_rep: list[np.ndarray | qml.ops.op_math.Prod]
+        num_wires: int, invariant_rep: list[jnp.ndarray | qml.ops.op_math.Prod]
     ) -> tuple[list[str], list[str]]:
         """
         :param num_wires:
