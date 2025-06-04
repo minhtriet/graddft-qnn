@@ -33,7 +33,8 @@ key = PRNGKey(42)
 @jax.jit
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
-    return jnp.sum(rho, 1)
+    kinetic = molecule.kinetic_density()
+    return jnp.sum(rho, axis=1) + jnp.sum(kinetic, axis=1)
 
 
 @jax.jit
@@ -112,8 +113,6 @@ else:
     dataset = H2MultibondDataset.get_dataset()
     dataset.save_to_disk("datasets/h2_dataset")
 
-learning_rate = 0.05
-momentum = 0.9
 tx = adam(learning_rate=learning_rate, b1=momentum)
 opt_state = tx.init(params)
 
@@ -135,9 +134,10 @@ for epoch in tqdm(range(n_epochs)):
             params, predictor, molecule, batch["groundtruth"]
         )
         E = nf.energy(params, molecule)
-        print("QNN functional energy parameters is", E)
+        # print("QNN functional energy parameters is", E)
         updates, opt_state = tx.update(grads, opt_state, params)
         params = apply_updates(params, updates)
+        print(params)
         aggregated_train_loss += cost_value
 
     train_loss = np.sqrt(aggregated_train_loss / len(train_ds))

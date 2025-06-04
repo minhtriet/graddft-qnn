@@ -25,11 +25,11 @@ def train_step(parameters, predictor, batch, opt_state, tx):
     for param in grads[0]["params"]:
         final_grad["params"][param] = sum(
             grads[i]["params"][param] for i in range(len(grads))
-        ) / len(grads)
+        )  # / len(grads)  << could be this but due to small grad comment out
     updates, opt_state = tx.update(final_grad, opt_state, parameters)
     parameters = apply_updates(parameters, updates)
-
-    avg_cost = sum(cost_values) / len(batch)
+    avg_cost = sum(cost_values) / len(batch["name"])
+    print(f"Parameters: {parameters}, grad {final_grad}, avg cost {avg_cost}")
     return parameters, opt_state, avg_cost
 
 
