@@ -9,7 +9,13 @@ from jaxtyping import Array, Float, PyTree, Scalar
 
 
 class QNNFunctional(NeuralFunctional):
-    def xc_energy(
+    def grid_weight_downsampling(self, grid: Grid):
+        raise NotImplementedError
+
+    def charge_density_downsampling(self, charge_density):
+        raise NotImplementedError
+
+    def xc_energy(  # noqa: F821 F841
         self,
         params: PyTree,
         grid: Grid,
@@ -35,31 +41,36 @@ class QNNFunctional(NeuralFunctional):
             n_qubits = data["QBITS"]
         # unscaled_coeff_inputs: (xxx, 2)
         # bar_plot_jvp(unscaled_coefficient_inputs, "column_chart_og.png")
-        numerator = jnp.sum(unscaled_coefficient_inputs, axis=0)
+        numerator = jnp.sum(unscaled_coefficient_inputs, axis=0)  # noqa F841
         indices = jnp.round(
             jnp.linspace(0, unscaled_coefficient_inputs.shape[0], 2**n_qubits)
         ).astype(jnp.int32)  # taking 2**n_qubits indices
         # because the size of the grid is bigger than the actual input feedable
         # to the QNN, we do downsample here by summing the negihbors together
-        unnormalized_coefficient_inputs = QNNFunctional.compute_slice_sums(
+        unnormalized_coefficient_inputs = QNNFunctional.compute_slice_sums(  # noqa F841
             unscaled_coefficient_inputs, indices
         )
-        denominator = jnp.sum(unnormalized_coefficient_inputs)
-        coefficient_inputs = unnormalized_coefficient_inputs / denominator * numerator
+        # denominator = jnp.sum(unnormalized_coefficient_inputs)
+        # coefficient_inputs = unnormalized_coefficient_inputs / denominator * numerator
+        coefficients_input = self.charge_density_downsampling(  # noqa F841
+            unscaled_coefficient_inputs
+        )  # < todo implement here
 
-        grid_numerator = jnp.sum(grid.weights)
-        grid_weights = QNNFunctional.compute_slice_sums(grid.weights, indices)
-        grid_weights = grid_weights / jnp.sum(grid_weights) * grid_numerator
-
+        # grid_numerator = jnp.sum(grid.weights)
+        # grid_weights = QNNFunctional.compute_slice_sums(grid.weights, indices)
+        # grid_weights = grid_weights / jnp.sum(grid_weights) * grid_numerator
+        grid_weights = self.grid_weight_downsampling(
+            self, grid
+        )  # < todo implement here
         # densities: (xxx, 2)
         densities = unscaled_densities[indices]
 
         # subtract mean
-        mean = jax.numpy.mean(coefficient_inputs)
-        coefficient_centered = coefficient_inputs - mean
+        mean = jax.numpy.mean(coefficient_inputs)  # noqa F821
+        coefficient_centered = coefficient_inputs - mean  # noqa F821
 
         # divide by standard deviation
-        std = jax.numpy.std(coefficient_inputs)
+        std = jax.numpy.std(coefficient_inputs)  # noqa F821
         coefficient_standardized = coefficient_centered / std
 
         # bar_plot_jvp(coefficient_standardized, "column_chart_standard.png")
