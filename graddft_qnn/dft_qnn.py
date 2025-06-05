@@ -45,6 +45,7 @@ class DFTQNN(nn.Module):
         result = self.qnode(feature, theta, gate_gens)
         if self.rotate_matrix is not None and (not self.rotate_feature):
             result = self.rotate_matrix @ result
+        result = result * (2 ** len(self.dev.wires))
         return jnp.array(result)
 
     @nn.compact
