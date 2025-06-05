@@ -75,8 +75,7 @@ if __name__ == "__main__":
             gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
         dft_qnn = DFTQNN(dev, gates_gen, gates_indices)
     else:
-        z_measurements = NaiveDFTQNN.generate_Z_measurements(len(dev.wires))
-        dft_qnn = NaiveDFTQNN(dev, z_measurements, num_gates)
+        dft_qnn = NaiveDFTQNN(dev, num_gates)
 
     # get a sample batch for initialization
     coeff_input = jnp.empty((2 ** len(dev.wires),))
@@ -177,7 +176,7 @@ if __name__ == "__main__":
         MetricName.LEARNING_RATE: learning_rate,
         MetricName.BATCH_SIZE: batch_size,
     }
-    if pathlib.Path("report.json").exists():
+    if pathlib.Path("rexport.json").exists():
         with open("report.json") as f:
             try:
                 history_report = json.load(f)

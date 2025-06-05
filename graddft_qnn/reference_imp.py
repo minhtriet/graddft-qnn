@@ -97,8 +97,7 @@ if "naive" not in group[0].lower():
         gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
     dft_qnn = DFTQNN(dev, gates_gen, gates_indices)
 else:
-    z_measurements = NaiveDFTQNN.generate_Z_measurements(len(dev.wires))
-    dft_qnn = NaiveDFTQNN(dev, z_measurements, num_gates)
+    dft_qnn = NaiveDFTQNN(dev, num_gates)
 
 nf = QNNFunctional(dft_qnn, energy_densities, coefficient_inputs)
 
