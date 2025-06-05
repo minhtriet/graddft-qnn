@@ -39,6 +39,8 @@ class DFTQNN(nn.Module):
             return qml.probs(wires=self.dev.wires)
 
         def _circuit_mps(feature, theta, gate_gens):
+            #0605 version
+            '''
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             #operations = [qml.exp(gates_gen) for gates_gen in gate_gens]
             #bond_dim = 10
@@ -49,6 +51,10 @@ class DFTQNN(nn.Module):
                 qml.evolve(gen, t)
                 #qml.ApproxTimeEvolution(gen, t, 2)  # Trotter steps = 1
             return [qml.expval(measure) for measure in self.measurements]
+            '''
+
+            qnode = self.circuit_instance()
+            return qnode(feature, theta, gate_gens)
 
         def _circuit_tn(feature, theta, gate_gens):
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
@@ -71,8 +77,13 @@ class DFTQNN(nn.Module):
         is_tn = getattr(self.dev, "method", "") == "tn"
 
         if is_mps:
+            #06.05 version
+            '''
             circuit_func = _circuit_mps
             diff_method = None  # makes it gradient-free
+            '''
+            self.qnode = self.circuit_instance(dev=self.dev)
+            return
         elif is_tn:
             circuit_func = _circuit_tn
             diff_method = None #'parameter-shift'
@@ -104,6 +115,20 @@ class DFTQNN(nn.Module):
         if self.rotate_matrix is not None and (not self.rotate_feature):
             result = self.rotate_matrix @ result
         return jnp.array(result)
+
+    #You can remove this function
+    def circuit_instance(self, dev=None):
+        dev = dev or qml.device("default.qubit", wires=self.dev.wires)
+
+        def circuit(feature, theta, gate_gens):
+            qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
+            for idx, gen in enumerate(gate_gens):
+                t = theta[idx][0]
+                evolved = qml.evolve(qml.simplify(gen), t)
+                evolved.queue()
+            return [qml.expval(m) for m in self.measurements]
+
+        return qml.QNode(circuit, dev, diff_method=None)
 
     @nn.compact
     def __call__(self, feature: Array) -> Array:
