@@ -154,12 +154,13 @@ for epoch in range(n_epochs):
 
     for i in tqdm.tqdm(range(0, len(train_ds), batch_size), desc=f"Epoch {epoch + 1}"):
         batch = train_ds[i : i + batch_size]
-
-        "from helper.training.train_step()"
+        if len(batch["symbols"]) < batch_size:
+            # drop last batch if len(train_ds) % batch_size > 0
+            continue
         cost_values = []
         for example_id in range(len(batch["symbols"])):
-            len_batch_symbols = len(batch["symbols"])
-            len_batch = len(batch)
+            len_batch_symbols=len(batch["symbols"])
+            len_batch=len(batch)
             atom_coords = list(
                 zip(batch["symbols"][example_id], batch["coordinates"][example_id])
             )
@@ -183,7 +184,8 @@ for epoch in range(n_epochs):
         aggregated_train_loss += avg_cost
         train_losses_batch.append(np.sqrt(avg_cost / len(batch["symbols"])))
 
-    train_loss = np.sqrt(aggregated_train_loss / len(train_ds))
+    num_train_batch = int(np.floor(len(train_ds) / batch_size))
+    train_loss = np.sqrt(aggregated_train_loss / num_train_batch)
     logging.info(f"RMS train loss: {train_loss}")
     train_losses.append(train_loss)
 
@@ -284,9 +286,9 @@ plt.show()
 def to_serializable(obj):
     if isinstance(obj, jnp.ndarray):
         return obj.tolist()
-    if isinstance(obj, jnp.float32 | jnp.float64):
+    if isinstance(obj, (jnp.float32, jnp.float64)):
         return float(obj)
-    if isinstance(obj, jnp.int32 | jnp.int64):
+    if isinstance(obj, (jnp.int32, jnp.int64)):
         return int(obj)
     return obj
 

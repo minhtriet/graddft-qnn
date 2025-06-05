@@ -13,7 +13,7 @@ import pandas as pd
 import tqdm
 import yaml
 from flax import linen as nn
-from grad_dft.popular_functionals import pw92_densities
+from jax.nn import sigmoid
 from jax.nn import gelu
 from jax.random import PRNGKey
 from optax import adam, apply_updates
@@ -53,13 +53,8 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # Molecule can compute the density matrix.
     rho = jnp.clip(molecule.density(), a_min=clip_cte)
     # Now we can implement the LDA energy density equation in the paper.
-    lda_e = (
-        -3
-        / 2
-        * (3 / (4 * jnp.pi)) ** (1 / 3)
-        * (rho ** (4 / 3)).sum(axis=1, keepdims=True)
-    )
-    pw92_densities(molecule, clip_cte)
+    lda_e = -3/2 * (3/(4*jnp.pi)) ** (1/3) * (rho**(4/3)).sum(axis = 1, keepdims = True)
+    pw92_corr_e = pw92_densities(molecule, clip_cte)
     # For simplicity we do not include the exchange polarization correction
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
@@ -165,7 +160,9 @@ for epoch in range(n_epochs):
 
     for i in tqdm.tqdm(range(0, len(train_ds), batch_size), desc=f"Epoch {epoch + 1}"):
         batch = train_ds[i : i + batch_size]
-
+        if len(batch["symbols"]) < batch_size:
+            # drop last batch if len(train_ds) % batch_size > 0
+            continue
         "from helper.training.train_step()"
         cost_values = []
         for example_id in range(len(batch["symbols"])):
@@ -191,7 +188,8 @@ for epoch in range(n_epochs):
 
         aggregated_train_loss += avg_cost
         train_losses_batch.append(np.sqrt(avg_cost / len(batch["symbols"])))
-    train_loss = np.sqrt(aggregated_train_loss / len(train_ds))
+    num_train_batch = int(np.floor(len(train_ds) / batch_size))
+    train_loss = np.sqrt(aggregated_train_loss /num_train_batch)
     logging.info(f"RMS train loss: {train_loss}")
     train_losses.append(train_loss)
 
@@ -292,9 +290,9 @@ plt.show()
 def to_serializable(obj):
     if isinstance(obj, jnp.ndarray):
         return obj.tolist()
-    if isinstance(obj, jnp.float32 | jnp.float64):
+    if isinstance(obj, (jnp.float32, jnp.float64)):
         return float(obj)
-    if isinstance(obj, jnp.int32 | jnp.int64):
+    if isinstance(obj, (jnp.int32, jnp.int64)):
         return int(obj)
     return obj
 
