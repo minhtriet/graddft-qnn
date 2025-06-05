@@ -63,7 +63,7 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
     # print(f"LDA Energy Density - Shape: {lda_e.shape}, Size: {lda_e.size}")
-    return jnp.concatenate((lda_e, pw92_corr_e), axis=1)
+    return lda_e
 
 
 # test_inputs=coefficient_inputs(HH_molecule)
