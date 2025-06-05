@@ -82,15 +82,9 @@ class QNNFunctional(NeuralFunctional):
         ).flatten()
 
         # downsampling charge density
-        if isinstance(unscaled_densities, JVPTracer):
-            interpolated_energy_densities = self._regularize_grid(
-                grid, n_qubits, unscaled_densities.aval.val
-            ).flatten()
-        else:
-            interpolated_energy_densities = self._regularize_grid(
-                grid, n_qubits, unscaled_densities
-            ).flatten()
-
+        interpolated_energy_densities = self.downsampling_energy_density(
+            interpolated_charge_density
+        )
         interpolated_energy_densities = interpolated_energy_densities[
             :, jax.numpy.newaxis
         ]
@@ -166,3 +160,18 @@ class QNNFunctional(NeuralFunctional):
         density_sum = jnp.sum(density, axis=1, keepdims=True)  # shape (n, 1)
         weighted = density_sum * grid_weights[:, jnp.newaxis]  # shape (n, 1)
         return jnp.sum(weighted)
+
+    @staticmethod
+    def downsampling_energy_density(charge_density):
+        r"""Auxiliary function to generate the features of LSDA."""
+        # Now we can implement the LDA energy density equation in the paper.
+        lda_e = (
+            -3
+            / 2
+            * (3 / (4 * jnp.pi)) ** (1 / 3)
+            * (charge_density ** (4 / 3))
+        )
+        # For simplicity, we do not include the exchange polarization correction
+        # check function exchange_polarization_correction in functional.py
+        # The output of features must be an Array of dimension n_grid x n_features.
+        return lda_e
