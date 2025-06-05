@@ -4,6 +4,15 @@ from pyscf import dft, gto
 
 
 def train_step(parameters, predictor, batch, opt_state, tx):
+    """
+    :param parameters:
+    :param predictor:
+    :param batch:
+    :param opt_state:
+    :param tx:
+    :return:
+    avg loss of the batch
+    """
     grads = []
     cost_values = []
     for example_id in range(len(batch["symbols"])):
@@ -29,7 +38,8 @@ def train_step(parameters, predictor, batch, opt_state, tx):
     updates, opt_state = tx.update(final_grad, opt_state, parameters)
     parameters = apply_updates(parameters, updates)
 
-    avg_cost = sum(cost_values) / len(batch)
+    # divide by the length of elements in batch, not the number of keys in batch
+    avg_cost = sum(cost_values) / len(batch["name"])
     return parameters, opt_state, avg_cost
 
 

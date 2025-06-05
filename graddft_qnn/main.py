@@ -116,12 +116,18 @@ if __name__ == "__main__":
             range(0, len(train_ds), batch_size), desc=f"Epoch {epoch + 1}"
         ):
             batch = train_ds[i : i + batch_size]
+            if len(batch["symbols"]) < batch_size:
+                # drop last batch if len(train_ds) % batch_size > 0
+                continue
             parameters, opt_state, cost_value = helper.training.train_step(
                 parameters, predictor, batch, opt_state, tx
             )
             aggregated_train_loss += cost_value
 
-        train_loss = np.sqrt(aggregated_train_loss / len(train_ds))
+        # drop last batch if len(train_ds) % batch_size > 0
+        num_train_batch = int(np.floor(len(train_ds) / batch_size))
+        train_loss = np.sqrt(aggregated_train_loss / num_train_batch)
+
         logging.info(f"RMS train loss: {train_loss}")
         train_losses.append(train_loss)
 
