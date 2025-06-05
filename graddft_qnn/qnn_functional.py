@@ -40,6 +40,7 @@ class QNNFunctional(NeuralFunctional):
         unscaled_coefficient_inputs: Float[Array, "(n,n)"],  # noqa: F821
         unscaled_densities: Float[Array, "(n,n)"],  # noqa: F821
         clip_cte: float = 1e-30,
+        FLAG_STANDARD: bool = False,
         **kwargs,
     ) -> Scalar:
         """
@@ -65,7 +66,7 @@ class QNNFunctional(NeuralFunctional):
                 raise KeyError("YAML file must contain 'QBITS' key")
             n_qubits = data["QBITS"]
 
-        # downsampling
+        # downsampling charge density
         if isinstance(unscaled_coefficient_inputs, JVPTracer):
             interpolated_charge_density = self._regularize_grid(
                 grid, n_qubits, unscaled_coefficient_inputs.aval.val
@@ -75,6 +76,12 @@ class QNNFunctional(NeuralFunctional):
                 grid, n_qubits, unscaled_coefficient_inputs
             ).flatten()
 
+        # downsampling grid weight
+        interpolated_grid_weights = self._regularize_grid(
+            grid, n_qubits, grid.weights
+        ).flatten()
+
+        # downsampling charge density
         if isinstance(unscaled_densities, JVPTracer):
             interpolated_energy_densities = self._regularize_grid(
                 grid, n_qubits, unscaled_densities.aval.val
@@ -84,9 +91,6 @@ class QNNFunctional(NeuralFunctional):
                 grid, n_qubits, unscaled_densities
             ).flatten()
 
-        interpolated_grid_weights = self._regularize_grid(
-            grid, n_qubits, grid.weights
-        ).flatten()
         interpolated_energy_densities = interpolated_energy_densities[
             :, jax.numpy.newaxis
         ]
@@ -111,16 +115,18 @@ class QNNFunctional(NeuralFunctional):
             * factor_volume
         )
 
-        # subtract mean
-        mean = jax.numpy.mean(normalized_charge_density)  # noqa F821
-        charge_density_centered = normalized_charge_density - mean  # noqa F821
+        if FLAG_STANDARD: # standardization
+            # subtract mean
+            mean = jax.numpy.mean(normalized_charge_density)  # noqa F821
+            charge_density_centered = normalized_charge_density - mean  # noqa F821
 
-        # divide by standard deviation
-        std = jax.numpy.std(normalized_charge_density)  # noqa F821
-        charge_density_standardized = charge_density_centered / std
+            # divide by standard deviation
+            std = jax.numpy.std(normalized_charge_density)  # noqa F821
+            charge_density_standardized = charge_density_centered / std
+            normalized_charge_density = charge_density_standardized
 
         # get coefficients
-        coefficients = self.coefficients.apply(params, charge_density_standardized)
+        coefficients = self.coefficients.apply(params, normalized_charge_density)
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
 
         # should we bring back normal scale
