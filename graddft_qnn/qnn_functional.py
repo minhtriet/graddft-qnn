@@ -7,6 +7,7 @@ from grad_dft.molecule import Grid
 from jax import numpy as jnp
 from jax._src.interpreters.ad import JVPTracer
 from jaxtyping import Array, Float, PyTree, Scalar
+import grad_dft as gd
 
 
 class QNNFunctional(NeuralFunctional):
@@ -70,39 +71,45 @@ class QNNFunctional(NeuralFunctional):
         if isinstance(unscaled_coefficient_inputs, JVPTracer):
             interpolated_charge_density = self._regularize_grid(
                 grid, n_qubits, unscaled_coefficient_inputs.aval.val
-            ).flatten()
+            )
         else:
             interpolated_charge_density = self._regularize_grid(
                 grid, n_qubits, unscaled_coefficient_inputs
-            ).flatten()
+            )
+        for _idx in range(interpolated_charge_density.shape[3]): # shape (n, 2)
+            temp_density = interpolated_charge_density[:,:,:,_idx].flatten()[:,np.newaxis]
+            if _idx == 0:
+                downsampled_charge_density = temp_density
+            else:
+                downsampled_charge_density = np.append(downsampled_charge_density,
+                                                temp_density,
+                                                axis=1)
 
         # downsampling grid weight
         interpolated_grid_weights = self._regularize_grid(
             grid, n_qubits, grid.weights
-        ).flatten()
-
-        # downsampling charge density
-        interpolated_energy_densities = self.downsampling_energy_density(
-            interpolated_charge_density
         )
-        interpolated_energy_densities = interpolated_energy_densities[
-            :, jax.numpy.newaxis
-        ]
+        downsampled_grid_weights = interpolated_grid_weights.flatten()
 
         # normalization
         num_electron = self.integrate_density_with_weights(
             grid.weights, unscaled_coefficient_inputs
         )
         factor_electron = self.integrate_density_with_weights(
-            interpolated_grid_weights, interpolated_charge_density
+            downsampled_grid_weights, downsampled_charge_density
         )
 
         tot_volume = jnp.sum(grid.weights)
-        factor_volume = jnp.sum(interpolated_grid_weights)
+        factor_volume = jnp.sum(downsampled_grid_weights)
 
-        normalized_grid_weights = interpolated_grid_weights * tot_volume / factor_volume
+        normalized_grid_weights = (
+                downsampled_grid_weights
+                * tot_volume
+                / factor_volume
+        )
+
         normalized_charge_density = (
-            interpolated_charge_density
+            downsampled_charge_density
             * num_electron
             / factor_electron
             / tot_volume
@@ -119,13 +126,19 @@ class QNNFunctional(NeuralFunctional):
             charge_density_standardized = charge_density_centered / std
             normalized_charge_density = charge_density_standardized
 
+        normalized_energy_densities = self.normalize_energy_density(
+            normalized_charge_density)
+
         # get coefficients
-        coefficients = self.coefficients.apply(params, normalized_charge_density)
+        coefficients = self.coefficients.apply(
+            params, normalized_charge_density.sum(axis=1))
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
+        coefficients = jnp.concatenate(
+            (coefficients, coefficients), axis=1) # shape (xxx, 2)
 
         # should we bring back normal scale
         xc_energy_density = jnp.einsum(
-            "rf,rf->r", coefficients, interpolated_energy_densities
+            "rf,rf->r", coefficients, normalized_energy_densities
         )
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
         return self._integrate(
@@ -162,16 +175,13 @@ class QNNFunctional(NeuralFunctional):
         return jnp.sum(weighted)
 
     @staticmethod
-    def downsampling_energy_density(charge_density):
-        r"""Auxiliary function to generate the features of LSDA."""
-        # Now we can implement the LDA energy density equation in the paper.
-        lda_e = (
+    def normalize_energy_density(downsampled_charge_density):
+        lda_x_e = (
             -3
             / 2
             * (3 / (4 * jnp.pi)) ** (1 / 3)
-            * (charge_density ** (4 / 3))
+            * (downsampled_charge_density ** (4 / 3)).sum(axis=1, keepdims=True)
         )
-        # For simplicity, we do not include the exchange polarization correction
-        # check function exchange_polarization_correction in functional.py
-        # The output of features must be an Array of dimension n_grid x n_features.
-        return lda_e
+        pw92_c_e = gd.popular_functionals.pw92_c_e(downsampled_charge_density)
+        pw92_c_e = jnp.expand_dims(pw92_c_e, axis=1)
+        return jnp.concatenate((lda_x_e, pw92_c_e), axis=1)
