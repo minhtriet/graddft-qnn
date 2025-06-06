@@ -1,3 +1,4 @@
+import grad_dft as gd
 import jax
 import numpy as np
 import scipy
@@ -7,7 +8,6 @@ from grad_dft.molecule import Grid
 from jax import numpy as jnp
 from jax._src.interpreters.ad import JVPTracer
 from jaxtyping import Array, Float, PyTree, Scalar
-import grad_dft as gd
 
 
 class QNNFunctional(NeuralFunctional):
@@ -76,19 +76,19 @@ class QNNFunctional(NeuralFunctional):
             interpolated_charge_density = self._regularize_grid(
                 grid, n_qubits, unscaled_coefficient_inputs
             )
-        for _idx in range(interpolated_charge_density.shape[3]): # shape (n, 2)
-            temp_density = interpolated_charge_density[:,:,:,_idx].flatten()[:,np.newaxis]
+        for _idx in range(interpolated_charge_density.shape[3]):  # shape (n, 2)
+            temp_density = interpolated_charge_density[:, :, :, _idx].flatten()[
+                :, np.newaxis
+            ]
             if _idx == 0:
                 downsampled_charge_density = temp_density
             else:
-                downsampled_charge_density = np.append(downsampled_charge_density,
-                                                temp_density,
-                                                axis=1)
+                downsampled_charge_density = np.append(
+                    downsampled_charge_density, temp_density, axis=1
+                )
 
         # downsampling grid weight
-        interpolated_grid_weights = self._regularize_grid(
-            grid, n_qubits, grid.weights
-        )
+        interpolated_grid_weights = self._regularize_grid(grid, n_qubits, grid.weights)
         downsampled_grid_weights = interpolated_grid_weights.flatten()
 
         # normalization
@@ -102,11 +102,7 @@ class QNNFunctional(NeuralFunctional):
         tot_volume = jnp.sum(grid.weights)
         factor_volume = jnp.sum(downsampled_grid_weights)
 
-        normalized_grid_weights = (
-                downsampled_grid_weights
-                * tot_volume
-                / factor_volume
-        )
+        normalized_grid_weights = downsampled_grid_weights * tot_volume / factor_volume
 
         normalized_charge_density = (
             downsampled_charge_density
@@ -116,7 +112,7 @@ class QNNFunctional(NeuralFunctional):
             * factor_volume
         )
 
-        if FLAG_STANDARD: # standardization
+        if FLAG_STANDARD:  # standardization
             # subtract mean
             mean = jax.numpy.mean(normalized_charge_density)  # noqa F821
             charge_density_centered = normalized_charge_density - mean  # noqa F821
@@ -127,14 +123,17 @@ class QNNFunctional(NeuralFunctional):
             normalized_charge_density = charge_density_standardized
 
         normalized_energy_densities = self.normalize_energy_density(
-            normalized_charge_density)
+            normalized_charge_density
+        )
 
         # get coefficients
         coefficients = self.coefficients.apply(
-            params, normalized_charge_density.sum(axis=1))
+            params, normalized_charge_density.sum(axis=1)
+        )
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
         coefficients = jnp.concatenate(
-            (coefficients, coefficients), axis=1) # shape (xxx, 2)
+            (coefficients, coefficients), axis=1
+        )  # shape (xxx, 2)
 
         # should we bring back normal scale
         xc_energy_density = jnp.einsum(
@@ -143,7 +142,7 @@ class QNNFunctional(NeuralFunctional):
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
         return self._integrate(
             xc_energy_density, normalized_grid_weights
-        )  # was grid.weights
+        )
 
     @staticmethod
     def compute_slice_sums(X, indices):

@@ -1,4 +1,3 @@
-import logging
 from itertools import combinations
 
 import flax.linen as nn

@@ -13,7 +13,6 @@ import pandas as pd
 import tqdm
 import yaml
 from flax import linen as nn
-from jax.nn import sigmoid
 from jax.nn import gelu
 from jax.random import PRNGKey
 from optax import adam, apply_updates
@@ -53,8 +52,13 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # Molecule can compute the density matrix.
     rho = jnp.clip(molecule.density(), a_min=clip_cte)
     # Now we can implement the LDA energy density equation in the paper.
-    lda_e = -3/2 * (3/(4*jnp.pi)) ** (1/3) * (rho**(4/3)).sum(axis = 1, keepdims = True)
-    #pw92_corr_e = pw92_densities(molecule, clip_cte)
+    lda_e = (
+        -3
+        / 2
+        * (3 / (4 * jnp.pi)) ** (1 / 3)
+        * (rho ** (4 / 3)).sum(axis=1, keepdims=True)
+    )
+    # pw92_corr_e = pw92_densities(molecule, clip_cte)
     # For simplicity we do not include the exchange polarization correction
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
@@ -187,8 +191,8 @@ for epoch in range(n_epochs):
 
         aggregated_train_loss += avg_cost
         train_losses_batch.append(np.sqrt(avg_cost / len(batch["symbols"])))
-    num_train_batch = int(np.floor(len(train_ds)/batch_size))
-    train_loss = np.sqrt(aggregated_train_loss /num_train_batch)
+    num_train_batch = int(np.floor(len(train_ds) / batch_size))
+    train_loss = np.sqrt(aggregated_train_loss / num_train_batch)
     logging.info(f"RMS train loss: {train_loss}")
     train_losses.append(train_loss)
 

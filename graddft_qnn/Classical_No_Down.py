@@ -159,8 +159,8 @@ for epoch in range(n_epochs):
             continue
         cost_values = []
         for example_id in range(len(batch["symbols"])):
-            len_batch_symbols=len(batch["symbols"])
-            len_batch=len(batch)
+            len_batch_symbols = len(batch["symbols"])
+            len_batch = len(batch)
             atom_coords = list(
                 zip(batch["symbols"][example_id], batch["coordinates"][example_id])
             )

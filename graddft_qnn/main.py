@@ -13,7 +13,7 @@ import yaml
 from evaluate.metric_name import MetricName
 from jax import numpy as jnp
 from jax.random import PRNGKey
-from optax import sgd
+from optax import adamw
 
 from datasets import DatasetDict
 from graddft_qnn import helper
@@ -92,8 +92,7 @@ if __name__ == "__main__":
         energy_densities=helper.initialization.energy_densities,
         coefficient_inputs=helper.initialization.coefficient_inputs,
     )
-    # tx = adam(learning_rate=learning_rate, b1=momentum)
-    tx = sgd(learning_rate=learning_rate, momentum=momentum)
+    tx = adamw(learning_rate=learning_rate, weight_decay=1e-5)
     opt_state = tx.init(parameters)
 
     predictor = gd.non_scf_predictor(qnnf)
