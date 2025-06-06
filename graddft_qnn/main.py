@@ -156,7 +156,7 @@ if __name__ == "__main__":
     # test
     aggregated_cost = 0
     for batch in tqdm.tqdm(dataset["test"], desc="Evaluate"):
-        cost_value = helper.training.eval_step(parameters, predictor, batch)
+        cost_value = helper.training.eval_step(parameters, predictor, batch, flag_meanfield)
         aggregated_cost += cost_value
     test_loss = np.sqrt(aggregated_cost / len(dataset["test"]))
     logging.info(f"Test loss {test_loss}")
