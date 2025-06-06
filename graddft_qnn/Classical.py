@@ -45,7 +45,7 @@ HH_molecule = gd.molecule_from_pyscf(mf)
 
 def coefficient_inputs(molecule: gd.Molecule, *_, **__):
     rho = molecule.density()
-    return jnp.sum(rho, 1)
+    return rho
 
 
 def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
