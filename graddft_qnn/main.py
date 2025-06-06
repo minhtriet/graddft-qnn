@@ -182,6 +182,7 @@ if __name__ == "__main__":
         MetricName.TEST_LOSSES: test_losses,
         MetricName.LEARNING_RATE: learning_rate,
         MetricName.BATCH_SIZE: batch_size,
+        MetricName.FLAG_MEANFIELD: flag_meanfield,
     }
     if pathlib.Path("rexport.json").exists():
         with open("report.json") as f:

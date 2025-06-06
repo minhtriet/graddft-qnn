@@ -318,6 +318,7 @@ report = {
     "Number of Parameters": num_params,
     "Momentum": momentum,
     "eval_per_x_epoch": eval_per_x_epoch,
+    "flag_meanfield": flag_meanfield,
 }
 
 # Check if the report.json file exists
