@@ -31,6 +31,7 @@ learning_rate = data["TRAINING"]["LEARNING_RATE"]
 momentum = data["TRAINING"]["MOMENTUM"]
 eval_per_x_epoch = data["TRAINING"]["EVAL_PER_X_EPOCH"]
 batch_size = data["TRAINING"]["BATCH_SIZE"]
+flag_meanfield=data["FLAG_MEANFIELD"]
 
 # Define the geometry of the molecule
 mol = gto.M(
@@ -170,8 +171,9 @@ for epoch in range(n_epochs):
             )
             mol = gto.M(atom=atom_coords, basis="def2-tzvp")
             mean_field = dft.UKS(mol)
-            # mean_field.xc = 'wB97M-V'
-            # mean_field.nlc = 'VV10'
+            if flag_meanfield:
+                mean_field.xc = 'wB97M-V'
+                mean_field.nlc = 'VV10'
             mean_field.kernel()
             molecule = gd.molecule_from_pyscf(mean_field)
 
@@ -201,8 +203,9 @@ for epoch in range(n_epochs):
             atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
             mol = gto.M(atom=atom_coords, basis="def2-tzvp")
             mean_field = dft.UKS(mol)
-            # mean_field.xc = 'wB97M-V'
-            # mean_field.nlc = 'VV10'
+            if flag_meanfield:
+                mean_field.xc = 'wB97M-V'
+                mean_field.nlc = 'VV10'
             mean_field.kernel()  # pass max_cycles / increase iteration
             molecule = gd.molecule_from_pyscf(mean_field, scf_iteration=200)
 
@@ -240,8 +243,9 @@ for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):
         unit="Angstrom",
     )
     mean_field = dft.UKS(mol)
-    # mean_field.xc = 'wB97M-V'
-    # mean_field.nlc = 'VV10'
+    if flag_meanfield:
+        mean_field.xc = 'wB97M-V'
+        mean_field.nlc = 'VV10'
 
     ground_truth_energy = mean_field.kernel()
     molecule = gd.molecule_from_pyscf(mean_field)

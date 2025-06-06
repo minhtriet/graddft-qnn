@@ -46,6 +46,7 @@ if __name__ == "__main__":
         eval_per_x_epoch = data["TRAINING"]["EVAL_PER_X_EPOCH"]
         batch_size = data["TRAINING"]["BATCH_SIZE"]
         check_group = data["CHECK_GROUP"]
+        flag_meanfield=data["FLAG_MEANFIELD"]
         assert (
             isinstance(num_gates, int) or num_gates == "full"
         ), f"N_GATES must be integer or 'full', got {num_gates}"
@@ -129,7 +130,7 @@ if __name__ == "__main__":
                 # drop last batch if len(train_ds) % batch_size > 0
                 continue
             parameters, opt_state, cost_value = helper.training.train_step(
-                parameters, predictor, batch, opt_state, tx
+                parameters, predictor, batch, opt_state, tx, flag_meanfield
             )
             aggregated_train_loss += cost_value
 
@@ -145,7 +146,7 @@ if __name__ == "__main__":
             for batch in tqdm.tqdm(
                 dataset["test"], desc=f"Evaluate per {eval_per_x_epoch} epoch"
             ):
-                cost_value = helper.training.eval_step(parameters, predictor, batch)
+                cost_value = helper.training.eval_step(parameters, predictor, batch, flag_meanfield)
                 aggregated_cost += cost_value
             test_loss = np.sqrt(aggregated_cost / len(dataset["test"]))
             test_losses.append({epoch: test_loss})
