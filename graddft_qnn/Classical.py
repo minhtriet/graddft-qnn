@@ -240,8 +240,6 @@ for distance in tqdm.tqdm(DISTANCES, desc="Calculating Binding Energy"):
         unit="Angstrom",
     )
     mean_field = dft.UKS(mol)
-    # mean_field.xc = 'wB97M-V'
-    # mean_field.nlc = 'VV10'
 
     ground_truth_energy = mean_field.kernel()
     molecule = gd.molecule_from_pyscf(mean_field)
@@ -249,7 +247,7 @@ for distance in tqdm.tqdm(DISTANCES, desc="Calculating Binding Energy"):
     (cost_value, predicted_energy), _ = gd.simple_energy_loss(
         params, predictor, molecule, ground_truth_energy
     )
-    E_predicts.append(predicted_energy)
+    E_predicts.append(float(predicted_energy))
 
 
 E_predicts = np.array(E_predicts)

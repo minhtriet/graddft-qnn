@@ -73,9 +73,7 @@ def plot_bar_jvp(jvp_to_plot, filename=None):
 
 
 def plot_list(
-    gt: dict,
-    distances: list,
-    energies: list[list],
+    energies: list[dict],
     labels: list[str] | None = None,
     fname: str = "plot.png",
 ):
@@ -87,19 +85,11 @@ def plot_list(
         labels
     ), "The number of energy lists must match the number of labels."
 
-    plt.plot(
-        gt.keys(),
-        gt.values(),
-        marker="o",
-        linestyle="-",
-        color="black",
-        label="Ground truth",
-    )
     # Plot each set of energies
-    for i, energy_list in enumerate(energies):
+    for i, energy_dict in enumerate(energies):
         plt.plot(
-            distances,
-            energy_list,
+            energy_dict.keys(),
+            energy_dict.values(),
             marker="o",
             linestyle="-",
             color=colors[i],  # Cycle through colors if needed

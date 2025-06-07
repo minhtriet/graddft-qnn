@@ -51,8 +51,8 @@ if __name__ == "__main__":
         ), f"N_GATES must be integer or 'full', got {num_gates}"
         full_measurements = "prob"
         group: list = data["GROUP"]
+        group_str_rep = "]_[".join(group)[:230]
         if "naive" not in group[0].lower():
-            group_str_rep = "]_[".join(group)[:230]
             group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
             if (check_group) and (not is_group(group_matrix_reps, group)):
                 raise ValueError("Not forming a group")
@@ -60,8 +60,8 @@ if __name__ == "__main__":
         dev = qml.device("default.qubit", wires=num_qubits)
 
     # define the QNN
+    filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"
     if "naive" not in group[0].lower():
-        filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"
         if pathlib.Path(f"{filename}.pkl").exists():
             gates_gen = AnsatzIO.read_from_file(filename)
             logging.info(f"Loaded ansatz generator from {filename}")
@@ -150,11 +150,10 @@ if __name__ == "__main__":
     test_loss = np.sqrt(aggregated_cost / len(dataset["test"]))
     logging.info(f"Test loss {test_loss}")
 
-    if "naive" not in group[0].lower():
-        checkpoint_path = pathlib.Path().resolve() / pathlib.Path(filename).stem
-        qnnf.save_checkpoints(
-            parameters, tx, step=n_epochs, ckpt_dir=str(checkpoint_path)
-        )
+    checkpoint_path = pathlib.Path().resolve() / pathlib.Path(filename).stem
+    qnnf.save_checkpoints(
+        parameters, tx, step=n_epochs, ckpt_dir=str(checkpoint_path)
+    )
 
     # report
     now = datetime.now()
