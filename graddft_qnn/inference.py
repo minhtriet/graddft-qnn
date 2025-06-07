@@ -4,6 +4,7 @@ This will
 2. load the checkpoint associated with that config
 3. do annotation
 """
+
 import json
 import logging
 import pathlib
@@ -15,6 +16,7 @@ import pennylane as qml
 import tqdm
 import yaml
 from helper.visualization import DISTANCES, h2_dist_energy
+from jax.random import PRNGKey
 from optax import adamw
 from pyscf import dft, gto
 
@@ -25,6 +27,9 @@ from graddft_qnn.naive_dft_qnn import NaiveDFTQNN
 from graddft_qnn.qnn_functional import QNNFunctional
 from graddft_qnn.unitary_rep import O_h, is_group
 
+logging.getLogger().setLevel(logging.INFO)
+np.random.seed(42)
+key = PRNGKey(42)
 if __name__ == "__main__":
     jax.config.update("jax_enable_x64", True)
     with open("config.yaml") as file:
@@ -82,9 +87,7 @@ if __name__ == "__main__":
         energy_densities=helper.initialization.energy_densities,
         coefficient_inputs=helper.initialization.coefficient_inputs,
     )
-    checkpoint_path = (
-        pathlib.Path().resolve() / pathlib.Path(filename).stem / f"checkpoint_{n_epochs}"
-    )
+    checkpoint_path = pathlib.Path(filename) / f"checkpoint_{n_epochs}"
     tx = adamw(learning_rate=learning_rate, b1=momentum)
     state = qnnf.load_checkpoint(tx, ckpt_dir=str(checkpoint_path))
 
@@ -93,16 +96,21 @@ if __name__ == "__main__":
         energy_densities=helper.initialization.energy_densities,
         coefficient_inputs=helper.initialization.coefficient_inputs,
     )
-    checkpoint_path = (
-            pathlib.Path().resolve() / pathlib.Path(filename).stem / f"checkpoint_{n_epochs}"
+    checkpoint_path_naive = (
+        pathlib.Path(f"ansatz_{num_qubits}_naive_qubits") / f"checkpoint_{n_epochs}"
     )
     tx_naive = adamw(learning_rate=learning_rate, b1=momentum)
-    state_naive = qnnf_naive.load_checkpoint(tx, ckpt_dir=str(checkpoint_path))
+    state_naive = qnnf_naive.load_checkpoint(
+        tx_naive, ckpt_dir=str(checkpoint_path_naive)
+    )
 
     parameters = state.params
     parameters_naive = state_naive.params
     tx = state.tx
-    epoch = state.step
+    tx_naive = state_naive.tx
+
+    gt = h2_dist_energy()
+    gt.pop(0.01, None)
 
     # Evaluate the model
     predictor = gd.non_scf_predictor(qnnf)
@@ -118,22 +126,17 @@ if __name__ == "__main__":
             unit="Angstrom",
         )
         mean_field = dft.UKS(mol)
-        mean_field.xc = "wB97M-V"
-        mean_field.nlc = "VV10"
-
         ground_truth_energy = mean_field.kernel()
         molecule = gd.molecule_from_pyscf(mean_field)
+        predicted_energy = predictor(parameters, molecule).energy
 
-        (_, predicted_energy), _ = gd.simple_energy_loss(
-            parameters, predictor, molecule, ground_truth_energy
-        )
         (_, predicted_naive_energy), _ = gd.simple_energy_loss(
             parameters_naive, predictor_naive, molecule, ground_truth_energy
         )
-        predicts[distance] = predicted_energy
-        predicts_naive[distance] = predicted_naive_energy
+        predicts[distance] = float(predicted_energy)
+        predicts_naive[distance] = float(predicted_naive_energy)
 
     helper.visualization.plot_list(
-        [h2_dist_energy(), predicts, classical],
-        ["Invariant quantum", "Classical"],
+        [gt, predicts, predicts_naive, classical],
+        ["Groundtruth", "Invariant quantum", "Naive QNN", "Classical"],
     )

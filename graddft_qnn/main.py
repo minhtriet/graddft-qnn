@@ -151,9 +151,7 @@ if __name__ == "__main__":
     logging.info(f"Test loss {test_loss}")
 
     checkpoint_path = pathlib.Path().resolve() / pathlib.Path(filename).stem
-    qnnf.save_checkpoints(
-        parameters, tx, step=n_epochs, ckpt_dir=str(checkpoint_path)
-    )
+    qnnf.save_checkpoints(parameters, tx, step=n_epochs, ckpt_dir=str(checkpoint_path))
 
     # report
     now = datetime.now()

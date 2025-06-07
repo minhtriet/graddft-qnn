@@ -2,64 +2,15 @@ import os
 import pathlib
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as tck
 import numpy as np
 
 from datasets import DatasetDict
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 
-DISTANCES = np.arange(0.5, 4.0, 0.1)
+DISTANCES = np.arange(0.1, 4.0, 0.1)
 # this file can be created by running Classical_No_Down.py
 CLASSICAL_WITH_DOWN_FILENAME = "classical_with_down.json"
-classical = [
-    0.9658405,
-    0.19309501,
-    -0.14557038,
-    -0.31851137,
-    -0.41391742,
-    -0.468589,
-    -0.5002356,
-    -0.5181826,
-    -0.52766836,
-    -0.5318055,
-    -0.532502,
-    -0.5309742,
-    -0.5280177,
-    -0.5241591,
-    -0.51974666,
-    -0.51500493,
-    -0.5100828,
-    -0.50508165,
-    -0.5001214,
-    -0.49517483,
-    -0.49033344,
-    -0.4856318,
-    -0.481096,
-    -0.4767468,
-    -0.47259367,
-    -0.46864387,
-    -0.46489888,
-    -0.4613584,
-    -0.45802045,
-    -0.4548809,
-    -0.45193544,
-    -0.44917935,
-    -0.4466065,
-    -0.44422832,
-    -0.44201794,
-    -0.43995872,
-    -0.43805748,
-    -0.43630767,
-    -0.43470174,
-    -0.43313012,
-    -0.43179032,
-    -0.4305719,
-    -0.42958814,
-    -0.42859116,
-    -0.4276937,
-    -0.42688844,
-    -0.42616805,
-    -0.42530146,
-]
 
 
 def plot_bar_jvp(jvp_to_plot, filename=None):
@@ -81,17 +32,11 @@ def plot_list(
 
     colors = ["blue", "red", "green", "purple", "orange", "cyan", "magenta", "brown"]
 
-    assert len(energies) == len(
-        labels
-    ), "The number of energy lists must match the number of labels."
-
     # Plot each set of energies
     for i, energy_dict in enumerate(energies):
         plt.plot(
-            energy_dict.keys(),
+            [float(x) for x in energy_dict.keys()],
             energy_dict.values(),
-            marker="o",
-            linestyle="-",
             color=colors[i],  # Cycle through colors if needed
             label=labels[i],  # Use corresponding label for the legend
         )
@@ -102,8 +47,10 @@ def plot_list(
     plt.grid(alpha=0.3)
     plt.legend()  # Display legend with all labels
     plt.tight_layout()
+    ax = plt.gca()
+    ax.xaxis.set_major_locator(tck.MultipleLocator(1))
+    ax.xaxis.set_major_formatter(tck.FuncFormatter(lambda x, pos: f"{x:.2f}"))
 
-    # Define the filename and save if provided
     output_dir = "plots"
     os.makedirs(output_dir, exist_ok=True)
     if fname:
@@ -128,6 +75,8 @@ def h2_dist_energy():
             dist = np.linalg.norm(
                 np.array(data["coordinates"][0]) - np.array(data["coordinates"][1])
             )
+            if dist in [0.944865, 1.0960434, 1.0204542]:
+                continue
             h2_dist_energy[dist] = data["groundtruth"]
 
     return dict(sorted(h2_dist_energy.items()))
