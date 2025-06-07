@@ -13,12 +13,14 @@ import pandas as pd
 import tqdm
 import yaml
 from flax import linen as nn
+from helper.visualization import CLASSICAL_WITH_DOWN_FILENAME, DISTANCES
 from jax.nn import gelu
 from jax.random import PRNGKey
 from optax import adam, apply_updates
 from pyscf import dft, gto
 
 from datasets import DatasetDict
+from graddft_qnn import helper
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.qnn_functional import QNNFunctional
 
@@ -40,11 +42,6 @@ ground_truth_energy = mf.kernel()
 
 # Then we can use the following function to generate the molecule object
 HH_molecule = gd.molecule_from_pyscf(mf)
-
-
-def coefficient_inputs(molecule: gd.Molecule, *_, **__):
-    rho = molecule.density()
-    return jnp.sum(rho, 1)
 
 
 def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
@@ -108,7 +105,7 @@ coefficients = NeuralCoeff(layer_widths, out_features)
 nf = QNNFunctional(
     coefficients=coefficients,
     energy_densities=energy_densities,
-    coefficient_inputs=coefficient_inputs,
+    coefficient_inputs=helper.initialization.coefficient_inputs,
 )
 
 key = PRNGKey(42)
@@ -233,10 +230,9 @@ def get_unique_filename(base_filename):
 
 
 # Plot binding energy
-distances = np.arange(0.2, 5.0, 0.1)  # Distance range from 1 to 5 with step 0.3
 E_predicts = []
 
-for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):
+for distance in tqdm.tqdm(DISTANCES, desc="Calculating Binding Energy"):
     # Create molecule with the specified distance
     mol = gto.M(
         atom=[["H", (0, 0, 0)], ["H", (0, 0, distance)]],
@@ -256,13 +252,12 @@ for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):
     E_predicts.append(predicted_energy)
 
 
-distances = np.array(distances)
 E_predicts = np.array(E_predicts)
 
 
 plt.figure(figsize=(10, 6))
 plt.plot(
-    distances,
+    DISTANCES,
     E_predicts,
     marker="o",
     linestyle="-",
@@ -275,6 +270,10 @@ plt.title("Binding Energy Curve")
 plt.grid(alpha=0.3)
 plt.legend()
 plt.tight_layout()
+
+classcial_prediction_result = dict(zip(DISTANCES, E_predicts))
+with open(CLASSICAL_WITH_DOWN_FILENAME, "w") as f:
+    json.dump(classcial_prediction_result, f)
 
 # Define the filename
 output_dir = "plots"
@@ -293,9 +292,9 @@ plt.show()
 def to_serializable(obj):
     if isinstance(obj, jnp.ndarray):
         return obj.tolist()
-    if isinstance(obj, (jnp.float32, jnp.float64)):
+    if isinstance(obj, jnp.float32 | jnp.float64):
         return float(obj)
-    if isinstance(obj, (jnp.int32, jnp.int64)):
+    if isinstance(obj, jnp.int32 | jnp.int64):
         return int(obj)
     return obj
 

@@ -19,7 +19,7 @@ class H2MultibondDataset:
     """
     The dataset contains quantum chemistry data for a fixed list of molecules
     bond lengths are
-    [0.01, 0.11, 0.21 0.31 0.41 0.51, ..., 1, pennylane data,
+    [0.01, 0.11, 0.21 0.31 0.41 0.51, ..., 0.81, pennylane data,
     """
 
     # List of molecule names as a class attribute
@@ -81,7 +81,7 @@ class H2MultibondDataset:
     @classmethod
     def calculate_extra_data(cls):
         data_entries = []
-        for bond_length in (np.arange(0.01, 0.9, 0.1)):
+        for bond_length in np.arange(0.01, 0.9, 0.1):
             # Define the H2 molecule with the given bond length
             mol = gto.Mole()
             mol.atom = f"""

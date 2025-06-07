@@ -140,9 +140,7 @@ class QNNFunctional(NeuralFunctional):
             "rf,rf->r", coefficients, normalized_energy_densities
         )
         xc_energy_density = abs_clip(xc_energy_density, clip_cte)
-        return self._integrate(
-            xc_energy_density, normalized_grid_weights
-        )
+        return self._integrate(xc_energy_density, normalized_grid_weights)
 
     @staticmethod
     def compute_slice_sums(X, indices):

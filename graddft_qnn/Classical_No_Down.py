@@ -14,6 +14,7 @@ import tqdm
 import yaml
 from flax import linen as nn
 from grad_dft.popular_functionals import pw92_densities
+from helper.visualization import DISTANCES
 from jax.nn import gelu
 from jax.random import PRNGKey
 from optax import adam, apply_updates
@@ -58,7 +59,7 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
         * (3 / (4 * jnp.pi)) ** (1 / 3)
         * (rho ** (4 / 3)).sum(axis=1, keepdims=True)
     )
-    pw92_corr_e = pw92_densities(molecule, clip_cte)
+    pw92_densities(molecule, clip_cte)
     # For simplicity we do not include the exchange polarization correction
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
@@ -226,10 +227,9 @@ def get_unique_filename(base_filename):
 
 
 # Plot binding energy
-distances = np.arange(0.3, 5.0, 0.1)  # Distance range from 1 to 5 with step 0.3
 E_predicts = []
 
-for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):
+for distance in tqdm.tqdm(DISTANCES, desc="Calculating Binding Energy"):
     # Create molecule with the specified distance
     mol = gto.M(
         atom=[["H", (0, 0, 0)], ["H", (0, 0, distance)]],
@@ -249,13 +249,12 @@ for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):
     E_predicts.append(predicted_energy)
 
 
-distances = np.array(distances)
 E_predicts = np.array(E_predicts)
 
 
 plt.figure(figsize=(10, 6))
 plt.plot(
-    distances,
+    DISTANCES,
     E_predicts,
     marker="o",
     linestyle="-",
@@ -286,9 +285,9 @@ plt.show()
 def to_serializable(obj):
     if isinstance(obj, jnp.ndarray):
         return obj.tolist()
-    if isinstance(obj, (jnp.float32, jnp.float64)):
+    if isinstance(obj, jnp.float32 | jnp.float64):
         return float(obj)
-    if isinstance(obj, (jnp.int32, jnp.int64)):
+    if isinstance(obj, jnp.int32 | jnp.int64):
         return int(obj)
     return obj
 

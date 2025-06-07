@@ -14,6 +14,7 @@ import numpy as np
 import pennylane as qml
 import tqdm
 import yaml
+from helper.visualization import DISTANCES, classical, h2_dist_energy
 from optax import adam
 from pyscf import dft, gto
 
@@ -81,7 +82,7 @@ if __name__ == "__main__":
     )
 
     checkpoint_path = (
-        pathlib.Path().resolve() / pathlib.Path(filename).stem / "checkpoint_1"
+        pathlib.Path().resolve() / pathlib.Path(filename).stem / "checkpoint_50"
     )
     tx = adam(learning_rate=learning_rate, b1=momentum)
     state = qnnf.load_checkpoint(tx, ckpt_dir=str(checkpoint_path))
@@ -93,9 +94,10 @@ if __name__ == "__main__":
 
     # Evaluate the model
     predictor = gd.non_scf_predictor(qnnf)
-    distances = np.arange(0.3, 3.0, 0.5)
+    classical = classical
+
     predicts = []
-    for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):
+    for distance in tqdm.tqdm(DISTANCES, desc="Calculating Binding Energy"):
         # Create molecule with the specified distance
         mol = gto.M(
             atom=[["H", (0, 0, 0)], ["H", (0, 0, distance)]],
@@ -113,4 +115,10 @@ if __name__ == "__main__":
             parameters, predictor, molecule, ground_truth_energy
         )
         predicts.append(predicted_energy)
-    helper.visualization.plot_list(distances, predicts)
+
+    helper.visualization.plot_list(
+        h2_dist_energy(),
+        DISTANCES,
+        [predicts, classical],
+        ["Invariant quantum", "Classical"],
+    )
