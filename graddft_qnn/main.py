@@ -169,7 +169,7 @@ if __name__ == "__main__":
         MetricName.LEARNING_RATE: learning_rate,
         MetricName.BATCH_SIZE: batch_size,
     }
-    if pathlib.Path("rexport.json").exists():
+    if pathlib.Path("report.json").exists():
         with open("report.json") as f:
             try:
                 history_report = json.load(f)
