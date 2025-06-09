@@ -183,8 +183,7 @@ for epoch in range(n_epochs):
             params = apply_updates(params, updates)
 
             cost_values.append(cost_value)
-            # avg_cost = sum(cost_values) / len(batch) #30
-            avg_cost = sum(cost_values)
+            avg_cost = sum(cost_values)/len(batch["symbols"])
 
         aggregated_train_loss += avg_cost
         train_losses_batch.append(np.sqrt(avg_cost / len(batch["symbols"])))
