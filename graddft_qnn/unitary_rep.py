@@ -1,9 +1,14 @@
+import itertools
 import logging
 from itertools import product
 
 import numpy as np
 import pennylane as qml
+from pennylane.operation import TermsUndefinedError
 from scipy.sparse import csr_matrix
+from tqdm import tqdm
+
+from graddft_qnn import custom_gates
 
 
 class O_h:
@@ -74,7 +79,6 @@ class O_h:
         if pauli_word:
             n_qubits = np.log2(size**3)
             assert n_qubits.is_integer()
-            n_qubits = int(n_qubits)
             num_Is = np.log2(size)
             assert num_Is.is_integer()
             num_Is = int(num_Is)
@@ -210,6 +214,32 @@ class O_h:
         if pauli_word:
             return qml.pauli_decompose(
                 perm_matrix, check_hermitian=False, hide_identity=True
+            )
+        else:
+            return perm_matrix
+
+    @staticmethod
+    def _90_deg_x_rot_sparse(size=2, pauli_word=False):
+        total_elements = size * size * size
+        row_indices, col_indices = [], []
+        for x in range(size):
+            for y in range(size):
+                for z in range(size):
+                    orig_idx = x * size * size + y * size + z
+                    new_x = x
+                    new_y = z
+                    new_z = size - 1 - y
+                    new_idx = new_x * size * size + new_y * size + new_z
+                    row_indices.append(orig_idx)
+                    col_indices.append(new_idx)
+        perm_matrix = csr_matrix(
+            ([1] * len(row_indices), (row_indices, col_indices)),
+            shape=(total_elements, total_elements),
+            dtype=int,
+        )
+        if pauli_word:
+            return qml.SparseHamiltonian(
+                perm_matrix, wires=range(int(np.log2(total_elements)))
             )
         else:
             return perm_matrix
@@ -440,3 +470,72 @@ def is_zero_matrix_combination(op: qml.operation.Operator):
     except qml.operation.SparseMatrixUndefinedError:
         data = qml.matrix(op)
     return np.allclose(np.zeros_like(data), data)
+
+
+def _identity_like(num_wires):
+    result = qml.I(0)
+    for x in range(1, num_wires):
+        result = qml.prod(result, qml.I(x))
+    return result
+
+
+def _sentence_twirl(sentence: tuple, invariant_rep: list[qml.ops.op_math.Prod]):
+    sentence = qml.prod(
+        *[getattr(qml, word)(idx) for idx, word in enumerate(sentence)]
+    )  # e.g, create qml.X(0) @ qml.Y(1) from X,Y
+    return _twirling(sentence, invariant_rep)
+
+
+def _twirling(
+    ansatz: tuple,
+    unitary_reps: list[np.ndarray | qml.operation.Operator],
+):
+    """
+    :param ansatz:
+    :param unitary_reps: list of all the group member, it should have
+    the identity group member
+    :return:
+    """
+    twirled = 0
+    for unitary_rep in unitary_reps:
+        twirled += unitary_rep @ ansatz @ qml.adjoint(unitary_rep)
+        if is_zero_matrix_combination(twirled):
+            return None  # Twirling with this group member returns zero matrix!
+    twirled /= len(unitary_reps)
+    return twirled
+
+
+def gate_design(
+    num_wires: int, invariant_rep: list[np.ndarray | qml.ops.op_math.Prod]
+) -> tuple[list[str], list[str]]:
+    """
+    :param num_wires:
+    :param invariant_rep: The representation of group members, doesn't have
+    identity yet
+    :return:
+    """
+    ansatz_gen = []
+    invariant_rep.append(_identity_like(num_wires))
+    MAX_GATE = 20
+    with tqdm(total=MAX_GATE, desc="Creating invariant gates generator") as pbar:
+        for _, combination in enumerate(
+            itertools.product(custom_gates.words.keys(), repeat=num_wires)
+        ):
+            invariant_gate = _sentence_twirl(combination, invariant_rep)
+            if not invariant_gate:
+                continue
+            invariant_gate = invariant_gate.simplify()
+            # trotter product requires > 2 terms in
+            # pennylane.templates.subroutines.trotter.TrotterProduct
+            MIN_TERMS_TROTTER = 2
+            try:
+                if len(invariant_gate.terms()[0]) < MIN_TERMS_TROTTER:
+                    continue
+            except TermsUndefinedError:
+                continue
+            ansatz_gen.append(invariant_gate)
+            pbar.update()
+            if len(ansatz_gen) == MAX_GATE:  # random number
+                break
+    assert ansatz_gen, "Empty ansatz"
+    return ansatz_gen

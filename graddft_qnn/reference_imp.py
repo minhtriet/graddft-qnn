@@ -16,7 +16,7 @@ from pyscf import dft, gto
 from tqdm import tqdm
 
 from datasets import DatasetDict
-from graddft_qnn import helper
+from graddft_qnn import helper, unitary_rep
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.evaluate.metric_name import MetricName
@@ -88,7 +88,7 @@ if "naive" not in group[0].lower():
         gates_gen = AnsatzIO.read_from_file(filename)
         logging.info(f"Loaded ansatz generator from {filename}")
     else:
-        gates_gen = DFTQNN.gate_design(
+        gates_gen = unitary_rep.gate_design(
             len(dev.wires), [getattr(O_h, gr)(size, True) for gr in group]
         )
         AnsatzIO.write_to_file(filename, gates_gen)

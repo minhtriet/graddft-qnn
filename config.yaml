@@ -1,6 +1,9 @@
-QBITS: 6  # 3 6 9 12
+QBITS: 18  # 3 6 9 12
 FULL_MEASUREMENTS: prob
-N_GATES: 8
+N_GATES: 1
+DEVICE:
+  name: default.tensor
+  method: tn
 CHECK_GROUP: False
 XC_FUNCTIONAL: pw92_densities  # possible options: vwn_density, lyp_density, pw92_densities
 GROUP:
@@ -9,9 +12,9 @@ GROUP:
 #=== demo
 #  - _180_deg_x_rot
 #===   c3 group
-  - _90_deg_x_rot
-  - _180_deg_x_rot
-  - _270_deg_x_rot
+  - _90_deg_x_rot_sparse
+  - _180_deg_x_rot_sparse
+  - _270_deg_x_rot_sparse
 #===   d4 group
 #  - _90_deg_x_rot
 #  - _180_deg_x_rot
@@ -37,7 +40,7 @@ GROUP:
 #  - _90_roto_x_reflect_yz
 #  - _270_roto_x_reflect_yz
 TRAINING:
-  N_EPOCHS: 50
+  N_EPOCHS: 20
   LEARNING_RATE: 0.01   # for naive: 0.7 ,for 6 qubits: 0.007
   MOMENTUM: 0.9
   EVAL_PER_X_EPOCH: 3

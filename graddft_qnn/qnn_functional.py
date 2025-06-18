@@ -1,3 +1,4 @@
+import flax.linen as nn
 import grad_dft as gd
 import jax
 import numpy as np
@@ -34,7 +35,7 @@ class QNNFunctional(NeuralFunctional):
         ).astype(jnp.float32)
         return interpolated
 
-    def xc_energy(
+    def xc_energy(  # noqa: PLR0913
         self,
         params: PyTree,
         grid: Grid,
@@ -127,9 +128,14 @@ class QNNFunctional(NeuralFunctional):
         )
 
         # get coefficients
-        coefficients = self.coefficients.apply(
-            params, normalized_charge_density.sum(axis=1)
-        )
+        if isinstance(self.coefficients, nn.Module):
+            coefficients = self.coefficients.apply(
+                params, normalized_charge_density.sum(axis=1)
+            )
+        else:
+            coefficients = self.coefficients(
+                normalized_charge_density.sum(axis=1)
+            )
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
         coefficients = jnp.concatenate(
             (coefficients, coefficients), axis=1

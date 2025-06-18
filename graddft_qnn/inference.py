@@ -20,7 +20,7 @@ from jax.random import PRNGKey
 from optax import adamw
 from pyscf import dft, gto
 
-from graddft_qnn import helper
+from graddft_qnn import helper, unitary_rep
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.naive_dft_qnn import NaiveDFTQNN
@@ -69,7 +69,7 @@ if __name__ == "__main__":
         gates_gen = AnsatzIO.read_from_file(filename)
         logging.info(f"Loaded ansatz generator from {filename}")
     else:
-        gates_gen = DFTQNN.gate_design(
+        gates_gen = unitary_rep.gate_design(
             len(dev.wires), [getattr(O_h, gr)(size, True) for gr in group]
         )
         AnsatzIO.write_to_file(filename, gates_gen)
@@ -96,9 +96,7 @@ if __name__ == "__main__":
         energy_densities=helper.initialization.energy_densities,
         coefficient_inputs=helper.initialization.coefficient_inputs,
     )
-    checkpoint_path_naive = (
-        pathlib.Path(f"ansatz_{num_qubits}_naive_qubits") / f"checkpoint_{n_epochs}"
-    )
+    checkpoint_path_naive = pathlib.Path("ansatz_6_naive_qubits") / "checkpoint_50"
     tx_naive = adamw(learning_rate=learning_rate, b1=momentum)
     state_naive = qnnf_naive.load_checkpoint(
         tx_naive, ckpt_dir=str(checkpoint_path_naive)
