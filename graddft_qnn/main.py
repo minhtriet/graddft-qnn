@@ -1,3 +1,9 @@
+import os
+
+os.environ["OPENBLAS_NUM_THREADS"] = "8"
+os.environ["MKL_NUM_THREADS"] = "8"
+os.environ["OMP_NUM_THREADS"] = "8"
+os.environ["NUMBA_NUM_THREADS"] = "8"
 import json
 import logging
 import pathlib
@@ -24,7 +30,6 @@ from graddft_qnn.unitary_rep import O_h, is_group
 
 logging.getLogger().setLevel(logging.INFO)
 np.random.seed(42)
-
 
 if __name__ == "__main__":
     jax.config.update("jax_enable_x64", True)
@@ -96,7 +101,7 @@ if __name__ == "__main__":
         dataset.save_to_disk("datasets/h2_dataset")
 
     # train
-    if dev.name == "default.qubits":
+    if dev.name == "default.qubit":
         simulator = GradientBasedSimulator(
             dev,
             dataset,

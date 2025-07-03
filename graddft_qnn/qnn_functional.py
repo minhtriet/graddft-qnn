@@ -133,9 +133,7 @@ class QNNFunctional(NeuralFunctional):
                 params, normalized_charge_density.sum(axis=1)
             )
         else:
-            coefficients = self.coefficients(
-                normalized_charge_density.sum(axis=1)
-            )
+            coefficients = self.coefficients(normalized_charge_density.sum(axis=1))
         coefficients = coefficients[:, jax.numpy.newaxis]  # shape (xxx, 1)
         coefficients = jnp.concatenate(
             (coefficients, coefficients), axis=1

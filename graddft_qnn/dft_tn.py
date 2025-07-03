@@ -20,20 +20,20 @@ class DFTTN:
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for idx, gen in enumerate(gate_gens):
                 qml.TrotterProduct(
-                    -1j * theta[idx] * gen, time=2, order=2, check_hermitian=False
+                    -1j * theta[idx] * gen, time=1e-2, order=1, check_hermitian=False
                 )
             # tn doesn't support probs measurement like default.qubits
             # https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.default_tensor.DefaultTensor.html
             return qml.state()
 
         qml.decomposition.enable_graph()
-        self.theta = [1,2,3]
-        self.qnode = qml.QNode(_circuit, self.dev, interface="numpy")
+        self.theta = [1, 2, 3]
+        self.qnode = qml.QNode(_circuit, self.dev, interface=None)  # no gradient
 
     def circuit(self, feature, theta, gate_gens):
         result = self.qnode(feature, theta, gate_gens)
         # convert state to prob
-        result = jnp.abs(result) ** 2
+        result = (result * result.conj()).astype(jnp.float32)
         result /= jnp.sum(result)
         assert jnp.isclose(jnp.sum(result), 1)
         return jnp.array(result)

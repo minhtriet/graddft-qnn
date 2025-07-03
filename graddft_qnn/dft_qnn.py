@@ -23,7 +23,8 @@ class DFTQNN(nn.Module):
             """
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for idx, gen in enumerate(gate_gens):
-                qml.exp(-1j * theta[idx][0] * gen)
+                # qml.exp(-1j * theta[idx][0] * gen)
+                qml.TrotterProduct(-1j * theta[idx][0] * gen)
             return qml.probs(wires=self.dev.wires)
 
         def _tn(feature, theta, gate_gens):

@@ -34,7 +34,7 @@ class GradientBasedSimulator(Simulator):
         # get a sample batch for initialization
         coeff_input = jnp.empty((2 ** len(self.dev.wires),))
         logging.info("Initializing the params")
-        parameters = self.functional.coeeficients.init(key, coeff_input)
+        parameters = self.functional.coefficients.init(key, coeff_input)
         logging.info("Finished initializing the params")
         tx = adamw(learning_rate=self.learning_rate, weight_decay=1e-5)
         opt_state = tx.init(parameters)
