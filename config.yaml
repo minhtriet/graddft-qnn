@@ -1,6 +1,6 @@
 QBITS: 6  # 3 6 9 12
 FULL_MEASUREMENTS: prob
-N_GATES: 8
+N_GATES: 3
 CHECK_GROUP: False
 XC_FUNCTIONAL: pw92_densities  # possible options: vwn_density, lyp_density, pw92_densities
 GROUP:
@@ -9,9 +9,9 @@ GROUP:
 #=== demo
 #  - _180_deg_x_rot
 #===   c3 group
-  - _90_deg_x_rot
-  - _180_deg_x_rot
-  - _270_deg_x_rot
+  - _90_deg_x_rot_sparse
+  - _180_deg_x_rot_sparse
+  - _270_deg_x_rot_sparse
 #===   d4 group
 #  - _90_deg_x_rot
 #  - _180_deg_x_rot

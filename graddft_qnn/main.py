@@ -3,6 +3,7 @@ import logging
 import pathlib
 from datetime import datetime
 
+import flax.linen as nn
 import grad_dft as gd
 import jax
 import numpy as np
@@ -57,7 +58,7 @@ if __name__ == "__main__":
             if (check_group) and (not is_group(group_matrix_reps, group)):
                 raise ValueError("Not forming a group")
         xc_functional_name = data["XC_FUNCTIONAL"]
-        dev = qml.device("default.qubit", wires=num_qubits)
+        dev = qml.device("lightning.qubit", wires=num_qubits)
 
     # define the QNN
     filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"
@@ -80,7 +81,15 @@ if __name__ == "__main__":
     # get a sample batch for initialization
     coeff_input = jnp.empty((2 ** len(dev.wires),))
     logging.info("Initializing the params")
-    parameters = dft_qnn.init(key, coeff_input)
+    # parameters = dft_qnn.init(key, coeff_input)
+    if isinstance(num_gates, int):
+        param_shape = (num_gates, 1)
+    else:  # num_gates == "full"
+        param_shape = (len(gates_gen), 1)
+
+    theta_params = nn.initializers.he_normal()(key, param_shape, jnp.float32)
+    parameters = {"params": {"theta": theta_params}}
+
     logging.info("Finished initializing the params")
 
     # resolve energy density according to user input

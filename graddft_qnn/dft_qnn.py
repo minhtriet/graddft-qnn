@@ -1,7 +1,6 @@
 import itertools
 
 import flax.linen as nn
-import jax
 import jax.numpy as jnp
 import numpy as np
 import pennylane as qml
@@ -33,11 +32,13 @@ class DFTQNN(nn.Module):
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for idx, gen in enumerate(gate_gens):
                 # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
-                qml.exp(-1j * theta[idx][0] * gen)
+                qml.TrotterProduct(
+                    -1j * theta[idx][0] * gen, n=1, time=0.1, check_hermitian=False
+                )
             return qml.probs(wires=self.dev.wires)
 
-        self.qnode = qml.QNode(_circuit, self.dev, diff_method="backprop")
-        self.qnode = jax.jit(self.qnode)
+        self.qnode = qml.QNode(_circuit, self.dev)
+        # self.qnode = qml.qjit(self.qnode)
 
     def circuit(self, feature, theta, gate_gens):
         if self.rotate_matrix is not None and self.rotate_feature:

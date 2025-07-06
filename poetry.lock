@@ -877,6 +877,22 @@ files = [
 ]
 
 [[package]]
+name = "diastatic-malt"
+version = "2.15.2"
+description = "A library for Python operator overloading"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "diastatic-malt-2.15.2.tar.gz", hash = "sha256:7eb90d8c30b7ff16b4e84c3a65de2ff7f5b7b9d0f5cdea23918e747ff7fb5320"},
+    {file = "diastatic_malt-2.15.2-py3-none-any.whl", hash = "sha256:85429257b356030f101c31b2c7d506c4829f21bd865aed796766f900d7908407"},
+]
+
+[package.dependencies]
+astunparse = "*"
+gast = "*"
+termcolor = "*"
+
+[[package]]
 name = "dill"
 version = "0.3.8"
 description = "serialize all of Python"
@@ -1359,9 +1375,9 @@ examples = ["matplotlib (>=3.7.2)", "openfermion (>=1.5.1)", "openpyxl", "pandas
 
 [package.source]
 type = "git"
-url = "git@github.com:XanaduAI/GradDFT"
+url = "git@github.com:minhtriet/GradDFT"
 reference = "HEAD"
-resolved_reference = "941afc28a6b24477369d638b07ca64c6a46365ba"
+resolved_reference = "3fc84d3db4f1d26a8184f72eeecf11bdf7c35e6b"
 
 [[package]]
 name = "grpcio"
@@ -1751,13 +1767,13 @@ arrow = ">=0.15.0"
 
 [[package]]
 name = "jax"
-version = "0.4.23"
+version = "0.4.28"
 description = "Differentiate, compile, and transform Numpy code."
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "jax-0.4.23-py3-none-any.whl", hash = "sha256:a7a07ccd1577111e3b82378c79a8ed0f9d6613b1e98fb6bf3c0b459198f73eaa"},
-    {file = "jax-0.4.23.tar.gz", hash = "sha256:2a229a5a758d1b803891b2eaed329723f6b15b4258b14dc0ccb1498c84963685"},
+    {file = "jax-0.4.28-py3-none-any.whl", hash = "sha256:6a181e6b5a5b1140e19cdd2d5c4aa779e4cb4ec627757b918be322d8e81035ba"},
+    {file = "jax-0.4.28.tar.gz", hash = "sha256:dcf0a44aff2e1713f0a2b369281cd5b79d8c18fc1018905c4125897cb06b37e9"},
 ]
 
 [package.dependencies]
@@ -1768,45 +1784,43 @@ scipy = ">=1.9"
 
 [package.extras]
 australis = ["protobuf (>=3.13,<4)"]
-ci = ["jaxlib (==0.4.22)"]
-cpu = ["jaxlib (==0.4.23)"]
-cuda = ["jaxlib (==0.4.23+cuda11.cudnn86)"]
-cuda11-cudnn86 = ["jaxlib (==0.4.23+cuda11.cudnn86)"]
-cuda11-local = ["jaxlib (==0.4.23+cuda11.cudnn86)"]
-cuda11-pip = ["jaxlib (==0.4.23+cuda11.cudnn86)", "nvidia-cublas-cu11 (>=11.11)", "nvidia-cuda-cupti-cu11 (>=11.8)", "nvidia-cuda-nvcc-cu11 (>=11.8)", "nvidia-cuda-runtime-cu11 (>=11.8)", "nvidia-cudnn-cu11 (>=8.8)", "nvidia-cufft-cu11 (>=10.9)", "nvidia-cusolver-cu11 (>=11.4)", "nvidia-cusparse-cu11 (>=11.7)", "nvidia-nccl-cu11 (>=2.18.3)"]
-cuda12 = ["jax-cuda12-plugin (==0.4.23)", "jaxlib (==0.4.23)", "nvidia-cublas-cu12 (>=12.2.5.6)", "nvidia-cuda-cupti-cu12 (>=12.2.142)", "nvidia-cuda-nvcc-cu12 (>=12.2.140)", "nvidia-cuda-runtime-cu12 (>=12.2.140)", "nvidia-cudnn-cu12 (>=8.9)", "nvidia-cufft-cu12 (>=11.0.8.103)", "nvidia-cusolver-cu12 (>=11.5.2)", "nvidia-cusparse-cu12 (>=12.1.2.141)", "nvidia-nccl-cu12 (>=2.18.3)", "nvidia-nvjitlink-cu12 (>=12.2)"]
-cuda12-local = ["jaxlib (==0.4.23+cuda12.cudnn89)"]
-cuda12-pip = ["jaxlib (==0.4.23+cuda12.cudnn89)", "nvidia-cublas-cu12 (>=12.2.5.6)", "nvidia-cuda-cupti-cu12 (>=12.2.142)", "nvidia-cuda-nvcc-cu12 (>=12.2.140)", "nvidia-cuda-runtime-cu12 (>=12.2.140)", "nvidia-cudnn-cu12 (>=8.9)", "nvidia-cufft-cu12 (>=11.0.8.103)", "nvidia-cusolver-cu12 (>=11.5.2)", "nvidia-cusparse-cu12 (>=12.1.2.141)", "nvidia-nccl-cu12 (>=2.18.3)", "nvidia-nvjitlink-cu12 (>=12.2)"]
-minimum-jaxlib = ["jaxlib (==0.4.19)"]
-tpu = ["jaxlib (==0.4.23)", "libtpu-nightly (==0.1.dev20231213)", "requests"]
+ci = ["jaxlib (==0.4.27)"]
+cpu = ["jaxlib (==0.4.28)"]
+cuda = ["jaxlib (==0.4.28+cuda12.cudnn89)"]
+cuda12 = ["jax-cuda12-plugin (==0.4.28)", "jaxlib (==0.4.28)", "nvidia-cublas-cu12 (>=12.1.3.1)", "nvidia-cuda-cupti-cu12 (>=12.1.105)", "nvidia-cuda-nvcc-cu12 (>=12.1.105)", "nvidia-cuda-runtime-cu12 (>=12.1.105)", "nvidia-cudnn-cu12 (>=8.9.2.26,<9.0)", "nvidia-cufft-cu12 (>=11.0.2.54)", "nvidia-cusolver-cu12 (>=11.4.5.107)", "nvidia-cusparse-cu12 (>=12.1.0.106)", "nvidia-nccl-cu12 (>=2.18.1)", "nvidia-nvjitlink-cu12 (>=12.1.105)"]
+cuda12-cudnn89 = ["jaxlib (==0.4.28+cuda12.cudnn89)"]
+cuda12-local = ["jaxlib (==0.4.28+cuda12.cudnn89)"]
+cuda12-pip = ["jaxlib (==0.4.28+cuda12.cudnn89)", "nvidia-cublas-cu12 (>=12.1.3.1)", "nvidia-cuda-cupti-cu12 (>=12.1.105)", "nvidia-cuda-nvcc-cu12 (>=12.1.105)", "nvidia-cuda-runtime-cu12 (>=12.1.105)", "nvidia-cudnn-cu12 (>=8.9.2.26,<9.0)", "nvidia-cufft-cu12 (>=11.0.2.54)", "nvidia-cusolver-cu12 (>=11.4.5.107)", "nvidia-cusparse-cu12 (>=12.1.0.106)", "nvidia-nccl-cu12 (>=2.18.1)", "nvidia-nvjitlink-cu12 (>=12.1.105)"]
+minimum-jaxlib = ["jaxlib (==0.4.27)"]
+tpu = ["jaxlib (==0.4.28)", "libtpu-nightly (==0.1.dev20240508)", "requests"]
 
 [[package]]
 name = "jaxlib"
-version = "0.4.23"
+version = "0.4.28"
 description = "XLA library for JAX"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "jaxlib-0.4.23-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:e3756e0601af7636ae58f42d24af70e46048ffef89bd5e05c303b899a2177c36"},
-    {file = "jaxlib-0.4.23-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:1fdb1b791e3ee17cad44460b3f42c9a61a86910a877229d30bd3654f4463d5a0"},
-    {file = "jaxlib-0.4.23-cp310-cp310-manylinux2014_aarch64.whl", hash = "sha256:a3de5e061a173f434fd1b88074f1610e4e881ff712ff3be61e655bae2fab8ea0"},
-    {file = "jaxlib-0.4.23-cp310-cp310-manylinux2014_x86_64.whl", hash = "sha256:7275fbe5a489c683c5502603d55e508323cda2f4bd9521aa8383c674fb0ab2f3"},
-    {file = "jaxlib-0.4.23-cp310-cp310-win_amd64.whl", hash = "sha256:f774941542aa8fd866e4c860082aebdd17c34ea35c2a6a74e46631b6fb377a99"},
-    {file = "jaxlib-0.4.23-cp311-cp311-macosx_10_14_x86_64.whl", hash = "sha256:8e12d7e29b3e12d535b24bbbdb6bf9d66cf64926a6a38fdd91d4565f7cc57111"},
-    {file = "jaxlib-0.4.23-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:d646ff9bc0ce0ebb573b676b21fa6db422c2ef6a0d56ccc00db483b29965415b"},
-    {file = "jaxlib-0.4.23-cp311-cp311-manylinux2014_aarch64.whl", hash = "sha256:22fb2c2b76276d396ddb1edfe41c6d943216f04fa8c00638b16d6c56cad403b8"},
-    {file = "jaxlib-0.4.23-cp311-cp311-manylinux2014_x86_64.whl", hash = "sha256:984766d309b21ca83846503babdfded4e3aef817c670f281092bcbc177c58492"},
-    {file = "jaxlib-0.4.23-cp311-cp311-win_amd64.whl", hash = "sha256:99c345b9e58c158e5fe6c621084aa1fdf7eb9eb9172c27729918d20272124ea8"},
-    {file = "jaxlib-0.4.23-cp312-cp312-macosx_10_14_x86_64.whl", hash = "sha256:505104fe6062b443955288a38547e9872cb6e107d63d9f8540fb10d1c8d8efd0"},
-    {file = "jaxlib-0.4.23-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:278cda29cc7473406093bc3f9fa925a8396063d22a4cd20d7e0ea0d37dcb5039"},
-    {file = "jaxlib-0.4.23-cp312-cp312-manylinux2014_aarch64.whl", hash = "sha256:b33bc2f8a2163801941d4316fad095778fe32f5519d8d146e6e4504e6a82fe7d"},
-    {file = "jaxlib-0.4.23-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:a229a2b90a2980dd682a16c373b4ac4493e703a262108f5489e8a4591daaa559"},
-    {file = "jaxlib-0.4.23-cp312-cp312-win_amd64.whl", hash = "sha256:ce7dd9295ccdac6a4739b4a344caa1ea2e555e686216b74313ec7562b00695f0"},
-    {file = "jaxlib-0.4.23-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:4dd538c04a2a121b03ab5f0cb8b12998aaa9539d7ec54629feb799a840c92b55"},
-    {file = "jaxlib-0.4.23-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:81d6f4edcd761c27cae555d3d82fbd958292888a4f803f2c366778786d8ce8ce"},
-    {file = "jaxlib-0.4.23-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:c78d2accacb34da96ccd7fd2a7e87ed3e93ba74af40c2b2b19e09289fe3381cf"},
-    {file = "jaxlib-0.4.23-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:99a37d4732bafe1608b8f45df27f27e6a6bf1f23e001fe940fe9a5ab3675fd77"},
-    {file = "jaxlib-0.4.23-cp39-cp39-win_amd64.whl", hash = "sha256:fdf8920a8b00d3e4574978e799c865615132df75f6579e4eec0c50e105df6c66"},
+    {file = "jaxlib-0.4.28-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:a421d237f8c25d2850166d334603c673ddb9b6c26f52bc496704b8782297bd66"},
+    {file = "jaxlib-0.4.28-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:f038e68bd10d1a3554722b0bbe36e6a448384437a75aa9d283f696f0ed9f8c09"},
+    {file = "jaxlib-0.4.28-cp310-cp310-manylinux2014_aarch64.whl", hash = "sha256:fabe77c174e9e196e9373097cefbb67e00c7e5f9d864583a7cfcf9dabd2429b6"},
+    {file = "jaxlib-0.4.28-cp310-cp310-manylinux2014_x86_64.whl", hash = "sha256:e3bcdc6f8e60f8554f415c14d930134e602e3ca33c38e546274fd545f875769b"},
+    {file = "jaxlib-0.4.28-cp310-cp310-win_amd64.whl", hash = "sha256:a8b31c0e5eea36b7915696b9be40ea8646edc395a3e5437bf7ef26b7239a567a"},
+    {file = "jaxlib-0.4.28-cp311-cp311-macosx_10_14_x86_64.whl", hash = "sha256:2ff8290edc7b92c7eae52517f65492633e267b2e9067bad3e4c323d213e77cf5"},
+    {file = "jaxlib-0.4.28-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:793857faf37f371cafe752fea5fc811f435e43b8fb4b502058444a7f5eccf829"},
+    {file = "jaxlib-0.4.28-cp311-cp311-manylinux2014_aarch64.whl", hash = "sha256:b41a6b0d506c09f86a18ecc05bd376f072b548af89c333107e49bb0c09c1a3f8"},
+    {file = "jaxlib-0.4.28-cp311-cp311-manylinux2014_x86_64.whl", hash = "sha256:45ce0f3c840cff8236cff26c37f26c9ff078695f93e0c162c320c281f5041275"},
+    {file = "jaxlib-0.4.28-cp311-cp311-win_amd64.whl", hash = "sha256:d4d762c3971d74e610a0e85a7ee063cea81a004b365b2a7dc65133f08b04fac5"},
+    {file = "jaxlib-0.4.28-cp312-cp312-macosx_10_14_x86_64.whl", hash = "sha256:d6c09a545329722461af056e735146d2c8c74c22ac7426a845eb69f326b4f7a0"},
+    {file = "jaxlib-0.4.28-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:8dd8bffe3853702f63cd924da0ee25734a4d19cd5c926be033d772ba7d1c175d"},
+    {file = "jaxlib-0.4.28-cp312-cp312-manylinux2014_aarch64.whl", hash = "sha256:de2e8521eb51e16e85093a42cb51a781773fa1040dcf9245d7ea160a14ee5a5b"},
+    {file = "jaxlib-0.4.28-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:46a1aa857f4feee8a43fcba95c0e0ab62d40c26cc9730b6c69655908ba359f8d"},
+    {file = "jaxlib-0.4.28-cp312-cp312-win_amd64.whl", hash = "sha256:eee428eac31697a070d655f1f24f6ab39ced76750d93b1de862377a52dcc2401"},
+    {file = "jaxlib-0.4.28-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:4f98cc837b2b6c6dcfe0ab7ff9eb109314920946119aa3af9faa139718ff2787"},
+    {file = "jaxlib-0.4.28-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:b01562ec8ad75719b7d0389752489e97eb6b4dcb4c8c113be491634d5282ad3c"},
+    {file = "jaxlib-0.4.28-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:aa77a9360a395ba9faf6932df637686fb0c14ddcf4fdc1d2febe04bc88a580a6"},
+    {file = "jaxlib-0.4.28-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:4a56ebf05b4a4c1791699d874e072f3f808f0986b4010b14fb549a69c90ca9dc"},
+    {file = "jaxlib-0.4.28-cp39-cp39-win_amd64.whl", hash = "sha256:459a4ddcc3e120904b9f13a245430d7801d707bca48925981cbdc59628057dc8"},
 ]
 
 [package.dependencies]
@@ -1815,8 +1829,7 @@ numpy = ">=1.22"
 scipy = ">=1.9"
 
 [package.extras]
-cuda11-pip = ["nvidia-cublas-cu11 (>=11.11)", "nvidia-cuda-cupti-cu11 (>=11.8)", "nvidia-cuda-nvcc-cu11 (>=11.8)", "nvidia-cuda-runtime-cu11 (>=11.8)", "nvidia-cudnn-cu11 (>=8.8)", "nvidia-cufft-cu11 (>=10.9)", "nvidia-cusolver-cu11 (>=11.4)", "nvidia-cusparse-cu11 (>=11.7)"]
-cuda12-pip = ["nvidia-cublas-cu12", "nvidia-cuda-cupti-cu12", "nvidia-cuda-nvcc-cu12", "nvidia-cuda-runtime-cu12", "nvidia-cudnn-cu12 (>=8.9)", "nvidia-cufft-cu12", "nvidia-cusolver-cu12", "nvidia-cusparse-cu12"]
+cuda12-pip = ["nvidia-cublas-cu12 (>=12.1.3.1)", "nvidia-cuda-cupti-cu12 (>=12.1.105)", "nvidia-cuda-nvcc-cu12 (>=12.1.105)", "nvidia-cuda-runtime-cu12 (>=12.1.105)", "nvidia-cudnn-cu12 (>=8.9.2.26,<9.0)", "nvidia-cufft-cu12 (>=11.0.2.54)", "nvidia-cusolver-cu12 (>=11.4.5.107)", "nvidia-cusparse-cu12 (>=12.1.0.106)", "nvidia-nccl-cu12 (>=2.18.1)", "nvidia-nvjitlink-cu12 (>=12.1.105)"]
 
 [[package]]
 name = "jaxtyping"
@@ -3201,12 +3214,12 @@ files = [
 
 [[package]]
 name = "pennylane"
-version = "0.39.0"
+version = "0.41.1"
 description = "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network."
 optional = false
 python-versions = "*"
 files = [
-    {file = "PennyLane-0.39.0-py3-none-any.whl", hash = "sha256:e11928a8ffd652b9c1b4f11955b50210c3b637f36ee3d8cea64a3a9a6a830977"},
+    {file = "PennyLane-0.41.1-py3-none-any.whl", hash = "sha256:b2bfb07570c046d2ec1972942d5d6b5edbd8c0dfbebda9bb270ad78c31b5ee8b"},
 ]
 
 [package.dependencies]
@@ -3214,47 +3227,83 @@ appdirs = "*"
 autograd = "*"
 autoray = ">=0.6.11"
 cachetools = "*"
+diastatic-malt = "*"
 networkx = "*"
-numpy = "<2.1"
+numpy = "*"
 packaging = "*"
-pennylane-lightning = ">=0.39"
+pennylane-lightning = ">=0.41"
 requests = "*"
 rustworkx = ">=0.14.0"
 scipy = "*"
-toml = "*"
+tomlkit = "*"
 typing-extensions = "*"
 
 [package.extras]
 kernels = ["cvxopt", "cvxpy"]
 
 [[package]]
+name = "pennylane-catalyst"
+version = "0.11.0"
+description = "A JIT compiler for hybrid quantum programs in PennyLane"
+optional = false
+python-versions = ">=3.10"
+files = [
+    {file = "pennylane_catalyst-0.11.0-cp310-cp310-macosx_13_0_arm64.whl", hash = "sha256:439d4e6b5b087c9e3530d3f0be4ad120cc131eb986b4f59921ecf1021b15c87c"},
+    {file = "pennylane_catalyst-0.11.0-cp310-cp310-macosx_13_0_x86_64.whl", hash = "sha256:748340f6549919b1455be878f6be5eefaed00947c3ddb2509b9f179303cecbcf"},
+    {file = "pennylane_catalyst-0.11.0-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:2b272df761c5e146ad8bf2c2e1a257cc7d45cdb5a22619a3b8992decba617308"},
+    {file = "pennylane_catalyst-0.11.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:2f3089fd2f0a1f5ebb114520432a07324f7503f328ec8f41b7e2cddc0f83c36c"},
+    {file = "pennylane_catalyst-0.11.0-cp311-cp311-macosx_13_0_arm64.whl", hash = "sha256:232b6ee9fd3d3dc3c7cebd6b92fa0d4b4a76070d5fa355dd984a049e7b43e776"},
+    {file = "pennylane_catalyst-0.11.0-cp311-cp311-macosx_13_0_x86_64.whl", hash = "sha256:d9b53d33f99b00c097e7cf7351bdbb3d976506db5db8bfe70dcdf5dec76f37a5"},
+    {file = "pennylane_catalyst-0.11.0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:82a16218f8ba167b6881be74af38bbd1daef3440fa55120e96c3993b66e0b155"},
+    {file = "pennylane_catalyst-0.11.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:69dcad9f2f1e81747b4c90fc65353bfec173dbcc6852f134c21b7a27e399b3db"},
+    {file = "pennylane_catalyst-0.11.0-cp312-abi3-macosx_13_0_arm64.whl", hash = "sha256:81343af2fee8fdd1ac57d34c06216c625510b12ecfff8eecadebae18722aa3cd"},
+    {file = "pennylane_catalyst-0.11.0-cp312-abi3-macosx_13_0_x86_64.whl", hash = "sha256:0baf8803972724e4751fceb0d8a7c8839057745e145e9a861a3076edcd5b1d72"},
+    {file = "pennylane_catalyst-0.11.0-cp312-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:201192cf19d662e2a1aec1f907f13cee210bb26d35a56feb0d8010ee3f78b643"},
+    {file = "pennylane_catalyst-0.11.0-cp312-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:87152b6433b4047b821a9722c3cf1a27a5faee22a2700c52b089e7f32adde866"},
+]
+
+[package.dependencies]
+diastatic-malt = ">=2.15.2"
+jax = "0.4.28"
+jaxlib = "0.4.28"
+numpy = "!=2.0.0"
+pennylane = ">=0.41.0"
+pennylane-lightning = ">=0.41.0"
+scipy-openblas32 = ">=0.3.26"
+
+[[package]]
 name = "pennylane-lightning"
-version = "0.40.0"
+version = "0.41.1"
 description = "PennyLane-Lightning plugin"
 optional = false
 python-versions = ">=3.10"
 files = [
-    {file = "PennyLane_Lightning-0.40.0-cp310-cp310-macosx_13_0_arm64.whl", hash = "sha256:3a6915cc17ce99cd4f3d04dcf7d579f59cecdc2866cd4e8e1c33478d86101437"},
-    {file = "PennyLane_Lightning-0.40.0-cp310-cp310-macosx_13_0_x86_64.whl", hash = "sha256:4a66e8c644f634f9d1fda6b9223f5cc106acf4146334a25a23f948ec59b075c0"},
-    {file = "PennyLane_Lightning-0.40.0-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:a58ab1489fee0424840bc8f91e8f7e32ecc3338a714b2fe1bf68a9026a5a295a"},
-    {file = "PennyLane_Lightning-0.40.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:7fe9262c602b6c7f0ab893468867e24c63e9cacc7d77e19b448ac1361bb86a47"},
-    {file = "PennyLane_Lightning-0.40.0-cp310-cp310-win_amd64.whl", hash = "sha256:3f75b7d39d63880e9d59562d78ae5ec63d2aed936b2feee3c937dfbcd080b834"},
-    {file = "PennyLane_Lightning-0.40.0-cp311-cp311-macosx_13_0_arm64.whl", hash = "sha256:99cf7bcfb3a2a29838cc12f0001e3e7e02d35c5c1d696ce2e5ba0c3f2995c4d9"},
-    {file = "PennyLane_Lightning-0.40.0-cp311-cp311-macosx_13_0_x86_64.whl", hash = "sha256:6b89ad785e16cc3b3d155b1abd27e42fcb5854a0e2d90452f6445fc0e80b1cf4"},
-    {file = "PennyLane_Lightning-0.40.0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:20052041abc417d74d1794506d4340a8a2298b858e2b94591704e73670d913f9"},
-    {file = "PennyLane_Lightning-0.40.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:a3db3cf2c3caed80ce561b66bb4bf6b5712ecf0b08db986f24c4ff9e187e82b3"},
-    {file = "PennyLane_Lightning-0.40.0-cp311-cp311-win_amd64.whl", hash = "sha256:fed88008b7d468cb1d0e5b3ef92d87f9b600d0896d21eff43655a521cc841d7b"},
-    {file = "PennyLane_Lightning-0.40.0-cp312-cp312-macosx_13_0_arm64.whl", hash = "sha256:e3152f6b53390281334257554ecad90566cd4d200187971d238d2c7691000466"},
-    {file = "PennyLane_Lightning-0.40.0-cp312-cp312-macosx_13_0_x86_64.whl", hash = "sha256:8a4ff3f1d82f664e6d608d155cb019b189aac676c6c7cb40c4f92b15e0d2d485"},
-    {file = "PennyLane_Lightning-0.40.0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:b2209727b8c914c8101087da188cbbc7b332bb77ceab4b6791c7ed7b3c5a942c"},
-    {file = "PennyLane_Lightning-0.40.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:2ba97b4d6aa0a6eb774413ea3272d418959b792de6df8e4196171cad450f25af"},
-    {file = "PennyLane_Lightning-0.40.0-cp312-cp312-win_amd64.whl", hash = "sha256:3d7715c84290fc1291e315d2c0d2bf5719cbe86e3e92fb538393ab130b3f5ba2"},
-    {file = "PennyLane_Lightning-0.40.0-py3-none-any.whl", hash = "sha256:96390ce82767b3a66c4f8e0b1bcec2f4f15fb317652cffa9815e371e74458197"},
-    {file = "pennylane_lightning-0.40.0.tar.gz", hash = "sha256:edc95e75ef1b4e6dba96e914893175f9448d4d1b53a6e78614cb7587a8a22f2f"},
+    {file = "pennylane_lightning-0.41.1-cp310-cp310-macosx_13_0_arm64.whl", hash = "sha256:c7dd5bd59fc2102058dd07f4ec26c97932a07c4db998fbe9ff25e5bbbffc8b48"},
+    {file = "pennylane_lightning-0.41.1-cp310-cp310-macosx_13_0_x86_64.whl", hash = "sha256:c8b270b1c4f3dd054bfc6780ae8fd67e045a98e419fa96d400f375bdc05d1bf0"},
+    {file = "pennylane_lightning-0.41.1-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:85a4c25627e21dbdf1639f18218e2e4ae357da9465873e88e911405b5786cec8"},
+    {file = "pennylane_lightning-0.41.1-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:5be6525bbf8f9c72c30699b210257baeb4406108dd68891b6259df37e1bf421f"},
+    {file = "pennylane_lightning-0.41.1-cp310-cp310-win_amd64.whl", hash = "sha256:10e265332c83ad9c6c976790b324df0427ac355d46cdb73b56ce80fa3cb917e3"},
+    {file = "pennylane_lightning-0.41.1-cp311-cp311-macosx_13_0_arm64.whl", hash = "sha256:b2a2982f1932acfe4e9c2754da1f82278af3a210025ff80021e3d22eb609d1a3"},
+    {file = "pennylane_lightning-0.41.1-cp311-cp311-macosx_13_0_x86_64.whl", hash = "sha256:4d0f4a45f383b32c62b83d740ee05941140bda89e0d080ca846ceea0a825e29e"},
+    {file = "pennylane_lightning-0.41.1-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:3fe5468ebcbf8dc9dc9da3102f9dd78723d133524ec6b59b0eb7f9ab4f854c1e"},
+    {file = "pennylane_lightning-0.41.1-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:e5aa4af52cc4192a55f520742d74e3292c3b45d6f11737e65f1f05ecb17dc862"},
+    {file = "pennylane_lightning-0.41.1-cp311-cp311-win_amd64.whl", hash = "sha256:d0323d13f479a51849f326269da5955d3c2cf4281f07070d9444d39183a53f85"},
+    {file = "pennylane_lightning-0.41.1-cp312-cp312-macosx_13_0_arm64.whl", hash = "sha256:9f367a53f7bddb200405217e00b78590cd1d3c887147bf5fd9d4e9d80c5f0b12"},
+    {file = "pennylane_lightning-0.41.1-cp312-cp312-macosx_13_0_x86_64.whl", hash = "sha256:43e163e2d764d7bdf28f718c8b142fd36f29dbdd11123f518fb0d93268b9b1c2"},
+    {file = "pennylane_lightning-0.41.1-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:f8e47826a913b0899246c1df2724092a91a54243760c0423ccf074be5419c5d6"},
+    {file = "pennylane_lightning-0.41.1-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:3ac884459f5abf1ceba21c17bb559e4943e028af7f30940bee46515bf7c34334"},
+    {file = "pennylane_lightning-0.41.1-cp312-cp312-win_amd64.whl", hash = "sha256:4e631aad7a7436cfe68a55a23bcdd9748456268c34300c44ee8205696202a9c7"},
+    {file = "pennylane_lightning-0.41.1-cp313-cp313-macosx_13_0_arm64.whl", hash = "sha256:959558c9bb6983665c82f35543c091600f430c227c3afcc2a0e42c9fbfc7075e"},
+    {file = "pennylane_lightning-0.41.1-cp313-cp313-macosx_13_0_x86_64.whl", hash = "sha256:8f1c53bfd1c2701b39dedb041e243022bac2ee7a5080c50f3c69f97d4b4e309d"},
+    {file = "pennylane_lightning-0.41.1-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:db7f86237b4f76b6af34614983cc9f91434de3e6f11e4cca2f72d9f2e04e20ec"},
+    {file = "pennylane_lightning-0.41.1-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:585a00c6fc7aba5a98f8d2c4ecd60626801391f36647f5d5e29cc2eddd6b6791"},
+    {file = "pennylane_lightning-0.41.1-cp313-cp313-win_amd64.whl", hash = "sha256:b95305e42a6bda3d026907c7a6f339f4e8aefcd6723866108c19837e2c91c241"},
+    {file = "pennylane_lightning-0.41.1-py3-none-any.whl", hash = "sha256:84b06b21b219d0fd03d0beee159bc24799d6a9395ab078f46481f593569cfd95"},
+    {file = "pennylane_lightning-0.41.1.tar.gz", hash = "sha256:7d52936352df17c94e2a7e81a4784472754624256262f7ac88ac504596132c91"},
 ]
 
 [package.dependencies]
-pennylane = ">=0.37"
+pennylane = ">=0.41"
 scipy-openblas32 = ">=0.3.26"
 
 [package.extras]
@@ -4930,14 +4979,14 @@ doc = ["sphinx", "sphinx_rtd_theme"]
 test = ["pytest", "ruff"]
 
 [[package]]
-name = "toml"
-version = "0.10.2"
-description = "Python Library for Tom's Obvious, Minimal Language"
+name = "tomlkit"
+version = "0.13.3"
+description = "Style preserving TOML library"
 optional = false
-python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+python-versions = ">=3.8"
 files = [
-    {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
-    {file = "toml-0.10.2.tar.gz", hash = "sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f"},
+    {file = "tomlkit-0.13.3-py3-none-any.whl", hash = "sha256:c89c649d79ee40629a9fda55f8ace8c6a1b42deb912b2a8fd8d942ddadb606b0"},
+    {file = "tomlkit-0.13.3.tar.gz", hash = "sha256:430cf247ee57df2b94ee3fbe588e71d362a941ebb545dec29b53961d61add2a1"},
 ]
 
 [[package]]
@@ -5579,4 +5628,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.12"
-content-hash = "7be8a947497fbed12dc958350e85ae50096bb0a676eb471027cdcf63e8591ef5"
+content-hash = "f1757bae01fded89f8e256698bb6434133cbb5e5edaa2ca1bd3e3b75c520a205"
