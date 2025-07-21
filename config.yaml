@@ -1,4 +1,4 @@
-QBITS: 6  # 3 6 9 12
+QBITS: 12  # 3 6 9 12
 FULL_MEASUREMENTS: prob
 N_GATES: 3
 CHECK_GROUP: False
@@ -8,10 +8,17 @@ GROUP:
 #  - naive
 #=== demo
 #  - _180_deg_x_rot
+#=== klein group
+  - _180_deg_x_rot_sparse
+  - _180_deg_y_rot_sparse
+  - _180_deg_z_rot_sparse
 #===   c3 group
   - _90_deg_x_rot_sparse
   - _180_deg_x_rot_sparse
   - _270_deg_x_rot_sparse
+#  - _90_deg_x_rot
+#  - _180_deg_x_rot
+#  - _270_deg_x_rot
 #===   d4 group
 #  - _90_deg_x_rot
 #  - _180_deg_x_rot
@@ -41,4 +48,4 @@ TRAINING:
   LEARNING_RATE: 0.01   # for naive: 0.7 ,for 6 qubits: 0.007
   MOMENTUM: 0.9
   EVAL_PER_X_EPOCH: 3
-  BATCH_SIZE: 10
+  BATCH_SIZE: 1  # 10

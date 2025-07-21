@@ -6,6 +6,9 @@ from datetime import datetime
 import flax.linen as nn
 import grad_dft as gd
 import jax
+
+from optax import adamw
+import jaxopt
 import numpy as np
 import pandas as pd
 import pennylane as qml
@@ -14,7 +17,6 @@ import yaml
 from evaluate.metric_name import MetricName
 from jax import numpy as jnp
 from jax.random import PRNGKey
-from optax import adamw
 
 from datasets import DatasetDict
 from graddft_qnn import helper
@@ -24,6 +26,7 @@ from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.naive_dft_qnn import NaiveDFTQNN
 from graddft_qnn.qnn_functional import QNNFunctional
 from graddft_qnn.unitary_rep import O_h, is_group
+from graddft_qnn.helper import training
 
 logging.getLogger().setLevel(logging.INFO)
 np.random.seed(42)
@@ -58,7 +61,7 @@ if __name__ == "__main__":
             if (check_group) and (not is_group(group_matrix_reps, group)):
                 raise ValueError("Not forming a group")
         xc_functional_name = data["XC_FUNCTIONAL"]
-        dev = qml.device("lightning.qubit", wires=num_qubits)
+        dev = qml.device("default.qubit", wires=num_qubits)
 
     # define the QNN
     filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"
@@ -101,8 +104,10 @@ if __name__ == "__main__":
         energy_densities=helper.initialization.energy_densities,
         coefficient_inputs=helper.initialization.coefficient_inputs,
     )
-    tx = adamw(learning_rate=learning_rate, weight_decay=1e-5)
-    opt_state = tx.init(parameters)
+    tx = jaxopt.ScipyMinimize(fun=training.simple_energy_loss, method="COBYLA")
+
+    # tx = adamw(learning_rate=learning_rate, weight_decay=1e-5)
+    # opt_state = tx.init(parameters)
 
     predictor = gd.non_scf_predictor(qnnf)
     # start training
@@ -127,8 +132,17 @@ if __name__ == "__main__":
             if len(batch["symbols"]) < batch_size:
                 # drop last batch if len(train_ds) % batch_size > 0
                 continue
-            parameters, opt_state, cost_value = helper.training.train_step(
-                parameters, predictor, batch, opt_state, tx
+            #
+            # ```python
+            # parameters, opt_state, cost_value = helper.training.train_step(
+            #     parameters, predictor, batch, opt_state, tx
+            # )
+            # ```
+            # but now we use jaxopt.ScipyMinimize, so we need to modify this, while
+            # the training step should be more agnostic to the optimizer used.
+            #
+            cost_value = helper.training.train_step_non_grad(
+                parameters, predictor, batch, tx
             )
             aggregated_train_loss += cost_value
 

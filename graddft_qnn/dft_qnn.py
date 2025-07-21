@@ -1,6 +1,8 @@
 import itertools
+from functools import partial
 
 import flax.linen as nn
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pennylane as qml
@@ -32,13 +34,13 @@ class DFTQNN(nn.Module):
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for idx, gen in enumerate(gate_gens):
                 # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
-                qml.TrotterProduct(
-                    -1j * theta[idx][0] * gen, n=1, time=0.1, check_hermitian=False
-                )
+                qml.exp( -1j * theta[idx][0] * gen )
+                # qml.evolve(gen, theta[idx][0])
             return qml.probs(wires=self.dev.wires)
 
         self.qnode = qml.QNode(_circuit, self.dev)
         # self.qnode = qml.qjit(self.qnode)
+        self.selected_gates_gen = list(map(lambda i: self.ansatz_gen[i], self.gate_indices))
 
     def circuit(self, feature, theta, gate_gens):
         if self.rotate_matrix is not None and self.rotate_feature:
@@ -46,7 +48,7 @@ class DFTQNN(nn.Module):
         result = self.qnode(feature, theta, gate_gens)
         if self.rotate_matrix is not None and (not self.rotate_feature):
             result = self.rotate_matrix @ result
-        result = result * (2 ** len(self.dev.wires))
+        # result = result * (2 ** len(self.dev.wires))
         return jnp.array(result)
 
     @nn.compact
@@ -57,11 +59,10 @@ class DFTQNN(nn.Module):
             (len(self.gate_indices), 1),
             jnp.float32,
         )
-        selected_gates_gen = list(map(lambda i: self.ansatz_gen[i], self.gate_indices))
         return self.circuit(
             feature,
             theta,
-            selected_gates_gen,
+            self.selected_gates_gen,
         )
 
     @staticmethod

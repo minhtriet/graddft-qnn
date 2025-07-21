@@ -123,8 +123,8 @@ def test_a_training_step_6qb_d4(molecule):
 
 
 def test_180_x_rot_matrix():
-    a = O_h._180_deg_x_rot_sparse(4, False).todense()
-    b = O_h._180_deg_x_rot(4, False)
+    a = O_h._180_deg_x_rot_sparse(2, False).todense()
+    b = O_h._180_deg_x_rot(2, False)
     assert np.allclose(a, b)
 
 

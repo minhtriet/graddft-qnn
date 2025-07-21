@@ -9,8 +9,23 @@ from scipy.sparse import csr_matrix
 class O_h:
     @staticmethod
     def _180_deg_x_rot_sparse(
-        size=2, pauli_word=False
+        size=2, pauli_word=True
     ) -> csr_matrix | qml.SparseHamiltonian:
+        # 3 qubits I(0) @ X(1) @ X(2)
+        # 6 qubits I(0) @ I(1) @ X(2) @ X(3) @ X(4) @ X(5)
+        # 9 qubits I(0) @ I(1) @ I(2) @ X(3) @ X(4) @ X(5) @ X(6) @ X(7) @ X(8)
+        if pauli_word:
+            n_qubits = np.log2(size**3)
+            assert n_qubits.is_integer()
+            n_qubits = int(n_qubits)
+            num_Is = np.log2(size)
+            assert num_Is.is_integer()
+            num_Is = int(num_Is)
+            prods = (
+                [qml.I(i) for i in range(num_Is)]
+                + [qml.X(i) for i in range(num_Is,n_qubits)]
+            )
+            return qml.prod(*prods)
         total_elements = size * size * size
         row_indices = []
         col_indices = []
@@ -29,12 +44,9 @@ class O_h:
             shape=(total_elements, total_elements),
             dtype=int,
         )
-        if pauli_word:
-            return qml.SparseHamiltonian(
-                perm_matrix, wires=range(int(np.log2(total_elements)))
-            )
-        else:
-            return perm_matrix
+        return qml.SparseHamiltonian(
+            perm_matrix, wires=range(int(np.log2(total_elements)))
+        )
 
     @staticmethod
     def _180_deg_x_rot(size=2, pauli_word=False) -> np.array:
@@ -147,7 +159,7 @@ class O_h:
 
     @staticmethod
     def _270_deg_x_rot(
-        size=2, pauli_word=False
+        size=2, pauli_word=True
     ) -> np.ndarray | qml.Hamiltonian | qml.pauli.PauliSentence:
         total_elements = size * size * size
         perm_matrix = np.zeros((total_elements, total_elements), dtype=int)
@@ -168,7 +180,7 @@ class O_h:
             return perm_matrix
 
     @staticmethod
-    def _270_deg_x_rot_sparse(size=2, pauli_word=False):
+    def _270_deg_x_rot_sparse(size=2, pauli_word=True):
         total_elements = size * size * size
         row_indices = []
         col_indices = []
@@ -215,7 +227,7 @@ class O_h:
             return perm_matrix
 
     @staticmethod
-    def _90_deg_x_rot_sparse(size=2, pauli_word=False):
+    def _90_deg_x_rot_sparse(size=2, pauli_word=True):
         total_elements = size * size * size
         row_indices, col_indices = [], []
         for x in range(size):
