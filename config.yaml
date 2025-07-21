@@ -9,16 +9,13 @@ GROUP:
 #=== demo
 #  - _180_deg_x_rot
 #=== klein group
-  - _180_deg_x_rot_sparse
-  - _180_deg_y_rot_sparse
-  - _180_deg_z_rot_sparse
+  - _180_deg_x_rot
+  - _180_deg_y_rot
+  - _180_deg_z_rot
 #===   c3 group
-  - _90_deg_x_rot_sparse
-  - _180_deg_x_rot_sparse
-  - _270_deg_x_rot_sparse
-#  - _90_deg_x_rot
-#  - _180_deg_x_rot
-#  - _270_deg_x_rot
+#  - _90_deg_x_rot_sparse
+#  - _180_deg_x_rot_sparse
+#  - _270_deg_x_rot_sparse
 #===   d4 group
 #  - _90_deg_x_rot
 #  - _180_deg_x_rot

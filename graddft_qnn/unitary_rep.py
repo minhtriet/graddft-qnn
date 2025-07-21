@@ -77,7 +77,7 @@ class O_h:
         return perm_matrix
 
     @staticmethod
-    def _180_deg_y_rot(size=2, pauli_word=False):
+    def _180_deg_y_rot(size=2, pauli_word=True):
         """
         2 qubits -> qml.prod(X(0), I(1), X(2)))
         4 qubits -> qml.prod(X(0), X(1), I(2), I(3), X(4), X(5)))
@@ -112,7 +112,7 @@ class O_h:
             return perm_matrix
 
     @staticmethod
-    def _180_deg_z_rot(size=2, pauli_word=False):
+    def _180_deg_z_rot(size=2, pauli_word=True):
         """
         2 qubits -> qml.prod(X(0), X(1), I(2)))
         4 qubits -> qml.prod(X(0), X(1), X(2), X(3), I(4), I(5)))

@@ -39,7 +39,7 @@ class DFTQNN(nn.Module):
             return qml.probs(wires=self.dev.wires)
 
         self.qnode = qml.QNode(_circuit, self.dev)
-        # self.qnode = qml.qjit(self.qnode)
+        self.qnode = jax.jit(self.qnode)
         self.selected_gates_gen = list(map(lambda i: self.ansatz_gen[i], self.gate_indices))
 
     def circuit(self, feature, theta, gate_gens):
@@ -111,7 +111,7 @@ class DFTQNN(nn.Module):
         ansatz_gen = []
         invariant_rep.append(DFTQNN._identity_like(invariant_rep[0]))
         with tqdm(
-            total=2**num_wires, desc="Creating invariant gates generator"
+            total=64, desc="Creating invariant gates generator"
         ) as pbar:
             for _, combination in enumerate(
                 itertools.product(custom_gates.words.keys(), repeat=num_wires)
