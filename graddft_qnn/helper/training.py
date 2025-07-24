@@ -13,7 +13,7 @@ from grad_dft import (
     Solid,
 )
 
-def train_step(parameters, predictor, batch, opt_state, tx):
+def train_step(parameters, predictor, batch, opt_state, tx, flag_meanfield):
     """
     :param parameters:
     :param predictor:
@@ -31,6 +31,9 @@ def train_step(parameters, predictor, batch, opt_state, tx):
         )
         mol = gto.M(atom=atom_coords, basis="def2-tzvp")
         mean_field = dft.UKS(mol)
+        if flag_meanfield:
+            mean_field.xc = 'wB97M-V'
+            mean_field.nlc = 'VV10'
         mean_field.kernel()
         molecule = gd.molecule_from_pyscf(mean_field)
         (cost_value, predicted_energy), grad = gd.simple_energy_loss(
@@ -48,7 +51,7 @@ def train_step(parameters, predictor, batch, opt_state, tx):
     parameters = apply_updates(parameters, updates)
 
     # divide by the length of elements in batch, not the number of keys in batch
-    avg_cost = sum(cost_values) / len(cost_values)
+    avg_cost = sum(cost_values) / len(batch["name"])
     print(f"Parameters: {parameters}, grad {final_grad}, avg cost {avg_cost}")
 
     return parameters, opt_state, avg_cost
@@ -78,11 +81,13 @@ def train_step_non_grad(parameters, predictor, batch, tx):
     )
     return result
 
-
-def eval_step(parameters, predictor, batch):
+def eval_step(parameters, predictor, batch, flag_meanfield):
     atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
     mol = gto.M(atom=atom_coords, basis="def2-tzvp")
     mean_field = dft.UKS(mol)
+    if flag_meanfield:
+        mean_field.xc = 'wB97M-V'
+        mean_field.nlc = 'VV10'
     mean_field.kernel()  # pass max_cycles / increase iteration
     molecule = gd.molecule_from_pyscf(mean_field, scf_iteration=200)
 

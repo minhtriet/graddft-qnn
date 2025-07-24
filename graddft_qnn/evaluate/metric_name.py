@@ -13,3 +13,4 @@ class MetricName(str, Enum):
     TRAIN_LOSSES = "Train losses"
     LEARNING_RATE = "LR"
     BATCH_SIZE = "Batch size"
+    FLAG_MEANFIELD = "flag_meanfield"
