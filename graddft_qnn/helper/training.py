@@ -87,7 +87,7 @@ def eval_step(parameters, predictor, batch, flag_meanfield):
         mean_field.xc = "wB97M-V"
         mean_field.nlc = "VV10"
     mean_field.kernel()  # pass max_cycles / increase iteration
-    molecule = gd.molecule_from_pyscf(mean_field, scf_iteration=200)
+    molecule = gd.molecule_from_pyscf(mean_field)
 
     (cost_value, predicted_energy), _ = gd.simple_energy_loss(
         parameters, predictor, molecule, batch["groundtruth"]
