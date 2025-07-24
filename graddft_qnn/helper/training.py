@@ -1,17 +1,16 @@
+from collections.abc import Callable
 from functools import partial
-from typing import Callable
 
 import grad_dft as gd
-import jax
-from optax import apply_updates
-from pyscf import dft, gto
-from jax import value_and_grad
-from jaxtyping import PyTree, Float
-
 from grad_dft import (
     Molecule,
     Solid,
 )
+from jax import value_and_grad
+from jaxtyping import Float, PyTree
+from optax import apply_updates
+from pyscf import dft, gto
+
 
 def train_step(parameters, predictor, batch, opt_state, tx, flag_meanfield):
     """
@@ -32,8 +31,8 @@ def train_step(parameters, predictor, batch, opt_state, tx, flag_meanfield):
         mol = gto.M(atom=atom_coords, basis="def2-tzvp")
         mean_field = dft.UKS(mol)
         if flag_meanfield:
-            mean_field.xc = 'wB97M-V'
-            mean_field.nlc = 'VV10'
+            mean_field.xc = "wB97M-V"
+            mean_field.nlc = "VV10"
         mean_field.kernel()
         molecule = gd.molecule_from_pyscf(mean_field)
         (cost_value, predicted_energy), grad = gd.simple_energy_loss(
@@ -67,9 +66,7 @@ def train_step_non_grad(parameters, predictor, batch, tx):
     :return:
     avg loss of the batch
     """
-    atom_coords = list(
-        zip(batch["symbols"][0], batch["coordinates"][0])
-    )
+    atom_coords = list(zip(batch["symbols"][0], batch["coordinates"][0]))
     mol = gto.M(atom=atom_coords, basis="def2-tzvp")
     mean_field = dft.UKS(mol)
     mean_field.kernel()
@@ -81,13 +78,14 @@ def train_step_non_grad(parameters, predictor, batch, tx):
     )
     return result
 
+
 def eval_step(parameters, predictor, batch, flag_meanfield):
     atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
     mol = gto.M(atom=atom_coords, basis="def2-tzvp")
     mean_field = dft.UKS(mol)
     if flag_meanfield:
-        mean_field.xc = 'wB97M-V'
-        mean_field.nlc = 'VV10'
+        mean_field.xc = "wB97M-V"
+        mean_field.nlc = "VV10"
     mean_field.kernel()  # pass max_cycles / increase iteration
     molecule = gd.molecule_from_pyscf(mean_field, scf_iteration=200)
 
@@ -116,11 +114,12 @@ def simple_energy_loss_non_grad(
 
 
 @partial(value_and_grad, has_aux=True, argnums=[0])
-def simple_energy_loss(params: PyTree,
+def simple_energy_loss(
+    params: PyTree,
     compute_energy: Callable,
     atoms: Molecule | Solid,
     truth_energy: Float,
-    ):
+):
     r"""
     Computes the loss for a single molecule
 

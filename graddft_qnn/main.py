@@ -6,8 +6,6 @@ from datetime import datetime
 import flax.linen as nn
 import grad_dft as gd
 import jax
-
-from optax import adamw
 import jaxopt
 import numpy as np
 import pandas as pd
@@ -22,11 +20,11 @@ from datasets import DatasetDict
 from graddft_qnn import helper
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.dft_qnn import DFTQNN
+from graddft_qnn.helper import training
 from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.naive_dft_qnn import NaiveDFTQNN
 from graddft_qnn.qnn_functional import QNNFunctional
 from graddft_qnn.unitary_rep import O_h, is_group
-from graddft_qnn.helper import training
 
 logging.getLogger().setLevel(logging.INFO)
 np.random.seed(42)
@@ -159,7 +157,9 @@ if __name__ == "__main__":
             for batch in tqdm.tqdm(
                 dataset["test"], desc=f"Evaluate per {eval_per_x_epoch} epoch"
             ):
-                cost_value = helper.training.eval_step(parameters, predictor, batch, flag_meanfield)
+                cost_value = helper.training.eval_step(
+                    parameters, predictor, batch, flag_meanfield
+                )
                 aggregated_cost += cost_value
             test_loss = np.sqrt(aggregated_cost / len(dataset["test"]))
             test_losses.append({epoch: test_loss})
@@ -169,7 +169,9 @@ if __name__ == "__main__":
     # test
     aggregated_cost = 0
     for batch in tqdm.tqdm(dataset["test"], desc="Evaluate"):
-        cost_value = helper.training.eval_step(parameters, predictor, batch, flag_meanfield)
+        cost_value = helper.training.eval_step(
+            parameters, predictor, batch, flag_meanfield
+        )
         aggregated_cost += cost_value
     test_loss = np.sqrt(aggregated_cost / len(dataset["test"]))
     logging.info(f"Test loss {test_loss}")

@@ -21,10 +21,9 @@ class O_h:
             num_Is = np.log2(size)
             assert num_Is.is_integer()
             num_Is = int(num_Is)
-            prods = (
-                [qml.I(i) for i in range(num_Is)]
-                + [qml.X(i) for i in range(num_Is,n_qubits)]
-            )
+            prods = [qml.I(i) for i in range(num_Is)] + [
+                qml.X(i) for i in range(num_Is, n_qubits)
+            ]
             return qml.prod(*prods)
         total_elements = size * size * size
         row_indices = []

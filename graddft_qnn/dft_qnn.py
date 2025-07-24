@@ -1,5 +1,4 @@
 import itertools
-from functools import partial
 
 import flax.linen as nn
 import jax
@@ -34,13 +33,15 @@ class DFTQNN(nn.Module):
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for idx, gen in enumerate(gate_gens):
                 # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
-                qml.exp( -1j * theta[idx][0] * gen )
+                qml.exp(-1j * theta[idx][0] * gen)
                 # qml.evolve(gen, theta[idx][0])
             return qml.probs(wires=self.dev.wires)
 
         self.qnode = qml.QNode(_circuit, self.dev)
         self.qnode = jax.jit(self.qnode)
-        self.selected_gates_gen = list(map(lambda i: self.ansatz_gen[i], self.gate_indices))
+        self.selected_gates_gen = list(
+            map(lambda i: self.ansatz_gen[i], self.gate_indices)
+        )
 
     def circuit(self, feature, theta, gate_gens):
         if self.rotate_matrix is not None and self.rotate_feature:
@@ -48,8 +49,7 @@ class DFTQNN(nn.Module):
         result = self.qnode(feature, theta, gate_gens)
         if self.rotate_matrix is not None and (not self.rotate_feature):
             result = self.rotate_matrix @ result
-        # result = result * (2 ** len(self.dev.wires))
-        return jnp.array(result)
+        return result
 
     @nn.compact
     def __call__(self, feature: Array) -> Array:
@@ -110,9 +110,7 @@ class DFTQNN(nn.Module):
         """
         ansatz_gen = []
         invariant_rep.append(DFTQNN._identity_like(invariant_rep[0]))
-        with tqdm(
-            total=64, desc="Creating invariant gates generator"
-        ) as pbar:
+        with tqdm(total=64, desc="Creating invariant gates generator") as pbar:
             for _, combination in enumerate(
                 itertools.product(custom_gates.words.keys(), repeat=num_wires)
             ):

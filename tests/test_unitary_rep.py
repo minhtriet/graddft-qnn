@@ -6,6 +6,7 @@ import pytest
 
 from graddft_qnn.unitary_rep import O_h, is_zero_matrix_combination
 
+
 @pytest.mark.parametrize("size", [2, 4, 8, 16])
 def test_x_axis_180_permutation_matrix(size):
     expected_array = np.array(
@@ -22,7 +23,10 @@ def test_x_axis_180_permutation_matrix(size):
     )
     assert np.allclose(O_h._180_deg_x_rot(2), expected_array)
     assert np.allclose(qml.matrix(qml.I(0) @ qml.X(1) @ qml.X(2)), expected_array)
-    assert np.allclose(O_h._180_deg_x_rot(size, pauli_word=False), qml.matrix(O_h._180_deg_x_rot_sparse(size, pauli_word=True)))
+    assert np.allclose(
+        O_h._180_deg_x_rot(size, pauli_word=False),
+        qml.matrix(O_h._180_deg_x_rot_sparse(size, pauli_word=True)),
+    )
 
 
 @pytest.mark.parametrize("size", [2, 4, 8, 16])
@@ -41,7 +45,10 @@ def test_x_axis_90_permutation_matrix(size):
     )
     assert np.allclose(O_h._90_deg_x_rot(2), expected_array)
     assert np.allclose(qml.matrix(qml.I(0) @ qml.X(1) @ qml.X(2)), expected_array)
-    assert np.allclose(O_h._90_deg_x_rot(size, pauli_word=False), qml.matrix(O_h._90_deg_x_rot_sparse(size, pauli_word=True)))
+    assert np.allclose(
+        O_h._90_deg_x_rot(size, pauli_word=False),
+        qml.matrix(O_h._90_deg_x_rot_sparse(size, pauli_word=True)),
+    )
 
 
 @pytest.mark.parametrize("size", [2, 4, 8, 16])
