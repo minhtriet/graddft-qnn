@@ -32,6 +32,7 @@ learning_rate = data["TRAINING"]["LEARNING_RATE"]
 momentum = data["TRAINING"]["MOMENTUM"]
 eval_per_x_epoch = data["TRAINING"]["EVAL_PER_X_EPOCH"]
 batch_size = data["TRAINING"]["BATCH_SIZE"]
+flag_meanfield = data["FLAG_MEANFIELD"]
 
 # Define the geometry of the molecule
 mol = gto.M(
@@ -171,8 +172,9 @@ for epoch in range(n_epochs):
             )
             mol = gto.M(atom=atom_coords, basis="def2-tzvp")
             mean_field = dft.UKS(mol)
-            # mean_field.xc = 'wB97M-V'
-            # mean_field.nlc = 'VV10'
+            if flag_meanfield:
+                mean_field.xc = "wB97M-V"
+                mean_field.nlc = "VV10"
             mean_field.kernel()
             molecule = gd.molecule_from_pyscf(mean_field)
 
@@ -202,8 +204,9 @@ for epoch in range(n_epochs):
             atom_coords = list(zip(batch["symbols"], batch["coordinates"]))
             mol = gto.M(atom=atom_coords, basis="def2-tzvp")
             mean_field = dft.UKS(mol)
-            # mean_field.xc = 'wB97M-V'
-            # mean_field.nlc = 'VV10'
+            if flag_meanfield:
+                mean_field.xc = "wB97M-V"
+                mean_field.nlc = "VV10"
             mean_field.kernel()  # pass max_cycles / increase iteration
             molecule = gd.molecule_from_pyscf(mean_field, scf_iteration=200)
 
@@ -231,8 +234,9 @@ def get_unique_filename(base_filename):
 
 # Plot binding energy
 E_predicts = []
+distances = np.arange(0.2, 5.0, 0.1)  # Distance range from 1 to 5 with step 0.3
 
-for distance in tqdm.tqdm(DISTANCES, desc="Calculating Binding Energy"):
+for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):
     # Create molecule with the specified distance
     mol = gto.M(
         atom=[["H", (0, 0, 0)], ["H", (0, 0, distance)]],
@@ -240,6 +244,9 @@ for distance in tqdm.tqdm(DISTANCES, desc="Calculating Binding Energy"):
         unit="Angstrom",
     )
     mean_field = dft.UKS(mol)
+    if flag_meanfield:
+        mean_field.xc = "wB97M-V"
+        mean_field.nlc = "VV10"
 
     ground_truth_energy = mean_field.kernel()
     molecule = gd.molecule_from_pyscf(mean_field)
@@ -247,15 +254,16 @@ for distance in tqdm.tqdm(DISTANCES, desc="Calculating Binding Energy"):
     (cost_value, predicted_energy), _ = gd.simple_energy_loss(
         params, predictor, molecule, ground_truth_energy
     )
-    E_predicts.append(float(predicted_energy))
+    E_predicts.append(predicted_energy)
 
 
+distances = np.array(distances)
 E_predicts = np.array(E_predicts)
 
 
 plt.figure(figsize=(10, 6))
 plt.plot(
-    DISTANCES,
+    distances,
     E_predicts,
     marker="o",
     linestyle="-",
@@ -315,6 +323,7 @@ report = {
     "Number of Parameters": num_params,
     "Momentum": momentum,
     "eval_per_x_epoch": eval_per_x_epoch,
+    "flag_meanfield": flag_meanfield,
 }
 
 # Check if the report.json file exists
