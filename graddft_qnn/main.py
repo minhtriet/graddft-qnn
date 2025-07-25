@@ -12,6 +12,8 @@ import pandas as pd
 import pennylane as qml
 import tqdm
 import yaml
+from optax import adamw
+
 from evaluate.metric_name import MetricName
 from jax import numpy as jnp
 from jax.random import PRNGKey
@@ -20,7 +22,7 @@ from datasets import DatasetDict
 from graddft_qnn import helper
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.dft_qnn import DFTQNN
-from graddft_qnn.helper import training
+# from graddft_qnn.helper import training
 from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.naive_dft_qnn import NaiveDFTQNN
 from graddft_qnn.qnn_functional import QNNFunctional
@@ -103,10 +105,10 @@ if __name__ == "__main__":
         energy_densities=helper.initialization.energy_densities,
         coefficient_inputs=helper.initialization.coefficient_inputs,
     )
-    tx = jaxopt.ScipyMinimize(fun=training.simple_energy_loss, method="COBYLA")
+    # tx = jaxopt.ScipyMinimize(fun=training.simple_energy_loss, method="COBYLA")
 
-    # tx = adamw(learning_rate=learning_rate, weight_decay=1e-5)
-    # opt_state = tx.init(parameters)
+    tx = adamw(learning_rate=learning_rate, weight_decay=1e-5)
+    opt_state = tx.init(parameters)
 
     predictor = gd.non_scf_predictor(qnnf)
     # start training
@@ -133,16 +135,16 @@ if __name__ == "__main__":
                 continue
             #
             # ```python
-            # parameters, opt_state, cost_value = helper.training.train_step(
-            #     parameters, predictor, batch, opt_state, tx
-            # )
+            parameters, opt_state, cost_value = helper.training.train_step(
+                parameters, predictor, batch, opt_state, tx, flag_meanfield
+            )
             # ```
             # but now we use jaxopt.ScipyMinimize, so we need to modify this, while
             # the training step should be more agnostic to the optimizer used.
             #
-            cost_value = helper.training.train_step_non_grad(
-                parameters, predictor, batch, tx
-            )
+            # cost_value = helper.training.train_step_non_grad(
+            #     parameters, predictor, batch, tx
+            # )
             aggregated_train_loss += cost_value
 
         # drop last batch if len(train_ds) % batch_size > 0
