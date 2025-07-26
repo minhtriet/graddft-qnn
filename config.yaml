@@ -1,6 +1,6 @@
 QBITS: 12  # 3 6 9 12
 FULL_MEASUREMENTS: prob
-N_GATES: 8
+N_GATES: 1
 CHECK_GROUP: False
 XC_FUNCTIONAL: pw92_densities  # possible options: vwn_density, lyp_density, pw92_densities
 GROUP:
@@ -41,9 +41,9 @@ GROUP:
 #  - _90_roto_x_reflect_yz
 #  - _270_roto_x_reflect_yz
 TRAINING:
-  N_EPOCHS: 50
-  LEARNING_RATE: 0.01   # for naive: 0.7 ,for 6 qubits: 0.007
+  N_EPOCHS: 15
+  LEARNING_RATE: 0.02   # for naive: 0.7 ,for 6 qubits: 0.007
   MOMENTUM: 0.9
-  EVAL_PER_X_EPOCH: 1
-  BATCH_SIZE: 10
+  EVAL_PER_X_EPOCH: 3
+  BATCH_SIZE: 4
 FLAG_MEANFIELD: True
