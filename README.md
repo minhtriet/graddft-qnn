@@ -29,3 +29,8 @@ Please run `ruff format .` and `ruff check --fix .`
   - Both in matrix form and quantum gates form
 - Invariant quantum neural network applied to DFT
 - Performance comparison with normal n
+
+
+# To run:
+- Train
+- Run `inference.py` to run inference on the trained model, should draw a PES of H2
