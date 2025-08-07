@@ -12,7 +12,7 @@ from datasets import Dataset, DatasetDict, Features, Sequence, Value
 Molecule = namedtuple("Molecule", ["symbols", "coordinates"])
 DataEntry = namedtuple(
     "DataEntry", ["molecule", "fci_energy"]
-)  # Instantiate the object
+)  # a mock entry to hold properties of pennylane dataset properties
 
 
 class H2MultibondDataset:
@@ -81,14 +81,16 @@ class H2MultibondDataset:
     @classmethod
     def calculate_extra_data(cls):
         data_entries = []
-        for bond_length in np.arange(0.01, 0.9, 0.1):
+        for bond_length in np.concatenate(
+            (np.arange(0.001, 0.01, 0.001), np.arange(0.01, 0.9, 0.1))
+        ):
             # Define the H2 molecule with the given bond length
             mol = gto.Mole()
             mol.atom = f"""
             H 0 0 0
             H 0 0 {bond_length}
             """
-            mol.basis = "def2-tzvp"  # Use a decent basis set, e.g., cc-pVDZ
+            mol.basis = "def2-tzvp"
             mol.unit = "Angstrom"
             mol.build()
 

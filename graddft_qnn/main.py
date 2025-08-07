@@ -3,25 +3,23 @@ import logging
 import pathlib
 from datetime import datetime
 
-import flax.linen as nn
 import grad_dft as gd
 import jax
-import jaxopt
 import numpy as np
 import pandas as pd
 import pennylane as qml
 import tqdm
 import yaml
-from optax import adamw
-
 from evaluate.metric_name import MetricName
 from jax import numpy as jnp
 from jax.random import PRNGKey
+from optax import adamw
 
 from datasets import DatasetDict
 from graddft_qnn import helper
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.dft_qnn import DFTQNN
+
 # from graddft_qnn.helper import training
 from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.naive_dft_qnn import NaiveDFTQNN
@@ -85,14 +83,14 @@ if __name__ == "__main__":
     # get a sample batch for initialization
     coeff_input = jnp.empty((2 ** len(dev.wires),))
     logging.info("Initializing the params")
-    # parameters = dft_qnn.init(key, coeff_input)
-    if isinstance(num_gates, int):
-        param_shape = (num_gates, 1)
-    else:  # num_gates == "full"
-        param_shape = (len(gates_gen), 1)
-
-    theta_params = nn.initializers.he_normal()(key, param_shape, jnp.float32)
-    parameters = {"params": {"theta": theta_params}}
+    parameters = dft_qnn.init(key, coeff_input)
+    # if isinstance(num_gates, int):
+    #     param_shape = (num_gates, 1)
+    # else:  # num_gates == "full"
+    #     param_shape = (len(gates_gen), 1)
+    #
+    # theta_params = nn.initializers.he_normal()(key, param_shape, jnp.float32)
+    # parameters = {"params": {"theta": theta_params}}
 
     logging.info("Finished initializing the params")
 

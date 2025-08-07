@@ -92,7 +92,7 @@ def eval_step(parameters, predictor, batch, flag_meanfield):
     atoms_out = predictor(parameters, molecule)
     E_predict = atoms_out.energy
     diff = E_predict - batch["groundtruth"]
-    return diff ** 2
+    return diff**2
 
 
 def simple_energy_loss_non_grad(
