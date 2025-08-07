@@ -22,10 +22,11 @@ COLOR_DICT = {
     frozenset(["_90_deg_x_rot", "_180_deg_x_rot", "_270_deg_x_rot"]): to_rgb("green"),
     frozenset(["_180_deg_x_rot"]): to_rgb("red"),
     frozenset(["_180_deg_x_rot_sparse"]): to_rgb("red"),
+    frozenset(["_180_deg_x_rot", "_180_deg_y_rot", "_180_deg_z_rot"]): to_rgb("red"),
     frozenset(["naive"]): to_rgb("black"),
 }
 
-MARKER_DICT = {6: "D", 9: "X", 3: "1"}
+MARKER_DICT = {6: "D", 9: "X", 3: "1", 12: "o"}
 
 NAME_DICT = {
     frozenset(
@@ -42,6 +43,7 @@ NAME_DICT = {
     frozenset(["_90_deg_x_rot", "_180_deg_x_rot", "_270_deg_x_rot"]): "C3",
     frozenset(["_180_deg_x_rot"]): "180 deg rotation",
     frozenset(["_180_deg_x_rot_sparse"]): "180 deg rotation",
+    frozenset(["_180_deg_x_rot", "_180_deg_y_rot", "_180_deg_z_rot"]): "klein",
     frozenset(["naive"]): "Naive",
 }
 
