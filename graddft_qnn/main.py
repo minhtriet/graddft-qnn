@@ -1,3 +1,5 @@
+import os
+os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count=10"
 import json
 import logging
 import pathlib
@@ -17,6 +19,7 @@ from optax import adamw
 
 from datasets import DatasetDict
 from graddft_qnn import helper
+from graddft_qnn.helper import pmap_training
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.dft_qnn import DFTQNN
 from graddft_qnn.io.ansatz_io import AnsatzIO
@@ -118,7 +121,8 @@ if __name__ == "__main__":
             if len(batch["symbols"]) < batch_size:
                 # drop last batch if len(train_ds) % batch_size > 0
                 continue
-            parameters, opt_state, cost_value = helper.training.train_step(
+            #parameters, opt_state, cost_value = helper.training.train_step(
+            parameters, opt_state, cost_value = pmap_training.train_step(
                 parameters, predictor, batch, opt_state, tx
             )
             aggregated_train_loss += cost_value
@@ -150,8 +154,8 @@ if __name__ == "__main__":
     test_loss = np.sqrt(aggregated_cost / len(dataset["test"]))
     logging.info(f"Test loss {test_loss}")
 
-    checkpoint_path = pathlib.Path().resolve() / pathlib.Path(filename).stem
-    qnnf.save_checkpoints(parameters, tx, step=n_epochs, ckpt_dir=str(checkpoint_path))
+    #checkpoint_path = pathlib.Path().resolve() / pathlib.Path(filename).stem
+    #qnnf.save_checkpoints(parameters, tx, step=n_epochs, ckpt_dir=str(checkpoint_path))
 
     # report
     now = datetime.now()

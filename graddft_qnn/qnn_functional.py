@@ -6,6 +6,7 @@ import yaml
 from grad_dft import NeuralFunctional, abs_clip
 from grad_dft.molecule import Grid
 from jax import numpy as jnp
+from jax import ShapeDtypeStruct
 from jax._src.interpreters.ad import JVPTracer
 from jaxtyping import Array, Float, PyTree, Scalar
 
@@ -33,6 +34,49 @@ class QNNFunctional(NeuralFunctional):
             method="nearest",
         ).astype(jnp.float32)
         return interpolated
+
+    def _regularize_grid2(self, grid, num_qubits, grid_data):
+        """
+        Pure-JAX 'nearest bin' regularization:
+        - Build an m x m x m regular grid (m = cube_root(2**num_qubits))
+        - Map each irregular coord to a voxel index
+        - Scatter-accumulate values and divide by counts (average per voxel)
+        - Works under jit/pmap; no callbacks, no SciPy.
+        """
+        m = int(np.cbrt(2 ** int(num_qubits)))
+        coords = jnp.asarray(grid.coords, dtype=jnp.float64)  # (N,3)
+        data = jnp.asarray(grid_data, dtype=jnp.float32)  # (N,) or (N,F)
+        N = coords.shape[0]
+
+        # Ensure feature dimension F
+        if data.ndim == 1:
+            data = data[:, None]  # (N,1)
+        F = data.shape[1]
+
+        # Compute voxel indices
+        mins = jnp.min(coords, axis=0)  # (3,)
+        maxs = jnp.max(coords, axis=0)
+        # Avoid /0 when molecule is flat along an axis
+        spans = jnp.maximum(maxs - mins, 1e-12)
+
+        norm = (coords - mins) / spans  # [0,1]
+        idxf = jnp.floor(norm * (m - 1)).astype(jnp.int32)  # (N,3)
+        ix, iy, iz = [jnp.clip(idxf[:, k], 0, m - 1) for k in range(3)]  # each (N,)
+
+        # Ravel voxel index
+        ravel = ix * (m * m) + iy * m + iz  # (N,)
+
+        # Scatter-add values and counts
+        out_vals = jnp.zeros((m * m * m, F), dtype=jnp.float32)
+        out_counts = jnp.zeros((m * m * m, 1), dtype=jnp.float32)
+
+        out_vals = out_vals.at[ravel].add(data)  # sum per voxel
+        out_counts = out_counts.at[ravel].add(1.0)  # count per voxel
+
+        # Avoid divide-by-zero: keep empty voxels at 0
+        out = jnp.where(out_counts > 0, out_vals / out_counts, 0.0)  # (m^3, F)
+
+        return out.reshape((m, m, m, F)) if F > 1 else out.reshape((m, m, m))
 
     def xc_energy(
         self,
@@ -67,29 +111,52 @@ class QNNFunctional(NeuralFunctional):
                 raise KeyError("YAML file must contain 'QBITS' key")
             n_qubits = data["QBITS"]
 
-        # downsampling charge density
-        if isinstance(unscaled_coefficient_inputs, JVPTracer):
-            interpolated_charge_density = self._regularize_grid(
-                grid, n_qubits, unscaled_coefficient_inputs.aval.val
-            )
-        else:
-            interpolated_charge_density = self._regularize_grid(
-                grid, n_qubits, unscaled_coefficient_inputs
-            )
-        for _idx in range(interpolated_charge_density.shape[3]):  # shape (n, 2)
-            temp_density = interpolated_charge_density[:, :, :, _idx].flatten()[
-                :, np.newaxis
-            ]
-            if _idx == 0:
-                downsampled_charge_density = temp_density
-            else:
-                downsampled_charge_density = np.append(
-                    downsampled_charge_density, temp_density, axis=1
+        try:
+            if isinstance(unscaled_coefficient_inputs, JVPTracer):
+                # original behavior for traced JVP in non-pmap paths
+                interpolated_charge_density = self._regularize_grid(
+                    grid, n_qubits, unscaled_coefficient_inputs.aval.val
                 )
+            else:
+                # original behavior
+                interpolated_charge_density = self._regularize_grid(
+                    grid, n_qubits, unscaled_coefficient_inputs
+                )
+        except Exception:
+            # under pmap/jit, NumPy/SciPy path may hit tracers -> safe fallback
+            interpolated_charge_density = self._regularize_grid2(
+                grid, n_qubits, jnp.asarray(unscaled_coefficient_inputs, dtype=jnp.float32)
+            )
+
+        try:
+            # original flatten & append logic
+            for _idx in range(interpolated_charge_density.shape[3]):  # shape (n, 2)
+                temp_density = interpolated_charge_density[:, :, :, _idx].flatten()[:, np.newaxis]
+                if _idx == 0:
+                    downsampled_charge_density = temp_density
+                else:
+                    downsampled_charge_density = np.append(
+                        downsampled_charge_density, temp_density, axis=1
+                    )
+        except Exception:
+            # fallback for pmap/tracer case
+            downsampled_charge_density = interpolated_charge_density.reshape(
+                -1, interpolated_charge_density.shape[-1]
+            )
 
         # downsampling grid weight
-        interpolated_grid_weights = self._regularize_grid(grid, n_qubits, grid.weights)
-        downsampled_grid_weights = interpolated_grid_weights.flatten()
+        try:
+            # original behavior
+            interpolated_grid_weights = self._regularize_grid(
+                grid, n_qubits, grid.weights
+            )
+            downsampled_grid_weights = interpolated_grid_weights.flatten()
+        except Exception:
+            # safe fallback for pmap/jit tracer cases
+            interpolated_grid_weights = self._regularize_grid2(
+                grid, n_qubits, jnp.asarray(grid.weights, dtype=jnp.float32)
+            )
+            downsampled_grid_weights = interpolated_grid_weights.reshape(-1)
 
         # normalization
         num_electron = self.integrate_density_with_weights(
