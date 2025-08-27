@@ -1,11 +1,12 @@
 import itertools
 
+# from catalyst import qjit
 import flax.linen as nn
-import jax
 import jax.numpy as jnp
 import numpy as np
 import pennylane as qml
 from flax.typing import Array
+from jax import jit
 from tqdm import tqdm
 
 from graddft_qnn import custom_gates
@@ -24,21 +25,17 @@ class DFTQNN(nn.Module):
     def setup(self) -> None:
         def _circuit(feature, theta, gate_gens):
             """
-            :return: should be full measurement or just 1 measurement,
-            so that graddft_qnn.qnn_functional.QNNFunctional.xc_energy works
+            :return: probabilities of measuring each computational basis state
             """
-            # debugging
-            # if type(theta) == jax._src.interpreters.ad.JVPTracer:
-            #     print(jnp.max(theta).aval, jnp.min(theta).aval, jnp.var(theta).aval, np.mean(theta).aval)   # noqa: E501
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for idx, gen in enumerate(gate_gens):
                 # theta[idx] is ArrayImpl[float]. theta[idx][0] takes the float
                 qml.exp(-1j * theta[idx][0] * gen)
-                # qml.evolve(gen, theta[idx][0])
             return qml.probs(wires=self.dev.wires)
 
         self.qnode = qml.QNode(_circuit, self.dev)
-        self.qnode = jax.jit(self.qnode)
+        # self.qnode = qjit(self.qnode)
+        self.qnode = jit(self.qnode)
         self.selected_gates_gen = list(
             map(lambda i: self.ansatz_gen[i], self.gate_indices)
         )

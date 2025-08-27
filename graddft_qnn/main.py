@@ -10,10 +10,14 @@ import pandas as pd
 import pennylane as qml
 import tqdm
 import yaml
+from flax.core import FrozenDict
+
 from evaluate.metric_name import MetricName
+from flax.training import train_state
 from jax import numpy as jnp
 from jax.random import PRNGKey
 from optax import adamw
+from torch.utils.data import DataLoader
 
 from datasets import DatasetDict
 from graddft_qnn import helper
@@ -29,6 +33,20 @@ from graddft_qnn.unitary_rep import O_h, is_group
 logging.getLogger().setLevel(logging.INFO)
 np.random.seed(42)
 key = PRNGKey(42)
+
+
+def collate_fn(batch, element_id_map: dict[str, int]):
+    """
+    Custom collate function to handle the batch data.
+    """
+    symbols = [[element_id_map[s] for s in entry["symbols"]] for entry in batch]
+    coordinates = jnp.array([entry["coordinates"] for entry in batch])
+    groundtruth = [entry["groundtruth"] for entry in batch]
+    return {
+        "symbols": symbols,
+        "coordinates": coordinates,
+        "groundtruth": groundtruth,
+    }
 
 
 if __name__ == "__main__":
@@ -84,13 +102,6 @@ if __name__ == "__main__":
     coeff_input = jnp.empty((2 ** len(dev.wires),))
     logging.info("Initializing the params")
     parameters = dft_qnn.init(key, coeff_input)
-    # if isinstance(num_gates, int):
-    #     param_shape = (num_gates, 1)
-    # else:  # num_gates == "full"
-    #     param_shape = (len(gates_gen), 1)
-    #
-    # theta_params = nn.initializers.he_normal()(key, param_shape, jnp.float32)
-    # parameters = {"params": {"theta": theta_params}}
 
     logging.info("Finished initializing the params")
 
@@ -109,32 +120,51 @@ if __name__ == "__main__":
     opt_state = tx.init(parameters)
 
     predictor = gd.non_scf_predictor(qnnf)
-    # start training
     if pathlib.Path("datasets/h2_dataset").exists():
         dataset = DatasetDict.load_from_disk(pathlib.Path("datasets/h2_dataset"))
     else:
         dataset = H2MultibondDataset.get_dataset()
         dataset.save_to_disk("datasets/h2_dataset")
 
-    # train
+    # start training
     train_losses = []
     test_losses = []
     train_ds = dataset["train"]
+
+    element_to_id_map = FrozenDict({"H": 1})
+    id_to_element_map = FrozenDict({1: "H"})
+
+    train_dataloader = DataLoader(
+        train_ds,
+        batch_size=batch_size,
+        shuffle=True,
+        collate_fn=lambda batch: collate_fn(batch, element_to_id_map),
+    )
+
+    model_state = train_state.TrainState.create(
+        apply_fn=dft_qnn.apply, params=parameters, tx=tx
+    )
+
     for epoch in range(n_epochs):
         train_ds = train_ds.shuffle(seed=42)
         aggregated_train_loss = 0
 
-        for i in tqdm.tqdm(
-            range(0, len(train_ds), batch_size), desc=f"Epoch {epoch + 1}"
-        ):
-            batch = train_ds[i : i + batch_size]
-            if len(batch["symbols"]) < batch_size:
-                # drop last batch if len(train_ds) % batch_size > 0
-                continue
-            #
+        # for i in tqdm.tqdm(
+        #     range(0, len(train_ds), batch_size), desc=f"Epoch {epoch + 1}"
+        # ):
+        for batch in tqdm.tqdm(train_dataloader):
             # ```python
-            parameters, opt_state, cost_value = helper.training.train_step(
-                parameters, predictor, batch, opt_state, tx, flag_meanfield
+            # parameters, opt_state, cost_value = helper.training.train_step(
+            #     parameters, predictor, batch, opt_state, tx, flag_meanfield
+            # )
+            model_state, cost_value = helper.training._train_step(
+                predictor,
+                batch["coordinates"],
+                batch["symbols"],
+                batch["groundtruth"],
+                model_state,
+                flag_meanfield,
+                id_to_element_map,
             )
             # ```
             # but now we use jaxopt.ScipyMinimize, so we need to modify this, while
