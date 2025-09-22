@@ -9,6 +9,8 @@ from jax import numpy as jnp
 from jax import ShapeDtypeStruct
 from jax._src.interpreters.ad import JVPTracer
 from jaxtyping import Array, Float, PyTree, Scalar
+from flax.training import checkpoints, orbax_utils
+from orbax.checkpoint import Checkpointer, PyTreeCheckpointer
 
 
 class QNNFunctional(NeuralFunctional):
@@ -35,7 +37,7 @@ class QNNFunctional(NeuralFunctional):
         ).astype(jnp.float32)
         return interpolated
 
-    def _regularize_grid2(self, grid, num_qubits, grid_data):
+    def _regularize_grid_jax(self, grid, num_qubits, grid_data):
         """
         Pure-JAX 'nearest bin' regularization:
         - Build an m x m x m regular grid (m = cube_root(2**num_qubits))
@@ -124,7 +126,7 @@ class QNNFunctional(NeuralFunctional):
                 )
         except Exception:
             # under pmap/jit, NumPy/SciPy path may hit tracers -> safe fallback
-            interpolated_charge_density = self._regularize_grid2(
+            interpolated_charge_density = self._regularize_grid_jax(
                 grid, n_qubits, jnp.asarray(unscaled_coefficient_inputs, dtype=jnp.float32)
             )
 
@@ -153,7 +155,7 @@ class QNNFunctional(NeuralFunctional):
             downsampled_grid_weights = interpolated_grid_weights.flatten()
         except Exception:
             # safe fallback for pmap/jit tracer cases
-            interpolated_grid_weights = self._regularize_grid2(
+            interpolated_grid_weights = self._regularize_grid_jax(
                 grid, n_qubits, jnp.asarray(grid.weights, dtype=jnp.float32)
             )
             downsampled_grid_weights = interpolated_grid_weights.reshape(-1)

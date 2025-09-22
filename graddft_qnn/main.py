@@ -4,7 +4,6 @@ import json
 import logging
 import pathlib
 from datetime import datetime
-
 import grad_dft as gd
 import jax
 import numpy as np
@@ -19,6 +18,7 @@ from optax import adamw
 
 from datasets import DatasetDict
 from graddft_qnn import helper
+#from graddft_qnn.helper import training
 from graddft_qnn.helper import pmap_training
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.dft_qnn import DFTQNN
@@ -154,8 +154,8 @@ if __name__ == "__main__":
     test_loss = np.sqrt(aggregated_cost / len(dataset["test"]))
     logging.info(f"Test loss {test_loss}")
 
-    #checkpoint_path = pathlib.Path().resolve() / pathlib.Path(filename).stem
-    #qnnf.save_checkpoints(parameters, tx, step=n_epochs, ckpt_dir=str(checkpoint_path))
+    checkpoint_path = pathlib.Path().resolve() / pathlib.Path(filename).stem
+    qnnf.save_checkpoints(parameters, tx, step=n_epochs, ckpt_dir=str(checkpoint_path))
 
     # report
     now = datetime.now()
