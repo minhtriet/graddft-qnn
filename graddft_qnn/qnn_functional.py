@@ -39,7 +39,7 @@ class QNNFunctional(NeuralFunctional):
 
     def _regularize_grid_jax(self, grid, num_qubits, grid_data):
         """
-        Pure-JAX 'nearest bin' regularization:
+        Pure-JAX regularization:
         - Build an m x m x m regular grid (m = cube_root(2**num_qubits))
         - Map each irregular coord to a voxel index
         - Scatter-accumulate values and divide by counts (average per voxel)
@@ -47,7 +47,7 @@ class QNNFunctional(NeuralFunctional):
         """
         m = int(np.cbrt(2 ** int(num_qubits)))
         coords = jnp.asarray(grid.coords, dtype=jnp.float64)  # (N,3)
-        data = jnp.asarray(grid_data, dtype=jnp.float32)  # (N,) or (N,F)
+        data = jnp.asarray(grid_data, dtype=jnp.float64)  # (N,) or (N,F)
         N = coords.shape[0]
 
         # Ensure feature dimension F
@@ -69,8 +69,8 @@ class QNNFunctional(NeuralFunctional):
         ravel = ix * (m * m) + iy * m + iz  # (N,)
 
         # Scatter-add values and counts
-        out_vals = jnp.zeros((m * m * m, F), dtype=jnp.float32)
-        out_counts = jnp.zeros((m * m * m, 1), dtype=jnp.float32)
+        out_vals = jnp.zeros((m * m * m, F), dtype=jnp.float64)
+        out_counts = jnp.zeros((m * m * m, 1), dtype=jnp.float64)
 
         out_vals = out_vals.at[ravel].add(data)  # sum per voxel
         out_counts = out_counts.at[ravel].add(1.0)  # count per voxel
