@@ -1,8 +1,9 @@
-import jax
-import jax.numpy as jnp
-import optax
 import grad_dft as gd
+import jax
+import optax
+
 from .batching import batch_to_jax
+
 
 def train_step(parameters, predictor, batch, opt_state, tx):
     # Make per-device batch
@@ -23,8 +24,8 @@ def train_step(parameters, predictor, batch, opt_state, tx):
 
     loss_grad_pmap = jax.pmap(
         per_device,
-        in_axes=(None, 0, 0),        # params broadcast; mol & targets sharded
-        out_axes=(None, None),       # return host values (already reduced)
+        in_axes=(None, 0, 0),  # params broadcast; mol & targets sharded
+        out_axes=(None, None),  # return host values (already reduced)
         axis_name="i",
     )
 
