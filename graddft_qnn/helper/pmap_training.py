@@ -18,8 +18,6 @@ def train_step(parameters, predictor, batch, opt_state, tx):
     #  pmap wrapper that does cross-device mean ON DEVICE
     def per_device(p, mol, y):
         loss, grad = loss_and_grad_one(p, mol, y)
-        loss = jax.lax.pmean(loss, axis_name="i")
-        grad = jax.lax.pmean(grad, axis_name="i")
         return loss, grad
 
     loss_grad_pmap = jax.pmap(
@@ -32,8 +30,10 @@ def train_step(parameters, predictor, batch, opt_state, tx):
     # run pmap
     loss_value, grads = loss_grad_pmap(parameters, mol_jax, targets)
 
+    grads_mean = jax.tree_map(lambda x: x / len(batch["coordinates"]), grads)
+
     # Optax update on host (single grads pytree)
-    updates, opt_state = tx.update(grads, opt_state, parameters)
+    updates, opt_state = tx.update(grads_mean, opt_state, parameters)
     new_params = optax.apply_updates(parameters, updates)
 
     return new_params, opt_state, loss_value

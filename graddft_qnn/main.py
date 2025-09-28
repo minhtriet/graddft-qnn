@@ -1,9 +1,11 @@
 import os
+
 os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count=10"
 import json
 import logging
 import pathlib
 from datetime import datetime
+
 import grad_dft as gd
 import jax
 import numpy as np
@@ -18,10 +20,9 @@ from optax import adamw
 
 from datasets import DatasetDict
 from graddft_qnn import helper
-#from graddft_qnn.helper import training
-from graddft_qnn.helper import pmap_training
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.dft_qnn import DFTQNN
+from graddft_qnn.helper import pmap_training
 from graddft_qnn.io.ansatz_io import AnsatzIO
 from graddft_qnn.naive_dft_qnn import NaiveDFTQNN
 from graddft_qnn.qnn_functional import QNNFunctional
@@ -121,7 +122,7 @@ if __name__ == "__main__":
             if len(batch["symbols"]) < batch_size:
                 # drop last batch if len(train_ds) % batch_size > 0
                 continue
-            #parameters, opt_state, cost_value = helper.training.train_step(
+            # parameters, opt_state, cost_value = helper.training.train_step(
             parameters, opt_state, cost_value = pmap_training.train_step(
                 parameters, predictor, batch, opt_state, tx
             )
