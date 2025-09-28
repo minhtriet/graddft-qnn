@@ -18,8 +18,6 @@ def train_step(parameters, predictor, batch, opt_state, tx):
     #  pmap wrapper that does cross-device mean ON DEVICE
     def per_device(p, mol, y):
         loss, grad = loss_and_grad_one(p, mol, y)
-        # loss = jax.lax.pmean(loss, axis_name="i")
-        # grad = jax.lax.pmean(grad, axis_name="i")
         return loss, grad
 
     loss_grad_pmap = jax.pmap(
