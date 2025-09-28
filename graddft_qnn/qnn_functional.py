@@ -6,11 +6,8 @@ import yaml
 from grad_dft import NeuralFunctional, abs_clip
 from grad_dft.molecule import Grid
 from jax import numpy as jnp
-from jax import ShapeDtypeStruct
 from jax._src.interpreters.ad import JVPTracer
 from jaxtyping import Array, Float, PyTree, Scalar
-from flax.training import checkpoints, orbax_utils
-from orbax.checkpoint import Checkpointer, PyTreeCheckpointer
 
 
 class QNNFunctional(NeuralFunctional):
@@ -127,13 +124,17 @@ class QNNFunctional(NeuralFunctional):
         except Exception:
             # under pmap/jit, NumPy/SciPy path may hit tracers -> safe fallback
             interpolated_charge_density = self._regularize_grid_jax(
-                grid, n_qubits, jnp.asarray(unscaled_coefficient_inputs, dtype=jnp.float32)
+                grid,
+                n_qubits,
+                jnp.asarray(unscaled_coefficient_inputs, dtype=jnp.float32),
             )
 
         try:
             # original flatten & append logic
             for _idx in range(interpolated_charge_density.shape[3]):  # shape (n, 2)
-                temp_density = interpolated_charge_density[:, :, :, _idx].flatten()[:, np.newaxis]
+                temp_density = interpolated_charge_density[:, :, :, _idx].flatten()[
+                    :, np.newaxis
+                ]
                 if _idx == 0:
                     downsampled_charge_density = temp_density
                 else:

@@ -1,13 +1,10 @@
+import grad_dft as gd
 import jax
 import jax.numpy as jnp
-import grad_dft as gd
 from pyscf import dft, gto
 
 
-def preprocess_molecule(
-    symbols,
-    coordinates
-):
+def preprocess_molecule(symbols, coordinates):
     """
     Make a list of molecules
     """
