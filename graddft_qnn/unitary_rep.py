@@ -9,8 +9,12 @@ from scipy.sparse import csr_matrix
 class O_h:
     @staticmethod
     def _180_deg_x_rot_sparse(
-        size=2, pauli_word=True
+        size=2, pauli_word=True, starting_wire=0
     ) -> csr_matrix | qml.SparseHamiltonian:
+        """
+        Allowing starting_wire to be set so that this can be used when number of qubits is not the number of wires
+        this gate acts on.
+        """
         # 3 qubits I(0) @ X(1) @ X(2)
         # 6 qubits I(0) @ I(1) @ X(2) @ X(3) @ X(4) @ X(5)
         # 9 qubits I(0) @ I(1) @ I(2) @ X(3) @ X(4) @ X(5) @ X(6) @ X(7) @ X(8)
@@ -21,8 +25,8 @@ class O_h:
             num_Is = np.log2(size)
             assert num_Is.is_integer()
             num_Is = int(num_Is)
-            prods = [qml.I(i) for i in range(num_Is)] + [
-                qml.X(i) for i in range(num_Is, n_qubits)
+            prods = [qml.I(i) for i in range(starting_wire, num_Is + starting_wire)] + [
+                qml.X(i) for i in range(num_Is + starting_wire, n_qubits + starting_wire)
             ]
             return qml.prod(*prods)
         total_elements = size * size * size

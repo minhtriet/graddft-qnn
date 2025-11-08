@@ -1,4 +1,5 @@
 import itertools
+import logging
 
 import flax.linen as nn
 import jax
@@ -37,6 +38,13 @@ class DFTQNN(nn.Module):
                 # qml.evolve(gen, theta[idx][0])
             return qml.probs(wires=self.dev.wires)
 
+
+        def _qcnn(feature, theta, gate_gens):
+            qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
+            for idx, gen in enumerate(gate_gens):
+                qml.exp(-1j * theta[idx][0] * gen)
+
+
         self.qnode = qml.QNode(_circuit, self.dev)
         self.qnode = jax.jit(self.qnode)
         self.selected_gates_gen = list(
@@ -46,6 +54,8 @@ class DFTQNN(nn.Module):
     def circuit(self, feature, theta, gate_gens):
         if self.rotate_matrix is not None and self.rotate_feature:
             feature = self.rotate_matrix @ feature
+        # for visualization
+        logging.error(qml.draw(self.qnode)(feature, theta, gate_gens))
         result = self.qnode(feature, theta, gate_gens)
         if self.rotate_matrix is not None and (not self.rotate_feature):
             result = self.rotate_matrix @ result

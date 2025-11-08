@@ -1,45 +1,49 @@
-QBITS: 12  # 3 6 9 12
 FULL_MEASUREMENTS: prob
 N_GATES: 1
 CHECK_GROUP: False
 XC_FUNCTIONAL: pw92_densities  # possible options: vwn_density, lyp_density, pw92_densities
+NETWORK:
+  TYPE: qcnn  # possible options: qcnn, qnn
+  WIRES: 6  # for QCNN, number of wires can be independent on QUBITS
 GROUP:
-#=== naive
-#  - naive
-#=== demo
-#  - _180_deg_x_rot
-#=== klein group
-  - _180_deg_x_rot
-  - _180_deg_y_rot
-  - _180_deg_z_rot
-#===   c3 group
-#  - _90_deg_x_rot_sparse
-#  - _180_deg_x_rot_sparse
-#  - _270_deg_x_rot_sparse
-#===   d4 group
-#  - _90_deg_x_rot
-#  - _180_deg_x_rot
-#  - _270_deg_x_rot
-#  - _180_deg_y_rot
-#  - _180_deg_z_rot
-#  - y_eq_z_rot
-#  - y_eq_neg_z_rot
-#===   d4h group
-#  - _90_deg_x_rot
-#  - _180_deg_x_rot
-#  - _270_deg_x_rot
-#  - _180_deg_y_rot
-#  - _180_deg_z_rot
-#  - y_eq_z_rot
-#  - y_eq_neg_z_rot
-#  - inversion
-#  - xy_reflection
-#  - yz_reflection
-#  - xz_reflection
-#  - y_equal_neg_z_reflection
-#  - y_equal_z_reflection
-#  - _90_roto_x_reflect_yz
-#  - _270_roto_x_reflect_yz
+  QBITS: 3 # 3 6 9 12. For other setup, qubits = wires but qor QCNN it doesn't have to be
+  MEMBERS:
+#  === naive
+#    - naive
+#  === demo
+#    - _180_deg_x_rot
+#  === klein group
+    - _180_deg_x_rot
+    - _180_deg_y_rot
+    - _180_deg_z_rot
+#  ===   c3 group
+#    - _90_deg_x_rot_sparse
+#    - _180_deg_x_rot_sparse
+#    - _270_deg_x_rot_sparse
+#  ===   d4 group
+#    - _90_deg_x_rot
+#    - _180_deg_x_rot
+#    - _270_deg_x_rot
+#    - _180_deg_y_rot
+#    - _180_deg_z_rot
+#    - y_eq_z_rot
+#    - y_eq_neg_z_rot
+#  ===   d4h group
+#    - _90_deg_x_rot
+#    - _180_deg_x_rot
+#    - _270_deg_x_rot
+#    - _180_deg_y_rot
+#    - _180_deg_z_rot
+#    - y_eq_z_rot
+#    - y_eq_neg_z_rot
+#    - inversion
+#    - xy_reflection
+#    - yz_reflection
+#    - xz_reflection
+#    - y_equal_neg_z_reflection
+#    - y_equal_z_reflection
+#    - _90_roto_x_reflect_yz
+#    - _270_roto_x_reflect_yz
 TRAINING:
   N_EPOCHS: 15
   LEARNING_RATE: 0.02   # for naive: 0.7 ,for 6 qubits: 0.007
