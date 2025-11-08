@@ -43,8 +43,8 @@ class DFTQNN(nn.Module):
         if self.rotate_matrix is not None and self.rotate_feature:
             feature = self.rotate_matrix @ feature
         result = self.qnode(feature, theta, gate_gens)
-        if self.rotate_matrix is not None and (not self.rotate_feature):
-            result = self.rotate_matrix @ result
+        # if self.rotate_matrix is not None and (not self.rotate_feature):
+        #     result = self.rotate_matrix @ result
         result = result * (2 ** len(self.dev.wires))
         return jnp.array(result)
 

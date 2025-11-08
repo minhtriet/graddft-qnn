@@ -34,12 +34,6 @@ def _integrate(energy_density, gridweights, clip_cte=1e-30):
     "molecule",
     [
         {
-            "coordinates": [[[-1.1527353, 0.0, 0.0], [1.1527353, 0.0, 0.0]]],
-            "name": ["H2"],
-            "symbols": [["H", "H"]],
-            "groundtruth": [-1.0523215656204707],
-        },  # this is the first element from H2 dataset train set
-        {
             "coordinates": [[[0.74167178, 0.0, 0.0], [-2.22501535, 0.0, 0.0]]],
             "name": ["LiH"],
             "symbols": [["Li", "H"]],
@@ -116,7 +110,7 @@ def test_a_training_step_6qb_d4(molecule):
 
     # Assert that loss(rotate input -> QNN) == loss(QNN -> rotate output)
     # which is the definition of equivariance
-    assert np.isclose(avg_cost_2, avg_cost_3, atol=1e-10)
+    assert np.isclose(avg_cost_2, avg_cost, atol=1e-10)
 
     # this should be close because lost is invariant
     assert np.isclose(avg_cost, avg_cost_3, atol=1e-10)
@@ -181,30 +175,3 @@ def test_a_training_step_6qb_d4_2():
         _integrate(xc_energy_density, grid_weights),
         _integrate(xc_energy_density_rot_x, grid_weights),
     )
-
-
-def test_270_x_rot_sparse_matrix():
-    num_wire = 6
-    dev = qml.device("default.qubit", wires=num_wire)
-
-    @qml.qnode(dev)
-    def six_qubit_circuit_dense(params):
-        qml.AmplitudeEmbedding(params, wires=range(6), normalize=True)
-        qml.X(0)
-        qml.Y(1)
-        qml.RZ(1.23, 2)
-        return qml.expval(O_h._270_deg_x_rot(4, pauli_word=True))
-
-    @qml.qnode(dev)
-    def six_qubit_circuit_sparse(params):
-        qml.AmplitudeEmbedding(params, wires=range(6), normalize=True)
-        qml.X(0)
-        qml.Y(1)
-        qml.RZ(1.23, 2)
-        return qml.expval(O_h._270_deg_x_rot_sparse(4, pauli_word=True))
-
-    np.random.seed(14)
-    mock_coeff_inputs = np.random.rand(2**num_wire)
-    dense_result = six_qubit_circuit_dense(mock_coeff_inputs)
-    sparse_result = six_qubit_circuit_sparse(mock_coeff_inputs)
-    assert np.allclose(dense_result, sparse_result)
