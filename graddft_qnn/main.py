@@ -35,10 +35,8 @@ if __name__ == "__main__":
     jax.config.update("jax_enable_x64", True)
     with open("config.yaml") as file:
         data = yaml.safe_load(file)
-        if "QBITS" not in data:
-            raise KeyError("YAML file must contain 'QBITS' key")
-        num_qubits = data["QBITS"]
-        size = np.cbrt(2**num_qubits)
+        num_qubits = data["GROUP"]["QBITS"]
+        size = np.cbrt(2 ** num_qubits)
         assert size.is_integer()
         size = int(size)
         n_epochs = data["TRAINING"]["N_EPOCHS"]
@@ -55,8 +53,8 @@ if __name__ == "__main__":
         full_measurements = "prob"
         group: list = data["GROUP"]
         group_str_rep = "]_[".join(group)[:230]
-        if "naive" not in group[0].lower():
-            group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
+        if "naive" not in group["MEMBERS"]:
+            group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group["MEMBERS"]]
             if (check_group) and (not is_group(group_matrix_reps, group)):
                 raise ValueError("Not forming a group")
         xc_functional_name = data["XC_FUNCTIONAL"]

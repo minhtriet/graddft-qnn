@@ -102,15 +102,17 @@ class DFTQNN(nn.Module):
         return result
 
     @staticmethod
-    def _sentence_twirl(sentence: tuple, invariant_rep: list[qml.ops.op_math.Prod]):
+    def _sentence_twirl(sentence: tuple, invariant_rep: list[qml.ops.op_math.Prod], idx: list[int] | None = None):
+        if not idx:
+            idx = list(range(len(sentence)))
         sentence = qml.prod(
-            *[getattr(qml, word)(idx) for idx, word in enumerate(sentence)]
-        )  # e.g, create qml.X(0) @ qml.Y(1) from X,Y
+            *[getattr(qml, word)(i) for word, i in zip(sentence, idx)]
+        )  # e.g, create qml.X(0) @ qml.Y(1) from X,Y with separate idx
         return DFTQNN._twirling(sentence, invariant_rep)
 
     @staticmethod
     def gate_design(
-        num_wires: int, invariant_rep: list[np.ndarray | qml.ops.op_math.Prod]
+        num_wires: int, invariant_rep: list[np.ndarray | qml.ops.op_math.Prod], wires: list[int] | None = None
     ) -> tuple[list[str], list[str]]:
         """
         :param num_wires:
@@ -124,7 +126,7 @@ class DFTQNN(nn.Module):
             for _, combination in enumerate(
                 itertools.product(custom_gates.words.keys(), repeat=num_wires)
             ):
-                invariant_gate = DFTQNN._sentence_twirl(combination, invariant_rep)
+                invariant_gate = DFTQNN._sentence_twirl(combination, invariant_rep, wires)
                 if invariant_gate is not None:
                     ansatz_gen.append(invariant_gate)
                     pbar.update()

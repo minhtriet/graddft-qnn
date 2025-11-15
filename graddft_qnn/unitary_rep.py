@@ -52,7 +52,7 @@ class O_h:
         )
 
     @staticmethod
-    def _180_deg_x_rot(size=2, pauli_word=False) -> np.array:
+    def _180_deg_x_rot(size=2, pauli_word=False, starting_wire=0) -> np.array:
         if pauli_word:
             n_qubits = np.log2(size**3)
             assert n_qubits.is_integer()
@@ -60,8 +60,8 @@ class O_h:
             num_Is = np.log2(size)
             assert num_Is.is_integer()
             num_Is = int(num_Is)
-            prods = [qml.I(i) for i in range(num_Is)]
-            prods.extend([qml.X(i) for i in range(num_Is, n_qubits)])
+            prods = [qml.I(i) for i in range(starting_wire, starting_wire + num_Is)]
+            prods.extend([qml.X(i) for i in range(starting_wire + num_Is, starting_wire + n_qubits)])
             return qml.prod(*prods)
         # in matrix form
         total_elements = size * size * size
@@ -80,7 +80,7 @@ class O_h:
         return perm_matrix
 
     @staticmethod
-    def _180_deg_y_rot(size=2, pauli_word=True):
+    def _180_deg_y_rot(size=2, pauli_word=True, starting_wire=0):
         """
         2 qubits -> qml.prod(X(0), I(1), X(2)))
         4 qubits -> qml.prod(X(0), X(1), I(2), I(3), X(4), X(5)))
@@ -94,9 +94,9 @@ class O_h:
             assert num_Is.is_integer()
             num_Is = int(num_Is)
             prods = (
-                [qml.X(i) for i in range(num_Is)]
-                + [qml.I(i) for i in range(num_Is, num_Is * 2)]
-                + [qml.X(i) for i in range(num_Is * 2, num_Is * 3)]
+                [qml.X(i) for i in range(starting_wire, starting_wire + num_Is)]
+                + [qml.I(i) for i in range(starting_wire + num_Is, starting_wire + num_Is * 2)]
+                + [qml.X(i) for i in range(starting_wire + num_Is * 2, starting_wire + num_Is * 3)]
             )
             return qml.prod(*prods)
         else:
@@ -115,7 +115,7 @@ class O_h:
             return perm_matrix
 
     @staticmethod
-    def _180_deg_z_rot(size=2, pauli_word=True):
+    def _180_deg_z_rot(size=2, pauli_word=True, starting_wire=0):
         """
         2 qubits -> qml.prod(X(0), X(1), I(2)))
         4 qubits -> qml.prod(X(0), X(1), X(2), X(3), I(4), I(5)))
@@ -129,12 +129,13 @@ class O_h:
             assert num_Is.is_integer()
             num_Is = int(num_Is)
             prods = (
-                [qml.X(i) for i in range(num_Is)]
-                + [qml.X(i) for i in range(num_Is, num_Is * 2)]
-                + [qml.I(i) for i in range(num_Is * 2, num_Is * 3)]
+                [qml.X(i) for i in range(starting_wire + num_Is)]
+                + [qml.X(i) for i in range(starting_wire + num_Is, starting_wire + num_Is * 2)]
+                + [qml.I(i) for i in range(starting_wire + num_Is * 2, starting_wire + num_Is * 3)]
             )
             return qml.prod(*prods)
         else:
+            logging.warning("Deprecated: use pauli_word=True version for large size")
             # z stays the same, x and y change sign
             total_elements = size * size * size
             perm_matrix = np.zeros((total_elements, total_elements), dtype=int)

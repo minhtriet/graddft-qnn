@@ -1,3 +1,5 @@
+from itertools import islice
+
 import grad_dft as gd
 import jax
 import jax.numpy as jnp
@@ -36,3 +38,14 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
     return jnp.concatenate((lda_x_e, pw92_c_e), axis=1)
+
+
+def batched(iterable, n, *, strict=False):
+    # batched('ABCDEFG', 2) → AB CD EF G
+    if n < 1:
+        raise ValueError('n must be at least one')
+    iterator = iter(iterable)
+    while batch := tuple(islice(iterator, n)):
+        if strict and len(batch) != n:
+            raise ValueError('batched(): incomplete batch')
+        yield batch
