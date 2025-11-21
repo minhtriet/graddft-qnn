@@ -36,7 +36,7 @@ if __name__ == "__main__":
     with open("config.yaml") as file:
         data = yaml.safe_load(file)
         num_qubits = data["GROUP"]["QBITS"]
-        size = np.cbrt(2 ** num_qubits)
+        size = np.cbrt(2**num_qubits)
         assert size.is_integer()
         size = int(size)
         n_epochs = data["TRAINING"]["N_EPOCHS"]
@@ -54,7 +54,9 @@ if __name__ == "__main__":
         group: list = data["GROUP"]
         group_str_rep = "]_[".join(group)[:230]
         if "naive" not in group["MEMBERS"]:
-            group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group["MEMBERS"]]
+            group_matrix_reps = [
+                getattr(O_h, gr)(size, False) for gr in group["MEMBERS"]
+            ]
             if (check_group) and (not is_group(group_matrix_reps, group)):
                 raise ValueError("Not forming a group")
         xc_functional_name = data["XC_FUNCTIONAL"]
@@ -72,9 +74,10 @@ if __name__ == "__main__":
             )
             AnsatzIO.write_to_file(filename, gates_gen)
         gates_gen = gates_gen[: 2**num_qubits]
-        if isinstance(num_gates, int):
-            gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
-        dft_qnn = DFTQNN(dev, gates_gen, gates_indices)
+
+        gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
+
+        dft_qnn = DFTQNN(dev, gates_gen, gates_indices, network=data["NETWORK"]["TYPE"])
     else:
         dft_qnn = NaiveDFTQNN(dev, num_gates)
 

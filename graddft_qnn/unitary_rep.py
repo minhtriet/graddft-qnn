@@ -26,7 +26,8 @@ class O_h:
             assert num_Is.is_integer()
             num_Is = int(num_Is)
             prods = [qml.I(i) for i in range(starting_wire, num_Is + starting_wire)] + [
-                qml.X(i) for i in range(num_Is + starting_wire, n_qubits + starting_wire)
+                qml.X(i)
+                for i in range(num_Is + starting_wire, n_qubits + starting_wire)
             ]
             return qml.prod(*prods)
         total_elements = size * size * size
@@ -61,7 +62,12 @@ class O_h:
             assert num_Is.is_integer()
             num_Is = int(num_Is)
             prods = [qml.I(i) for i in range(starting_wire, starting_wire + num_Is)]
-            prods.extend([qml.X(i) for i in range(starting_wire + num_Is, starting_wire + n_qubits)])
+            prods.extend(
+                [
+                    qml.X(i)
+                    for i in range(starting_wire + num_Is, starting_wire + n_qubits)
+                ]
+            )
             return qml.prod(*prods)
         # in matrix form
         total_elements = size * size * size
@@ -95,8 +101,16 @@ class O_h:
             num_Is = int(num_Is)
             prods = (
                 [qml.X(i) for i in range(starting_wire, starting_wire + num_Is)]
-                + [qml.I(i) for i in range(starting_wire + num_Is, starting_wire + num_Is * 2)]
-                + [qml.X(i) for i in range(starting_wire + num_Is * 2, starting_wire + num_Is * 3)]
+                + [
+                    qml.I(i)
+                    for i in range(starting_wire + num_Is, starting_wire + num_Is * 2)
+                ]
+                + [
+                    qml.X(i)
+                    for i in range(
+                        starting_wire + num_Is * 2, starting_wire + num_Is * 3
+                    )
+                ]
             )
             return qml.prod(*prods)
         else:
@@ -130,8 +144,16 @@ class O_h:
             num_Is = int(num_Is)
             prods = (
                 [qml.X(i) for i in range(starting_wire + num_Is)]
-                + [qml.X(i) for i in range(starting_wire + num_Is, starting_wire + num_Is * 2)]
-                + [qml.I(i) for i in range(starting_wire + num_Is * 2, starting_wire + num_Is * 3)]
+                + [
+                    qml.X(i)
+                    for i in range(starting_wire + num_Is, starting_wire + num_Is * 2)
+                ]
+                + [
+                    qml.I(i)
+                    for i in range(
+                        starting_wire + num_Is * 2, starting_wire + num_Is * 3
+                    )
+                ]
             )
             return qml.prod(*prods)
         else:

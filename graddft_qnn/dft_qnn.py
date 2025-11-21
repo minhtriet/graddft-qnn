@@ -19,11 +19,12 @@ class DFTQNN(nn.Module):
     gate_indices: list[int]
     rotate_matrix: np.array = None  # add this to test equivar
     rotate_feature: bool = False
+    network_type: str = "qnn"
     # rotate_feature: if True and rotate_matrix, then apply rotation to input feature,
     # otherwise apply rotation to output
 
     def setup(self) -> None:
-        def _circuit(feature, theta, gate_gens):
+        def qnn(feature, theta, gate_gens):
             """
             :return: should be full measurement or just 1 measurement,
             so that graddft_qnn.qnn_functional.QNNFunctional.xc_energy works
@@ -38,14 +39,15 @@ class DFTQNN(nn.Module):
                 # qml.evolve(gen, theta[idx][0])
             return qml.probs(wires=self.dev.wires)
 
-
         def _qcnn(feature, theta, gate_gens):
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for idx, gen in enumerate(gate_gens):
                 qml.exp(-1j * theta[idx][0] * gen)
-
-
-        self.qnode = qml.QNode(_circuit, self.dev)
+        if self.network_type.lower() == "qcnn":
+            self.qnode = qml.QNode(qcnn, self.dev)
+        elif self.network_type.lower() == "qnn":
+            self.qnode = qml.QNode(qnn, self.dev)
+        else: raise ValueError("unknown network type")
         self.qnode = jax.jit(self.qnode)
         self.selected_gates_gen = list(
             map(lambda i: self.ansatz_gen[i], self.gate_indices)
@@ -95,14 +97,36 @@ class DFTQNN(nn.Module):
         return twirled
 
     @staticmethod
-    def _identity_like(group_member: qml.operation.Operator):
-        result = qml.I(0)
-        for x in range(1, group_member.num_wires):
+    def _identity_like(
+        group_member: qml.operation.Operator, wires: list[int] | None = None
+    ):
+        """
+        Generates an identity operation applied to a specified set of wires
+
+        Args:
+            group_member (qml.operation.Operator): The quantum operator whose number of wires is used to determine the default wiring.
+            wires (list[int] | None, optional): A list of wire indices where the identity operations will be applied.
+            If no wires are specified, the identity operation is applied to wires 0, 1 ... group_member's wires.
+
+        Returns:
+            qml.operation.Operator: Identity operation applied to the specified wires.
+
+        Example:
+            If `group_member.num_wires` is 3 and `wires=[1, 2], 3`, this function would return an identity operation on wires 1, 2, 3.
+        """
+        if wires is None:
+            wires = list(range(group_member.num_wires))
+        result = qml.I([wires[0]])
+        for x in wires[1:]:
             result = qml.prod(result, qml.I(x))
         return result
 
     @staticmethod
-    def _sentence_twirl(sentence: tuple, invariant_rep: list[qml.ops.op_math.Prod], idx: list[int] | None = None):
+    def _sentence_twirl(
+        sentence: tuple,
+        invariant_rep: list[qml.ops.op_math.Prod],
+        idx: list[int] | None = None,
+    ):
         if not idx:
             idx = list(range(len(sentence)))
         sentence = qml.prod(
@@ -112,7 +136,9 @@ class DFTQNN(nn.Module):
 
     @staticmethod
     def gate_design(
-        num_wires: int, invariant_rep: list[np.ndarray | qml.ops.op_math.Prod], wires: list[int] | None = None
+        num_wires: int,
+        invariant_rep: list[np.ndarray | qml.ops.op_math.Prod],
+        wires: list[int] | None = None,
     ) -> tuple[list[str], list[str]]:
         """
         :param num_wires:
@@ -121,12 +147,14 @@ class DFTQNN(nn.Module):
         :return:
         """
         ansatz_gen = []
-        invariant_rep.append(DFTQNN._identity_like(invariant_rep[0]))
-        with tqdm(total=64, desc="Creating invariant gates generator") as pbar:
+        invariant_rep.append(DFTQNN._identity_like(invariant_rep[0], wires))
+        with tqdm(total=1, desc="Creating invariant gates generator") as pbar:
             for _, combination in enumerate(
                 itertools.product(custom_gates.words.keys(), repeat=num_wires)
             ):
-                invariant_gate = DFTQNN._sentence_twirl(combination, invariant_rep, wires)
+                invariant_gate = DFTQNN._sentence_twirl(
+                    combination, invariant_rep, wires
+                )
                 if invariant_gate is not None:
                     ansatz_gen.append(invariant_gate)
                     pbar.update()
