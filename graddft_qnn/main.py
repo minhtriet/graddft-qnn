@@ -2,6 +2,7 @@ import json
 import logging
 import pathlib
 from datetime import datetime
+from graddft_qnn.helper.initialization import batched
 
 import grad_dft as gd
 import jax
@@ -35,7 +36,8 @@ if __name__ == "__main__":
     jax.config.update("jax_enable_x64", True)
     with open("config.yaml") as file:
         data = yaml.safe_load(file)
-        num_qubits = data["GROUP"]["QBITS"]
+        num_qubits = data["NETWORK"]["WIRES"]
+        group_qubits_size = data["GROUP"]["QBITS"]  # for group
         size = np.cbrt(2**num_qubits)
         assert size.is_integer()
         size = int(size)
@@ -51,7 +53,7 @@ if __name__ == "__main__":
             isinstance(num_gates, int) or num_gates == "full"
         ), f"N_GATES must be integer or 'full', got {num_gates}"
         full_measurements = "prob"
-        group: list = data["GROUP"]
+        group: list = data["GROUP"]["MEMBERS"]
         group_str_rep = "]_[".join(group)[:230]
         if "naive" not in group["MEMBERS"]:
             group_matrix_reps = [
@@ -63,21 +65,25 @@ if __name__ == "__main__":
         dev = qml.device("default.qubit", wires=num_qubits)
 
     # define the QNN
-    filename = f"ansatz_{num_qubits}_{group_str_rep}_qubits"
-    if "naive" not in group[0].lower():
+    filename = f"ansatz_{num_qubits}_{group_str_rep}_{group_qubits_size}_qubits"
+    if "naive" not in group["MEMBERS"][0].lower():
         if pathlib.Path(f"{filename}.pkl").exists():
             gates_gen = AnsatzIO.read_from_file(filename)
             logging.info(f"Loaded ansatz generator from {filename}")
         else:
-            gates_gen = DFTQNN.gate_design(
-                len(dev.wires), [getattr(O_h, gr)(size, True) for gr in group]
-            )
+            gates_gen = []
+            for batch in batched(range(num_qubits), group_qubits_size):
+                gates_gen.append(DFTQNN.gate_design(
+                    len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=0) for gr in group], wires=[0, 1, 2]
+                ))
             AnsatzIO.write_to_file(filename, gates_gen)
         gates_gen = gates_gen[: 2**num_qubits]
 
         gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
 
-        dft_qnn = DFTQNN(dev, gates_gen, gates_indices, network=data["NETWORK"]["TYPE"])
+        dft_qnn = DFTQNN(
+            dev, gates_gen, gates_indices, network_type=data["NETWORK"]["TYPE"]
+        )
     else:
         dft_qnn = NaiveDFTQNN(dev, num_gates)
 
@@ -85,14 +91,6 @@ if __name__ == "__main__":
     coeff_input = jnp.empty((2 ** len(dev.wires),))
     logging.info("Initializing the params")
     parameters = dft_qnn.init(key, coeff_input)
-    # if isinstance(num_gates, int):
-    #     param_shape = (num_gates, 1)
-    # else:  # num_gates == "full"
-    #     param_shape = (len(gates_gen), 1)
-    #
-    # theta_params = nn.initializers.he_normal()(key, param_shape, jnp.float32)
-    # parameters = {"params": {"theta": theta_params}}
-
     logging.info("Finished initializing the params")
 
     # resolve energy density according to user input

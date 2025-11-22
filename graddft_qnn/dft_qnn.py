@@ -39,15 +39,17 @@ class DFTQNN(nn.Module):
                 # qml.evolve(gen, theta[idx][0])
             return qml.probs(wires=self.dev.wires)
 
-        def _qcnn(feature, theta, gate_gens):
+        def qcnn(feature, theta, gate_gens):
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for idx, gen in enumerate(gate_gens):
                 qml.exp(-1j * theta[idx][0] * gen)
+
         if self.network_type.lower() == "qcnn":
             self.qnode = qml.QNode(qcnn, self.dev)
         elif self.network_type.lower() == "qnn":
             self.qnode = qml.QNode(qnn, self.dev)
-        else: raise ValueError("unknown network type")
+        else:
+            raise ValueError("unknown network type")
         self.qnode = jax.jit(self.qnode)
         self.selected_gates_gen = list(
             map(lambda i: self.ansatz_gen[i], self.gate_indices)
