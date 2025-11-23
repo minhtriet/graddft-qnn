@@ -53,7 +53,7 @@ if __name__ == "__main__":
             isinstance(num_gates, int) or num_gates == "full"
         ), f"N_GATES must be integer or 'full', got {num_gates}"
         full_measurements = "prob"
-        group: list = data["GROUP"]["MEMBERS"]
+        group: list = data["GROUP"]
         group_str_rep = "]_[".join(group)[:230]
         if "naive" not in group["MEMBERS"]:
             group_matrix_reps = [
@@ -73,8 +73,8 @@ if __name__ == "__main__":
         else:
             gates_gen = []
             for batch in batched(range(num_qubits), group_qubits_size):
-                gates_gen.append(DFTQNN.gate_design(
-                    len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=0) for gr in group], wires=[0, 1, 2]
+                gates_gen.extend(DFTQNN.gate_design(
+                    len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=batch[0]) for gr in group["MEMBERS"]], wires=batch
                 ))
             AnsatzIO.write_to_file(filename, gates_gen)
         gates_gen = gates_gen[: 2**num_qubits]

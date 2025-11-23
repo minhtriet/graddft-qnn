@@ -43,6 +43,7 @@ class DFTQNN(nn.Module):
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
             for idx, gen in enumerate(gate_gens):
                 qml.exp(-1j * theta[idx][0] * gen)
+            return qml.probs(wires=self.dev.wires)
 
         if self.network_type.lower() == "qcnn":
             self.qnode = qml.QNode(qcnn, self.dev)
@@ -160,6 +161,6 @@ class DFTQNN(nn.Module):
                 if invariant_gate is not None:
                     ansatz_gen.append(invariant_gate)
                     pbar.update()
-                    if len(ansatz_gen) == 2**num_wires:
+                    if len(ansatz_gen) == 1:  # only need 1 gate
                         break
         return ansatz_gen
