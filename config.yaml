@@ -6,7 +6,7 @@ NETWORK:
   TYPE: qcnn  # possible options: qcnn, qnn
   WIRES: 6  # for QCNN, number of wires can be independent on QUBITS
 GROUP:
-  QBITS: 3 # 3 6 9 12. For other setup, qubits = wires but qor QCNN it doesn't have to be
+  QUBITS: 3 # Group.Qubits == Network.wires for QNN
   MEMBERS:
 #  === naive
 #    - naive

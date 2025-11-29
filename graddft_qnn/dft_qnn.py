@@ -153,7 +153,7 @@ class DFTQNN(nn.Module):
         invariant_rep.append(DFTQNN._identity_like(invariant_rep[0], wires))
         with tqdm(total=1, desc="Creating invariant gates generator") as pbar:
             for _, combination in enumerate(
-                itertools.product(custom_gates.words.keys(), repeat=num_wires)
+                itertools.product(custom_gates.words.keys(), repeat=len(wires))
             ):
                 invariant_gate = DFTQNN._sentence_twirl(
                     combination, invariant_rep, wires

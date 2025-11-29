@@ -37,8 +37,8 @@ if __name__ == "__main__":
     with open("config.yaml") as file:
         data = yaml.safe_load(file)
         num_qubits = data["NETWORK"]["WIRES"]
-        group_qubits_size = data["GROUP"]["QBITS"]  # for group
-        size = np.cbrt(2**num_qubits)
+        group_qubits_size = data["GROUP"]["QUBITS"]  # for group
+        size = np.cbrt(2**group_qubits_size)
         assert size.is_integer()
         size = int(size)
         n_epochs = data["TRAINING"]["N_EPOCHS"]
@@ -53,11 +53,11 @@ if __name__ == "__main__":
             isinstance(num_gates, int) or num_gates == "full"
         ), f"N_GATES must be integer or 'full', got {num_gates}"
         full_measurements = "prob"
-        group: list = data["GROUP"]
+        group: list = data["GROUP"]["MEMBERS"]
         group_str_rep = "]_[".join(group)[:230]
-        if "naive" not in group["MEMBERS"]:
+        if "naive" not in group:
             group_matrix_reps = [
-                getattr(O_h, gr)(size, False) for gr in group["MEMBERS"]
+                getattr(O_h, gr)(size, False) for gr in group
             ]
             if (check_group) and (not is_group(group_matrix_reps, group)):
                 raise ValueError("Not forming a group")
@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     # define the QNN
     filename = f"ansatz_{num_qubits}_{group_str_rep}_{group_qubits_size}_qubits"
-    if "naive" not in group["MEMBERS"][0].lower():
+    if "naive" not in group:
         if pathlib.Path(f"{filename}.pkl").exists():
             gates_gen = AnsatzIO.read_from_file(filename)
             logging.info(f"Loaded ansatz generator from {filename}")
@@ -74,7 +74,7 @@ if __name__ == "__main__":
             gates_gen = []
             for batch in batched(range(num_qubits), group_qubits_size):
                 gates_gen.extend(DFTQNN.gate_design(
-                    len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=batch[0]) for gr in group["MEMBERS"]], wires=batch
+                    len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=batch[0]) for gr in group], wires=batch
                 ))
             AnsatzIO.write_to_file(filename, gates_gen)
         gates_gen = gates_gen[: 2**num_qubits]
