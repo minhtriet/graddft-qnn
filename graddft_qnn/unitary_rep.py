@@ -143,11 +143,7 @@ class O_h:
             assert num_Is.is_integer()
             num_Is = int(num_Is)
             prods = (
-                [qml.X(i) for i in range(starting_wire + num_Is)]
-                + [
-                    qml.X(i)
-                    for i in range(starting_wire + num_Is, starting_wire + num_Is * 2)
-                ]
+                [qml.X(i) for i in range(starting_wire, starting_wire + num_Is * 2)]
                 + [
                     qml.I(i)
                     for i in range(
