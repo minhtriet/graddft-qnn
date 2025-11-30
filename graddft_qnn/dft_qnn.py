@@ -1,5 +1,4 @@
 import itertools
-import logging
 
 import flax.linen as nn
 import jax
@@ -7,6 +6,7 @@ import jax.numpy as jnp
 import numpy as np
 import pennylane as qml
 from flax.typing import Array
+from pennylane import layer
 from tqdm import tqdm
 
 from graddft_qnn import custom_gates
@@ -59,8 +59,6 @@ class DFTQNN(nn.Module):
     def circuit(self, feature, theta, gate_gens):
         if self.rotate_matrix is not None and self.rotate_feature:
             feature = self.rotate_matrix @ feature
-        # for visualization
-        logging.error(qml.draw(self.qnode)(feature, theta, gate_gens))
         result = self.qnode(feature, theta, gate_gens)
         if self.rotate_matrix is not None and (not self.rotate_feature):
             result = self.rotate_matrix @ result

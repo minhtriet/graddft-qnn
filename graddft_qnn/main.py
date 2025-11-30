@@ -32,11 +32,26 @@ np.random.seed(42)
 key = PRNGKey(42)
 
 
+def draw_circuit_mpl(dev, gate_gens):
+    """
+    As the qml.draw() doesn't seem to support gates from qml.exp(), we do it ourself
+    """
+    drawer = qml.drawer.MPLDrawer(n_layers=10, wire_map={i: i for i in dev.wires})
+    layer = 1
+    for gate_gen in gate_gens:
+        if list(gate_gen.wires.labels)[-1] == len(dev.wires):
+            layer += 1
+        drawer.box_gate(layer=layer, wires=list(gate_gen.wires.labels))
+
+    drawer.fig.suptitle('My Circuit', fontsize='xx-large')
+    drawer.fig.savefig('circuit.png')
+
 if __name__ == "__main__":
     jax.config.update("jax_enable_x64", True)
     with open("config.yaml") as file:
         data = yaml.safe_load(file)
         num_qubits = data["NETWORK"]["WIRES"]
+        network_type = data["NETWORK"]["TYPE"]
         group_qubits_size = data["GROUP"]["QUBITS"]  # for group
         size = np.cbrt(2**group_qubits_size)
         assert size.is_integer()
@@ -72,12 +87,31 @@ if __name__ == "__main__":
             logging.info(f"Loaded ansatz generator from {filename}")
         else:
             gates_gen = []
-            for batch in batched(range(num_qubits), group_qubits_size):
-                gates_gen.extend(DFTQNN.gate_design(
-                    len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=batch[0]) for gr in group], wires=batch
-                ))
+            if network_type == "qcnn":
+                # a hack: we assume the size of the gate is 3 qubits
+                # convolution 1, can be > 1 layer
+                for batch in batched(range(num_qubits), group_qubits_size):
+                    gates_gen.extend(DFTQNN.gate_design(
+                        len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=batch[0]) for gr in group], wires=batch
+                    ))
+                for batch in batched(range(1, num_qubits), group_qubits_size):
+                    gates_gen.extend(DFTQNN.gate_design(
+                        len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=batch[0]) for gr in group], wires=batch
+                    ))
+                for batch in batched(range(2, num_qubits), group_qubits_size):
+                    gates_gen.extend(DFTQNN.gate_design(
+                        len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=batch[0]) for gr in group], wires=batch
+                    ))
+                # pooling 1
+                # not implemented yet
+            elif network_type == "qnn":
+                for batch in batched(range(num_qubits), group_qubits_size):
+                    gates_gen.extend(DFTQNN.gate_design(
+                        len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=batch[0]) for gr in group], wires=batch
+                    ))
             AnsatzIO.write_to_file(filename, gates_gen)
         gates_gen = gates_gen[: 2**num_qubits]
+        draw_circuit_mpl(dev, gates_gen)
 
         gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
 

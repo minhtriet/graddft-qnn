@@ -63,9 +63,9 @@ class QNNFunctional(NeuralFunctional):
         # rescale densities and grid_weights
         with open("config.yaml") as file:
             data = yaml.safe_load(file)
-            if "QBITS" not in data:
-                raise KeyError("YAML file must contain 'QBITS' key")
-            n_qubits = data["QBITS"]
+            if "WIRES" not in data["NETWORK"]:
+                raise KeyError("YAML file must contain 'NETWORK' key")
+            n_qubits = data["NETWORK"]["WIRES"]
 
         # downsampling charge density
         if isinstance(unscaled_coefficient_inputs, JVPTracer):
