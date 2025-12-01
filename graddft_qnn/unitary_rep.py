@@ -142,15 +142,12 @@ class O_h:
             num_Is = np.log2(size)
             assert num_Is.is_integer()
             num_Is = int(num_Is)
-            prods = (
-                [qml.X(i) for i in range(starting_wire, starting_wire + num_Is * 2)]
-                + [
-                    qml.I(i)
-                    for i in range(
-                        starting_wire + num_Is * 2, starting_wire + num_Is * 3
-                    )
-                ]
-            )
+            prods = [
+                qml.X(i) for i in range(starting_wire, starting_wire + num_Is * 2)
+            ] + [
+                qml.I(i)
+                for i in range(starting_wire + num_Is * 2, starting_wire + num_Is * 3)
+            ]
             return qml.prod(*prods)
         else:
             logging.warning("Deprecated: use pauli_word=True version for large size")

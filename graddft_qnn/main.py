@@ -2,7 +2,6 @@ import json
 import logging
 import pathlib
 from datetime import datetime
-from graddft_qnn.helper.initialization import batched
 
 import grad_dft as gd
 import jax
@@ -20,6 +19,7 @@ from datasets import DatasetDict
 from graddft_qnn import helper
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.dft_qnn import DFTQNN
+from graddft_qnn.helper.initialization import batched
 
 # from graddft_qnn.helper import training
 from graddft_qnn.io.ansatz_io import AnsatzIO
@@ -32,19 +32,67 @@ np.random.seed(42)
 key = PRNGKey(42)
 
 
+def reorder(lst, step):
+    """
+    Reorder a list by taking elements in column-wise strides.
+
+    Given a list ``lst`` and an integer ``step``, this function returns a new
+    list formed by starting at each offset ``0`` through ``step - 1`` and
+    collecting elements spaced ``step`` apart.
+
+    For example, with ``lst = [1,2,3,4,5,6,7,8,9,10]`` and ``step = 3``,
+    the function produces::
+
+        [1, 4, 7, 2, 5, 8, 3, 6, 9]
+
+    because it takes:
+    - elements at indices 0, 3, 6, ...
+    - then indices 1, 4, 7, ...
+    - then indices 2, 5, 8, ...
+    stopping when indices exceed the list length.
+
+    Parameters
+    ----------
+    lst : list
+        The input list to reorder.
+    step : int
+        The stride length used to collect column-wise elements. Must be
+        a positive integer.
+
+    Returns
+    -------
+    list
+        A new list containing the reordered elements.
+    """
+    result = []
+    n = len(lst)
+    for offset in range(step):
+        i = offset
+        while i < n:
+            result.append(lst[i])
+            i += step
+    return result
+
+
 def draw_circuit_mpl(dev, gate_gens):
     """
     As the qml.draw() doesn't seem to support gates from qml.exp(), we do it ourself
     """
     drawer = qml.drawer.MPLDrawer(n_layers=10, wire_map={i: i for i in dev.wires})
     layer = 1
+    last_wire = 0
     for gate_gen in gate_gens:
-        if list(gate_gen.wires.labels)[-1] == len(dev.wires):
+        if (last_wire > list(gate_gen.wires.labels)[-1]) or (
+            list(gate_gen.wires.labels)[0] < last_wire < list(gate_gen.wires.labels)[-1]
+        ):
             layer += 1
-        drawer.box_gate(layer=layer, wires=list(gate_gen.wires.labels))
+        drawer.box_gate(
+            layer=layer, text=str(gate_gen)[25:50], wires=list(gate_gen.wires.labels)
+        )
+        last_wire = list(gate_gen.wires.labels)[-1]
 
-    drawer.fig.suptitle('My Circuit', fontsize='xx-large')
-    drawer.fig.savefig('circuit.png')
+    drawer.fig.savefig("circuit.png")
+
 
 if __name__ == "__main__":
     jax.config.update("jax_enable_x64", True)
@@ -71,9 +119,7 @@ if __name__ == "__main__":
         group: list = data["GROUP"]["MEMBERS"]
         group_str_rep = "]_[".join(group)[:230]
         if "naive" not in group:
-            group_matrix_reps = [
-                getattr(O_h, gr)(size, False) for gr in group
-            ]
+            group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
             if (check_group) and (not is_group(group_matrix_reps, group)):
                 raise ValueError("Not forming a group")
         xc_functional_name = data["XC_FUNCTIONAL"]
@@ -83,40 +129,48 @@ if __name__ == "__main__":
     filename = f"ansatz_{num_qubits}_{group_str_rep}_{group_qubits_size}_qubits"
     if "naive" not in group:
         if pathlib.Path(f"{filename}.pkl").exists():
-            gates_gen = AnsatzIO.read_from_file(filename)
+            gates_gens = AnsatzIO.read_from_file(filename)
             logging.info(f"Loaded ansatz generator from {filename}")
         else:
-            gates_gen = []
+            gates_gens = []
             if network_type == "qcnn":
                 # a hack: we assume the size of the gate is 3 qubits
                 # convolution 1, can be > 1 layer
-                for batch in batched(range(num_qubits), group_qubits_size):
-                    gates_gen.extend(DFTQNN.gate_design(
-                        len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=batch[0]) for gr in group], wires=batch
-                    ))
-                for batch in batched(range(1, num_qubits), group_qubits_size):
-                    gates_gen.extend(DFTQNN.gate_design(
-                        len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=batch[0]) for gr in group], wires=batch
-                    ))
-                for batch in batched(range(2, num_qubits), group_qubits_size):
-                    gates_gen.extend(DFTQNN.gate_design(
-                        len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=batch[0]) for gr in group], wires=batch
-                    ))
+                for starting_wire in range(0, 3):
+                    for batch in batched(
+                        range(starting_wire, num_qubits), group_qubits_size
+                    ):
+                        gates_gens.extend(
+                            DFTQNN.gate_design(
+                                [
+                                    getattr(O_h, gr)(size, True, starting_wire=batch[0])
+                                    for gr in group
+                                ],
+                                wires=batch,
+                            )
+                        )
                 # pooling 1
                 # not implemented yet
+                gates_gens = reorder(gates_gens, step=3)
             elif network_type == "qnn":
                 for batch in batched(range(num_qubits), group_qubits_size):
-                    gates_gen.extend(DFTQNN.gate_design(
-                        len(dev.wires), [getattr(O_h, gr)(size, True, starting_wire=batch[0]) for gr in group], wires=batch
-                    ))
-            AnsatzIO.write_to_file(filename, gates_gen)
-        gates_gen = gates_gen[: 2**num_qubits]
-        draw_circuit_mpl(dev, gates_gen)
+                    gates_gens.extend(
+                        DFTQNN.gate_design(
+                            [
+                                getattr(O_h, gr)(size, True, starting_wire=batch[0])
+                                for gr in group
+                            ],
+                            wires=batch,
+                        )
+                    )
+            AnsatzIO.write_to_file(filename, gates_gens)
+        gates_gens = gates_gens[: 2**num_qubits]
+        draw_circuit_mpl(dev, gates_gens)
 
-        gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
+        gates_indices = sorted(np.random.choice(len(gates_gens), num_gates))
 
         dft_qnn = DFTQNN(
-            dev, gates_gen, gates_indices, network_type=data["NETWORK"]["TYPE"]
+            dev, gates_gens, gates_indices, network_type=data["NETWORK"]["TYPE"]
         )
     else:
         dft_qnn = NaiveDFTQNN(dev, num_gates)

@@ -40,12 +40,14 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     return jnp.concatenate((lda_x_e, pw92_c_e), axis=1)
 
 
-def batched(iterable, n, *, strict=False):
-    # batched('ABCDEFG', 2) → AB CD EF G
+def batched(iterable, n, *, strict=True):
+    # batched('ABCDEFG', 2) → AB CD EF G if strict==False, AB CD EF if strict==True
     if n < 1:
         raise ValueError("n must be at least one")
     iterator = iter(iterable)
+
     while batch := tuple(islice(iterator, n)):
-        if strict and len(batch) != n:
-            raise ValueError("batched(): incomplete batch")
-        yield batch
+        if strict and len(batch) == n:
+            yield batch
+        elif not strict:
+            yield batch

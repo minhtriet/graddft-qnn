@@ -6,7 +6,6 @@ import jax.numpy as jnp
 import numpy as np
 import pennylane as qml
 from flax.typing import Array
-from pennylane import layer
 from tqdm import tqdm
 
 from graddft_qnn import custom_gates
@@ -137,12 +136,10 @@ class DFTQNN(nn.Module):
 
     @staticmethod
     def gate_design(
-        num_wires: int,
         invariant_rep: list[np.ndarray | qml.ops.op_math.Prod],
         wires: list[int] | None = None,
     ) -> tuple[list[str], list[str]]:
         """
-        :param num_wires:
         :param invariant_rep: The representation of group members, doesn't have
         identity yet
         :return:
@@ -159,6 +156,6 @@ class DFTQNN(nn.Module):
                 if invariant_gate is not None:
                     ansatz_gen.append(invariant_gate)
                     pbar.update()
-                    if len(ansatz_gen) == 1:  # only need 1 gate
+                    if len(ansatz_gen) == 3:  # only need 1 gate
                         break
         return ansatz_gen
