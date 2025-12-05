@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from graddft_qnn import custom_gates
 from graddft_qnn.helper.initialization import batched
-from graddft_qnn.unitary_rep import is_zero_matrix_combination, O_h
+from graddft_qnn.unitary_rep import O_h, is_zero_matrix_combination
 
 
 class DFTQNN(nn.Module):
@@ -39,17 +39,27 @@ class DFTQNN(nn.Module):
                 # qml.evolve(gen, theta[idx][0])
             return qml.probs(wires=self.dev.wires)
 
-        def qcnn(feature, theta, gate_gens: dict, ):
+        def qcnn(feature, theta, gate_gens: tuple):
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
-            for layer in range(len(gate_gens)):
+            layer = -1
+            for gen in gate_gens:
                 # convolutional layer, where each layer has 1 shared param
-                for gen in gate_gens[layer]:
-                    qml.exp(-1j * theta[layer][0] * gen)
-                # pooling layer
-                # which goes from 0 -> num_wires - 0 in layer 0
-                # then 1 -> num_wires -1 in layer 1, etc.
-                for pool_wires in batched(range(layer, len(self.dev.wires) - layer), 3):
-                    O_h.pool(control_wire=pool_wires[0], act_wires=pool_wires[1:], phi=phi[layer][0])
+                # if the gate starts at wire 0, it means it's the new layer
+                if gen.wires[0] == 0:
+                    layer += 1
+                    if layer > 0:
+                        # pooling layer
+                        # which goes from 0 -> num_wires - 0 in layer 0
+                        # then 1 -> num_wires -1 in layer 1, etc.
+                        for pool_wires in batched(
+                            range(layer, len(self.dev.wires) - layer), 3
+                        ):
+                            O_h.pool(
+                                control_wire=pool_wires[0],
+                                act_wires=pool_wires[1:],
+                                phi=[theta[layer * 3 + 1][0], theta[layer * 3 + 2][0]],
+                            )  # noqa: E501
+                qml.exp(-1j * theta[layer * 3][0] * gen)
 
             return qml.probs(wires=self.dev.wires)
 
@@ -74,12 +84,21 @@ class DFTQNN(nn.Module):
 
     @nn.compact
     def __call__(self, feature: Array) -> Array:
-        theta = self.param(
-            "theta",
-            nn.initializers.he_normal(),
-            (len(self.gate_indices), 1),
-            jnp.float32,
-        )
+        if self.network_type == "qnn":
+            theta = self.param(
+                "theta",
+                nn.initializers.he_normal(),
+                (len(self.gate_indices), 1),
+                jnp.float32,
+            )
+        elif self.network_type == "qcnn":
+            theta = self.param(
+                "theta",
+                nn.initializers.he_normal(),
+                (len(self.gate_indices), 1),  # hack, it is more than needed
+                jnp.float32,
+            )
+
         return self.circuit(
             feature,
             theta,

@@ -166,8 +166,10 @@ if __name__ == "__main__":
         gates_gens = gates_gens[: 2**num_qubits]
         draw_circuit_mpl(dev, gates_gens)
 
-        gates_indices = sorted(np.random.choice(len(gates_gens), num_gates))
-
+        if isinstance(num_gates, int):
+            gates_indices = sorted(np.random.choice(len(gates_gens), num_gates))
+        else:
+            gates_indices = list(range(len(gates_gens)))
         dft_qnn = DFTQNN(
             dev, gates_gens, gates_indices, network_type=data["NETWORK"]["TYPE"]
         )

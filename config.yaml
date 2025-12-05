@@ -1,5 +1,5 @@
 FULL_MEASUREMENTS: prob
-N_GATES: 4
+N_GATES: full
 CHECK_GROUP: False
 XC_FUNCTIONAL: pw92_densities  # possible options: vwn_density, lyp_density, pw92_densities
 NETWORK:
