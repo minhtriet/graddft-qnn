@@ -9,7 +9,8 @@ from flax.typing import Array
 from tqdm import tqdm
 
 from graddft_qnn import custom_gates
-from graddft_qnn.unitary_rep import is_zero_matrix_combination
+from graddft_qnn.helper.initialization import batched
+from graddft_qnn.unitary_rep import is_zero_matrix_combination, O_h
 
 
 class DFTQNN(nn.Module):
@@ -38,10 +39,18 @@ class DFTQNN(nn.Module):
                 # qml.evolve(gen, theta[idx][0])
             return qml.probs(wires=self.dev.wires)
 
-        def qcnn(feature, theta, gate_gens):
+        def qcnn(feature, theta, gate_gens: dict, ):
             qml.AmplitudeEmbedding(feature, wires=self.dev.wires, pad_with=0.0)
-            for idx, gen in enumerate(gate_gens):
-                qml.exp(-1j * theta[idx][0] * gen)
+            for layer in range(len(gate_gens)):
+                # convolutional layer, where each layer has 1 shared param
+                for gen in gate_gens[layer]:
+                    qml.exp(-1j * theta[layer][0] * gen)
+                # pooling layer
+                # which goes from 0 -> num_wires - 0 in layer 0
+                # then 1 -> num_wires -1 in layer 1, etc.
+                for pool_wires in batched(range(layer, len(self.dev.wires) - layer), 3):
+                    O_h.pool(control_wire=pool_wires[0], act_wires=pool_wires[1:], phi=phi[layer][0])
+
             return qml.probs(wires=self.dev.wires)
 
         if self.network_type.lower() == "qcnn":

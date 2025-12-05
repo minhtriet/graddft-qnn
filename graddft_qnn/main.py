@@ -125,7 +125,8 @@ if __name__ == "__main__":
         xc_functional_name = data["XC_FUNCTIONAL"]
         dev = qml.device("default.qubit", wires=num_qubits)
 
-    # define the QNN
+    # define the QNN, we are not defining any learnable parameters here
+    # probably better do it in the qnn itself
     filename = f"ansatz_{num_qubits}_{group_str_rep}_{group_qubits_size}_qubits"
     if "naive" not in group:
         if pathlib.Path(f"{filename}.pkl").exists():
@@ -149,9 +150,7 @@ if __name__ == "__main__":
                                 wires=batch,
                             )
                         )
-                # pooling 1
-                # not implemented yet
-                gates_gens = reorder(gates_gens, step=3)
+                gates_gens = reorder(gates_gens, step=num_qubits - group_qubits_size)
             elif network_type == "qnn":
                 for batch in batched(range(num_qubits), group_qubits_size):
                     gates_gens.extend(

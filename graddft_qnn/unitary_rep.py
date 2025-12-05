@@ -461,6 +461,18 @@ class O_h:
         else:
             return perm_matrix
 
+    @staticmethod
+    def pool(control_wire, act_wires, phi):
+        assert phi.shape == (2,), "Angle parameter phi must be of shape (2,)"
+        base1 = qml.prod(*[qml.RX(phi[0], wires=x) for x in act_wires])
+        controlled1 = qml.ops.op_math.Controlled(
+            base1, control_wires=control_wire, control_values=True
+        )
+        base2 = qml.prod(*[qml.RX(phi[1], wires=x) for x in act_wires])
+        controlled2 = qml.ops.op_math.Controlled(
+            base2, control_wires=control_wire, control_values=False
+        )
+        return controlled1, controlled2
 
 def is_group(matrices: list[np.ndarray], group_name: list[str]) -> bool:
     """

@@ -60,13 +60,13 @@ def test_x_axis_180_permutation_matrix_qubits(size):
 @pytest.mark.parametrize("size", [2, 4, 8, 16])
 def test_y_axis_180_permutation_matrix(size):
     prod = O_h._180_deg_y_rot(size, True)
-    assert np.allclose(O_h._180_deg_y_rot(size), qml.matrix(prod))
+    assert np.allclose(qml.matrix(O_h._180_deg_y_rot(size)), qml.matrix(prod))
 
 
 @pytest.mark.parametrize("size", [2, 4, 8, 16])
 def test_z_axis_180_permutation_matrix(size):
     prod = O_h._180_deg_z_rot(size, True)
-    assert np.allclose(O_h._180_deg_z_rot(size), qml.matrix(prod))
+    assert np.allclose(qml.matrix(O_h._180_deg_z_rot(size)), qml.matrix(prod))
 
 
 def test_x_reflect():
