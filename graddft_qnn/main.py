@@ -79,18 +79,26 @@ def draw_circuit_mpl(dev, gate_gens):
     As the qml.draw() doesn't seem to support gates from qml.exp(), we do it ourself
     """
     drawer = qml.drawer.MPLDrawer(n_layers=10, wire_map={i: i for i in dev.wires})
-    layer = 1
+    layer = 0
     last_wire = 0
+    last_gate = qml.matrix(gate_gens[0])
     for gate_gen in gate_gens:
         if (last_wire > list(gate_gen.wires.labels)[-1]) or (
             list(gate_gen.wires.labels)[0] < last_wire < list(gate_gen.wires.labels)[-1]
         ):
             layer += 1
+            if (qml.matrix(gate_gen) != last_gate).any():  # pooling layer
+                last_gate = qml.matrix(gate_gen)
+                for pool_wires in batched(
+                    range(layer, len(dev.wires) - layer), 3
+                ):
+                    drawer.ctrl(layer, wires=pool_wires[0], wires_target=pool_wires[1])
+                    drawer.box_gate(layer, wires=pool_wires[1:], text="POOL")
+                layer += 1
         drawer.box_gate(
             layer=layer, text=str(gate_gen)[25:50], wires=list(gate_gen.wires.labels)
         )
         last_wire = list(gate_gen.wires.labels)[-1]
-
     drawer.fig.savefig("circuit.png")
 
 
