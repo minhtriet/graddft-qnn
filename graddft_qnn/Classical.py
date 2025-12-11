@@ -44,6 +44,7 @@ ground_truth_energy = mf.kernel()
 HH_molecule = gd.molecule_from_pyscf(mf)
 
 
+
 def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     r"""Auxiliary function to generate the features of LSDA."""
     # Molecule can compute the density matrix.
