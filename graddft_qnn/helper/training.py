@@ -39,7 +39,9 @@ def train_step(parameters, predictor, batch, opt_state, tx):
     parameters = apply_updates(parameters, updates)
 
     # divide by the length of elements in batch, not the number of keys in batch
-    avg_cost = sum(cost_values) / len(batch["name"])
+    avg_cost = sum(cost_values) / len(cost_values)
+    print(f"Parameters: {parameters}, grad {final_grad}, avg cost {avg_cost}")
+
     return parameters, opt_state, avg_cost
 
 

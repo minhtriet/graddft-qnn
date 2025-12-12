@@ -1,4 +1,3 @@
-import logging
 from itertools import combinations
 
 import flax.linen as nn
@@ -9,7 +8,6 @@ from flax.typing import Array
 
 class NaiveDFTQNN(nn.Module):
     dev: qml.device
-    measurements: list[qml.operation.Operator]
     num_gates: int
 
     def _circuit(self, feature, theta):
@@ -36,7 +34,7 @@ class NaiveDFTQNN(nn.Module):
             if (i + 1) % (len(self.dev.wires) * 3) == 0:
                 for j in range(len(self.dev.wires) - 1):
                     qml.CNOT(wires=[j, j + 1])
-        return [qml.expval(z_op) for z_op in self.measurements]
+        return qml.probs(wires=self.dev.wires)
 
     def setup(self) -> None:
         self.qnode = qml.QNode(self._circuit, self.dev)
@@ -67,21 +65,4 @@ class NaiveDFTQNN(nn.Module):
         for r in range(1, n + 1):
             for combo in combinations(range(n), r):
                 result.append(list(combo))
-        return result
-
-    @staticmethod
-    def generate_Z_measurements(n):
-        """
-        Generate 2^n_wires Z string
-        """
-        logging.info("Generating Z measurements")
-        combos = NaiveDFTQNN._combination(n)
-        result = []
-        for combo in combos:
-            term = qml.Z(combo[0])
-            for i in combo[1:]:
-                term = term @ qml.Z(i)
-            result.append(term)
-        # add last measurement
-        result.append(qml.Z(0))
         return result

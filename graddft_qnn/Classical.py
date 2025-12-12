@@ -13,12 +13,14 @@ import pandas as pd
 import tqdm
 import yaml
 from flax import linen as nn
+from helper.visualization import CLASSICAL_WITH_DOWN_FILENAME, DISTANCES
 from jax.nn import gelu
 from jax.random import PRNGKey
 from optax import adam, apply_updates
 from pyscf import dft, gto
 
 from datasets import DatasetDict
+from graddft_qnn import helper
 from graddft_qnn.cube_dataset.h2_multibond import H2MultibondDataset
 from graddft_qnn.qnn_functional import QNNFunctional
 
@@ -42,10 +44,6 @@ ground_truth_energy = mf.kernel()
 HH_molecule = gd.molecule_from_pyscf(mf)
 
 
-def coefficient_inputs(molecule: gd.Molecule, *_, **__):
-    rho = molecule.density()
-    return jnp.sum(rho, 1)
-
 
 def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
     r"""Auxiliary function to generate the features of LSDA."""
@@ -58,6 +56,7 @@ def energy_densities(molecule: gd.Molecule, clip_cte: float = 1e-30, *_, **__):
         * (3 / (4 * jnp.pi)) ** (1 / 3)
         * (rho ** (4 / 3)).sum(axis=1, keepdims=True)
     )
+    # pw92_corr_e = pw92_densities(molecule, clip_cte)
     # For simplicity we do not include the exchange polarization correction
     # check function exchange_polarization_correction in functional.py
     # The output of features must be an Array of dimension n_grid x n_features.
@@ -107,7 +106,7 @@ coefficients = NeuralCoeff(layer_widths, out_features)
 nf = QNNFunctional(
     coefficients=coefficients,
     energy_densities=energy_densities,
-    coefficient_inputs=coefficient_inputs,
+    coefficient_inputs=helper.initialization.coefficient_inputs,
 )
 
 key = PRNGKey(42)
@@ -166,7 +165,6 @@ for epoch in range(n_epochs):
         if len(batch["symbols"]) < batch_size:
             # drop last batch if len(train_ds) % batch_size > 0
             continue
-        "from helper.training.train_step()"
         cost_values = []
         for example_id in range(len(batch["symbols"])):
             atom_coords = list(
@@ -186,13 +184,12 @@ for epoch in range(n_epochs):
             params = apply_updates(params, updates)
 
             cost_values.append(cost_value)
-            # avg_cost = sum(cost_values) / len(batch) #30
-            avg_cost = sum(cost_values)
+            avg_cost = sum(cost_values)/len(batch["symbols"])
 
         aggregated_train_loss += avg_cost
         train_losses_batch.append(np.sqrt(avg_cost / len(batch["symbols"])))
     num_train_batch = int(np.floor(len(train_ds) / batch_size))
-    train_loss = np.sqrt(aggregated_train_loss /num_train_batch)
+    train_loss = np.sqrt(aggregated_train_loss / num_train_batch)
     logging.info(f"RMS train loss: {train_loss}")
     train_losses.append(train_loss)
 
@@ -233,10 +230,9 @@ def get_unique_filename(base_filename):
 
 
 # Plot binding energy
-distances = np.arange(0.2, 5.0, 0.1)  # Distance range from 1 to 5 with step 0.3
 E_predicts = []
 
-for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):
+for distance in tqdm.tqdm(DISTANCES, desc="Calculating Binding Energy"):
     # Create molecule with the specified distance
     mol = gto.M(
         atom=[["H", (0, 0, 0)], ["H", (0, 0, distance)]],
@@ -244,8 +240,6 @@ for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):
         unit="Angstrom",
     )
     mean_field = dft.UKS(mol)
-    # mean_field.xc = 'wB97M-V'
-    # mean_field.nlc = 'VV10'
 
     ground_truth_energy = mean_field.kernel()
     molecule = gd.molecule_from_pyscf(mean_field)
@@ -253,16 +247,15 @@ for distance in tqdm.tqdm(distances, desc="Calculating Binding Energy"):
     (cost_value, predicted_energy), _ = gd.simple_energy_loss(
         params, predictor, molecule, ground_truth_energy
     )
-    E_predicts.append(predicted_energy)
+    E_predicts.append(float(predicted_energy))
 
 
-distances = np.array(distances)
 E_predicts = np.array(E_predicts)
 
 
 plt.figure(figsize=(10, 6))
 plt.plot(
-    distances,
+    DISTANCES,
     E_predicts,
     marker="o",
     linestyle="-",
@@ -275,6 +268,10 @@ plt.title("Binding Energy Curve")
 plt.grid(alpha=0.3)
 plt.legend()
 plt.tight_layout()
+
+classcial_prediction_result = dict(zip(DISTANCES, E_predicts))
+with open(CLASSICAL_WITH_DOWN_FILENAME, "w") as f:
+    json.dump(classcial_prediction_result, f)
 
 # Define the filename
 output_dir = "plots"
@@ -293,9 +290,9 @@ plt.show()
 def to_serializable(obj):
     if isinstance(obj, jnp.ndarray):
         return obj.tolist()
-    if isinstance(obj, (jnp.float32 | jnp.float64)):
+    if isinstance(obj, jnp.float32 | jnp.float64):
         return float(obj)
-    if isinstance(obj, (jnp.int32 | jnp.int64)):
+    if isinstance(obj, jnp.int32 | jnp.int64):
         return int(obj)
     return obj
 

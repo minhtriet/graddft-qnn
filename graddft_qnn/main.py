@@ -13,7 +13,7 @@ import yaml
 from evaluate.metric_name import MetricName
 from jax import numpy as jnp
 from jax.random import PRNGKey
-from optax import adam
+from optax import adamw
 
 from datasets import DatasetDict
 from graddft_qnn import helper
@@ -51,8 +51,8 @@ if __name__ == "__main__":
         ), f"N_GATES must be integer or 'full', got {num_gates}"
         full_measurements = "prob"
         group: list = data["GROUP"]
+        group_str_rep = "]_[".join(group)[:230]
         if "naive" not in group[0].lower():
-            group_str_rep = "]_[".join(group)[:230]
             group_matrix_reps = [getattr(O_h, gr)(size, False) for gr in group]
             if (check_group) and (not is_group(group_matrix_reps, group)):
                 raise ValueError("Not forming a group")
@@ -75,8 +75,7 @@ if __name__ == "__main__":
             gates_indices = sorted(np.random.choice(len(gates_gen), num_gates))
         dft_qnn = DFTQNN(dev, gates_gen, gates_indices)
     else:
-        z_measurements = NaiveDFTQNN.generate_Z_measurements(len(dev.wires))
-        dft_qnn = NaiveDFTQNN(dev, z_measurements, num_gates)
+        dft_qnn = NaiveDFTQNN(dev, num_gates)
 
     # get a sample batch for initialization
     coeff_input = jnp.empty((2 ** len(dev.wires),))
@@ -93,7 +92,7 @@ if __name__ == "__main__":
         energy_densities=helper.initialization.energy_densities,
         coefficient_inputs=helper.initialization.coefficient_inputs,
     )
-    tx = adam(learning_rate=learning_rate, b1=momentum)
+    tx = adamw(learning_rate=learning_rate, weight_decay=1e-5)
     opt_state = tx.init(parameters)
 
     predictor = gd.non_scf_predictor(qnnf)
